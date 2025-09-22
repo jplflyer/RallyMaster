@@ -16,6 +16,10 @@ allprojects {
     }
 }
 
+tasks.register("printVersion") {
+    doLast { println(project.version.toString()) }
+}
+
 subprojects {
     plugins.apply("java")
 
@@ -34,3 +38,5 @@ subprojects {
         add("testImplementation", "org.junit.jupiter:junit-jupiter")
     }
 }
+
+
