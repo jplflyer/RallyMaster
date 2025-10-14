@@ -1,5 +1,6 @@
 plugins {
     id("java-library")
+    id("io.freefair.lombok") version "8.10"
 }
 
 group = "org.showpage"
