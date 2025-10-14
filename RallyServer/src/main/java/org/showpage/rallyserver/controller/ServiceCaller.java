@@ -6,8 +6,12 @@ import org.showpage.rallyserver.config.JwtUtil;
 import org.showpage.rallyserver.entity.Member;
 import org.showpage.rallyserver.exception.NotFoundException;
 import org.showpage.rallyserver.exception.ValidationException;
+import org.showpage.rallyserver.repository.MemberRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -16,6 +20,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ServiceCaller {
     private final JwtUtil jwtUtil;
+    private final MemberRepository memberRepository;
 
     public interface Lambda<T> {
         T process() throws NotFoundException, ValidationException;
@@ -54,7 +59,7 @@ public class ServiceCaller {
      */
     public <T> ResponseEntity<RestResponse<T>> call(MemberLambda<T> lambda) {
         try {
-            T result = lambda.process(null);
+            T result = lambda.process(getCurrentMember());
             return ResponseEntity.ok(RestResponse
                     .<T>builder()
                     .success(true)
@@ -68,9 +73,35 @@ public class ServiceCaller {
         catch (ValidationException e) {
             return error(HttpStatus.BAD_REQUEST, e);
         }
+        catch (UnauthorizedException e) {
+            return error(HttpStatus.UNAUTHORIZED, e);
+        }
         catch (Exception e) {
             return error(HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
+    }
+
+    //======================================================================
+    // Helpers.
+    //======================================================================
+
+    /**
+     * Gets the current user. Tosses a
+     * @return
+     */
+    private Member getCurrentMember() throws UnauthorizedException {
+        SecurityContext ctx = SecurityContextHolder.getContext();
+        if (ctx != null) {
+            Authentication auth = ctx.getAuthentication();
+            if (auth != null && auth.isAuthenticated()) {
+                String name = auth.getName();
+                if (name != null && !name.isBlank()) {
+                    return memberRepository.findByEmail(name).orElseThrow(() -> new UnauthorizedException("Unauthorized"));
+                }
+            }
+        }
+
+        throw new UnauthorizedException("Unauthorized");
     }
 
     private <T> ResponseEntity<RestResponse<T>> error(HttpStatus httpStatus, Exception e) {
@@ -103,4 +134,9 @@ public class ServiceCaller {
                 ? Optional.of(token)
                 : Optional.empty();
     }
+
+    public static class UnauthorizedException extends RuntimeException {
+        public UnauthorizedException(String msg) { super(msg); }
+    }
+
 }
