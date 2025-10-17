@@ -1,15 +1,20 @@
 package org.showpage.rallyserver.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * This represents a participant in the rally.
  */
 @Entity
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class RallyParticipant {
@@ -32,10 +37,16 @@ public class RallyParticipant {
     Integer memberId;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)               // <-- key part
     private RallyParticipantType participantType;
 
     private Integer odometerIn;
     private Integer odometerOut;
     private Boolean finisher;
     private Integer finalScore;
+
+    @JsonIgnore
+    public boolean isRallyMaster() {
+        return RallyParticipantType.ORGANIZER.equals(participantType);
+    }
 }

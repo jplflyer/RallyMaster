@@ -1,20 +1,21 @@
 package org.showpage.rallyserver.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.showpage.rallyserver.interfaces.HasId;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Rally {
+public class Rally implements HasId<Rally> {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -27,4 +28,14 @@ public class Rally {
     private String locationCity;
     private String locationState;
     private String locationCountry; /** 2-digit code. */
+
+    private Boolean isPublic;
+
+    @OneToMany(
+            mappedBy = "rally",                // owning side is RallyParticipant.rally
+            cascade = CascadeType.ALL,         // persist/update/remove participants with the rally
+            orphanRemoval = true,              // remove rows when detached from collection
+            fetch = FetchType.LAZY
+    )
+    private List<RallyParticipant> participants;
 }

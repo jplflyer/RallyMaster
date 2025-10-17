@@ -1,8 +1,8 @@
 package org.showpage.rallyserver.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.showpage.rallyserver.interfaces.HasId;
 import org.showpage.rallyserver.RestResponse;
-import org.showpage.rallyserver.config.JwtUtil;
 import org.showpage.rallyserver.entity.Member;
 import org.showpage.rallyserver.exception.NotFoundException;
 import org.showpage.rallyserver.exception.ValidationException;
@@ -13,13 +13,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
 public class ServiceCaller {
-    private final JwtUtil jwtUtil;
     private final MemberRepository memberRepository;
 
     public interface Lambda<T> {
@@ -43,15 +44,9 @@ public class ServiceCaller {
                     .build()
             );
         }
-        catch (NotFoundException e) {
-            return error(HttpStatus.NOT_FOUND, e);
-        }
-        catch (ValidationException e) {
-            return error(HttpStatus.BAD_REQUEST, e);
-        }
-        catch (Exception e) {
-            return error(HttpStatus.INTERNAL_SERVER_ERROR, e);
-        }
+        catch (NotFoundException e)   { return error(HttpStatus.NOT_FOUND, e); }
+        catch (ValidationException e) { return error(HttpStatus.BAD_REQUEST, e); }
+        catch (Exception e)           { return error(HttpStatus.INTERNAL_SERVER_ERROR, e); }
     }
 
     /**
@@ -60,6 +55,7 @@ public class ServiceCaller {
     public <T> ResponseEntity<RestResponse<T>> call(MemberLambda<T> lambda) {
         try {
             T result = lambda.process(getCurrentMember());
+
             return ResponseEntity.ok(RestResponse
                     .<T>builder()
                     .success(true)
@@ -67,27 +63,46 @@ public class ServiceCaller {
                     .build()
             );
         }
-        catch (NotFoundException e) {
-            return error(HttpStatus.NOT_FOUND, e);
-        }
-        catch (ValidationException e) {
-            return error(HttpStatus.BAD_REQUEST, e);
-        }
-        catch (UnauthorizedException e) {
-            return error(HttpStatus.UNAUTHORIZED, e);
-        }
-        catch (Exception e) {
-            return error(HttpStatus.INTERNAL_SERVER_ERROR, e);
-        }
+        catch (NotFoundException e)     { return error(HttpStatus.NOT_FOUND, e); }
+        catch (ValidationException e)   { return error(HttpStatus.BAD_REQUEST, e); }
+        catch (UnauthorizedException e) { return error(HttpStatus.UNAUTHORIZED, e); }
+        catch (Exception e)             { return error(HttpStatus.INTERNAL_SERVER_ERROR, e); }
     }
+
+    /**
+     * Use this for a create.
+     */
+    public <T extends HasId<T>> ResponseEntity<RestResponse<T>> call(String prefix, MemberLambda<T> lambda) {
+        try {
+            T result = lambda.process(getCurrentMember());
+
+            URI location = ServletUriComponentsBuilder
+                    .fromCurrentContextPath()
+                    .path(prefix.endsWith("/") ? prefix + "{id}" : prefix + "/{id}")
+                    .buildAndExpand(result.getId())
+                    .toUri();
+
+            return ResponseEntity.created(location)
+                    .body(RestResponse
+                        .<T>builder()
+                        .success(true)
+                        .data(result)
+                        .build()
+                );
+        }
+        catch (NotFoundException e)     { return error(HttpStatus.NOT_FOUND, e); }
+        catch (ValidationException e)   { return error(HttpStatus.BAD_REQUEST, e); }
+        catch (UnauthorizedException e) { return error(HttpStatus.UNAUTHORIZED, e); }
+        catch (Exception e)             { return error(HttpStatus.INTERNAL_SERVER_ERROR, e); }
+    }
+
 
     //======================================================================
     // Helpers.
     //======================================================================
 
     /**
-     * Gets the current user. Tosses a
-     * @return
+     * Gets the current user.
      */
     private Member getCurrentMember() throws UnauthorizedException {
         SecurityContext ctx = SecurityContextHolder.getContext();
