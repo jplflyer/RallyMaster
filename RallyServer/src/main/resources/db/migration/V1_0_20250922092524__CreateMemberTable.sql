@@ -34,7 +34,11 @@ CREATE TABLE IF NOT EXISTS rally
     end_date DATE,
     location_city TEXT,
     location_state TEXT,
-    location_country TEXT
+    location_country TEXT,
+	is_public BOOLEAN,
+	points_public BOOLEAN,
+	riders_public BOOLEAN,
+	organizers_public BOOLEAN
 );
 
 

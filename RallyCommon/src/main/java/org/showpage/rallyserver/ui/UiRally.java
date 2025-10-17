@@ -1,5 +1,6 @@
 package org.showpage.rallyserver.ui;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,6 +13,7 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class UiRally implements HasId<UiRally> {
     private Integer id;
     private String name;
@@ -21,4 +23,7 @@ public class UiRally implements HasId<UiRally> {
     private String locationCity;
     private String locationState;
     private String locationCountry;
+    private Boolean pointsPublic;
+    private Boolean ridersPublic;
+    private Boolean organizersPublic;
 }

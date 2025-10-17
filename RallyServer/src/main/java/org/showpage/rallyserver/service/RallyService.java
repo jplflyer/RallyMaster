@@ -60,6 +60,9 @@ public class RallyService {
                 .locationState(request.getLocationState() != null ? request.getLocationState().trim() : null)
                 .locationCountry(request.getLocationCountry().trim())
                 .isPublic(request.getIsPublic() != null && request.getIsPublic())
+                .pointsPublic(request.getPointsPublic() != null ? request.getPointsPublic() : false)
+                .ridersPublic(request.getRidersPublic() != null ? request.getRidersPublic() : false)
+                .organizersPublic(request.getOrganizersPublic() != null ? request.getOrganizersPublic() : false)
                 .build();
 
         Rally created = rallyRepository.save(rally);
@@ -126,6 +129,18 @@ public class RallyService {
 
         if (request.getIsPublic() != null) {
             rally.setIsPublic(request.getIsPublic());
+        }
+
+        if (request.getPointsPublic() != null) {
+            rally.setPointsPublic(request.getPointsPublic());
+        }
+
+        if (request.getRidersPublic() != null) {
+            rally.setRidersPublic(request.getRidersPublic());
+        }
+
+        if (request.getOrganizersPublic() != null) {
+            rally.setOrganizersPublic(request.getOrganizersPublic());
         }
 
         Rally updated = rallyRepository.save(rally);

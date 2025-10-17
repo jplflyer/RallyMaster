@@ -30,7 +30,7 @@ public class RallyController {
      */
     @PostMapping("/rally")
     ResponseEntity<RestResponse<UiRally>> createRally(@RequestBody CreateRallyRequest request) {
-        return serviceCaller.call("/api/rally/", (member) -> DtoMapper.toUiRally(rallyService.createRally(member, request)));
+        return serviceCaller.call("/api/rally/", (member) -> DtoMapper.toUiRally(member, rallyService.createRally(member, request)));
     }
 
     /**
@@ -41,12 +41,12 @@ public class RallyController {
             @PathVariable Integer id,
             @RequestBody UpdateRallyRequest request
     ) {
-        return serviceCaller.call((member) -> DtoMapper.toUiRally(rallyService.updateRally(member, id, request)));
+        return serviceCaller.call((member) -> DtoMapper.toUiRally(member, rallyService.updateRally(member, id, request)));
     }
 
     @GetMapping("/rally/{id}")
     ResponseEntity<RestResponse<UiRally>> getRally(@PathVariable Integer id) {
-        return serviceCaller.call((member) -> DtoMapper.toUiRally(rallyService.getRally(member, id)));
+        return serviceCaller.call((member) -> DtoMapper.toUiRally(member, rallyService.getRally(member, id)));
     }
 
     /**
@@ -72,9 +72,9 @@ public class RallyController {
 
             @PageableDefault(size = 20, sort = "startDate", direction = Sort.Direction.ASC) Pageable pageable
     ) {
-        return serviceCaller.call(() ->
+        return serviceCaller.call((member) ->
                 rallyService.search(name, from, to, country, region, nearLat, nearLng, radiusMiles, pageable)
-                        .map(DtoMapper::toUiRally)
+                        .map(rally -> DtoMapper.toUiRally(member, rally))
         );
     }
 }

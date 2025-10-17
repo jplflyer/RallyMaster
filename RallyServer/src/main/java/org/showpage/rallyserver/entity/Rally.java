@@ -30,6 +30,9 @@ public class Rally implements HasId<Rally> {
     private String locationCountry; /** 2-digit code. */
 
     private Boolean isPublic;
+    private Boolean pointsPublic;
+    private Boolean ridersPublic;
+    private Boolean organizersPublic;
 
     @OneToMany(
             mappedBy = "rally",                // owning side is RallyParticipant.rally

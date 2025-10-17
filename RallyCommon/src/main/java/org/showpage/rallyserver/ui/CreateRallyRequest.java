@@ -1,5 +1,6 @@
 package org.showpage.rallyserver.ui;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,6 +14,7 @@ import java.time.LocalDate;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CreateRallyRequest {
     private String name;
     private String description;
@@ -23,6 +25,9 @@ public class CreateRallyRequest {
     private String locationState;
     private String locationCountry; /** 2-digit code. */
     private Boolean isPublic;
+    private Boolean pointsPublic;
+    private Boolean ridersPublic;
+    private Boolean organizersPublic;
 
     /**
      * We must have a name, description. start/end date, and location info.
