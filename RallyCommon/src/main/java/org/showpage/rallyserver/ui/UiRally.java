@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.showpage.rallyserver.interfaces.HasId;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Builder
@@ -26,4 +27,7 @@ public class UiRally implements HasId<UiRally> {
     private Boolean pointsPublic;
     private Boolean ridersPublic;
     private Boolean organizersPublic;
+    private List<UiRallyParticipant> participants;
+    private List<UiBonusPoint> bonusPoints;
+    private List<UiCombination> combinations;
 }
