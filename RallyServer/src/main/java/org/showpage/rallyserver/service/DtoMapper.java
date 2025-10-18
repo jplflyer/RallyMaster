@@ -1,6 +1,9 @@
 package org.showpage.rallyserver.service;
 
 import org.showpage.rallyserver.entity.*;
+import org.showpage.rallyserver.repository.BonusPointRepository;
+import org.showpage.rallyserver.repository.CombinationPointRepository;
+import org.showpage.rallyserver.repository.CombinationRepository;
 import org.showpage.rallyserver.ui.*;
 import org.springframework.stereotype.Service;
 
@@ -11,12 +14,42 @@ import java.util.stream.Collectors;
  * Maps between DTOs and Entities.
  */
 public class DtoMapper {
-    public static UiRally toUiRally(Member member, Rally rally) {
+    public static UiRally toUiRally(
+            Member member,
+            Rally rally,
+            BonusPointRepository bonusPointRepository,
+            CombinationRepository combinationRepository,
+            CombinationPointRepository combinationPointRepository
+    ) {
         if (rally == null) {
             return null;
         }
 
         boolean isOrganizer = isOrganizer(member, rally);
+
+        // Conditionally populate arrays based on organizer status or public flags
+        List<UiRallyParticipant> participants = null;
+        if (isOrganizer || (rally.getRidersPublic() != null && rally.getRidersPublic())) {
+            participants = rally.getParticipants() != null
+                    ? rally.getParticipants().stream()
+                            .map(DtoMapper::toUiRallyParticipant)
+                            .collect(Collectors.toList())
+                    : null;
+        }
+
+        List<UiBonusPoint> bonusPoints = null;
+        if (isOrganizer || (rally.getPointsPublic() != null && rally.getPointsPublic())) {
+            bonusPoints = bonusPointRepository.findByRallyId(rally.getId()).stream()
+                    .map(DtoMapper::toUiBonusPoint)
+                    .collect(Collectors.toList());
+        }
+
+        List<UiCombination> combinations = null;
+        if (isOrganizer || (rally.getPointsPublic() != null && rally.getPointsPublic())) {
+            combinations = combinationRepository.findByRallyId(rally.getId()).stream()
+                    .map(c -> toUiCombination(c, combinationPointRepository))
+                    .collect(Collectors.toList());
+        }
 
         return UiRally
                 .builder()
@@ -31,6 +64,9 @@ public class DtoMapper {
                 .pointsPublic(isOrganizer ? rally.getPointsPublic() : null)
                 .ridersPublic(isOrganizer ? rally.getRidersPublic() : null)
                 .organizersPublic(isOrganizer ? rally.getOrganizersPublic() : null)
+                .participants(participants)
+                .bonusPoints(bonusPoints)
+                .combinations(combinations)
                 .build();
     }
 
@@ -87,10 +123,15 @@ public class DtoMapper {
                 .build();
     }
 
-    public static UiCombination toUiCombination(Combination combination) {
+    public static UiCombination toUiCombination(Combination combination, CombinationPointRepository combinationPointRepository) {
         if (combination == null) {
             return null;
         }
+
+        List<UiCombinationPoint> combinationPoints = combinationPointRepository
+                .findByCombinationId(combination.getId()).stream()
+                .map(DtoMapper::toUiCombinationPoint)
+                .collect(Collectors.toList());
 
         return UiCombination
                 .builder()
@@ -102,6 +143,7 @@ public class DtoMapper {
                 .points(combination.getPoints())
                 .requiresAll(combination.getRequiresAll())
                 .numRequired(combination.getNumRequired())
+                .combinationPoints(combinationPoints)
                 .build();
     }
 

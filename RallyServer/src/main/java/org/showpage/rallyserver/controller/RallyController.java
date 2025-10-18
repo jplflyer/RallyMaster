@@ -2,6 +2,9 @@ package org.showpage.rallyserver.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.showpage.rallyserver.RestResponse;
+import org.showpage.rallyserver.repository.BonusPointRepository;
+import org.showpage.rallyserver.repository.CombinationPointRepository;
+import org.showpage.rallyserver.repository.CombinationRepository;
 import org.showpage.rallyserver.service.DtoMapper;
 import org.showpage.rallyserver.service.RallyService;
 import org.showpage.rallyserver.ui.CreateRallyRequest;
@@ -24,13 +27,17 @@ import java.util.List;
 public class RallyController {
     private final ServiceCaller serviceCaller;
     private final RallyService rallyService;
+    private final BonusPointRepository bonusPointRepository;
+    private final CombinationRepository combinationRepository;
+    private final CombinationPointRepository combinationPointRepository;
 
     /**
      * Register a new rally.
      */
     @PostMapping("/rally")
     ResponseEntity<RestResponse<UiRally>> createRally(@RequestBody CreateRallyRequest request) {
-        return serviceCaller.call("/api/rally/", (member) -> DtoMapper.toUiRally(member, rallyService.createRally(member, request)));
+        return serviceCaller.call("/api/rally/", (member) ->
+            DtoMapper.toUiRally(member, rallyService.createRally(member, request), bonusPointRepository, combinationRepository, combinationPointRepository));
     }
 
     /**
@@ -41,12 +48,14 @@ public class RallyController {
             @PathVariable Integer id,
             @RequestBody UpdateRallyRequest request
     ) {
-        return serviceCaller.call((member) -> DtoMapper.toUiRally(member, rallyService.updateRally(member, id, request)));
+        return serviceCaller.call((member) ->
+            DtoMapper.toUiRally(member, rallyService.updateRally(member, id, request), bonusPointRepository, combinationRepository, combinationPointRepository));
     }
 
     @GetMapping("/rally/{id}")
     ResponseEntity<RestResponse<UiRally>> getRally(@PathVariable Integer id) {
-        return serviceCaller.call((member) -> DtoMapper.toUiRally(member, rallyService.getRally(member, id)));
+        return serviceCaller.call((member) ->
+            DtoMapper.toUiRally(member, rallyService.getRally(member, id), bonusPointRepository, combinationRepository, combinationPointRepository));
     }
 
     /**
@@ -74,7 +83,7 @@ public class RallyController {
     ) {
         return serviceCaller.call((member) ->
                 rallyService.search(name, from, to, country, region, nearLat, nearLng, radiusMiles, pageable)
-                        .map(rally -> DtoMapper.toUiRally(member, rally))
+                        .map(rally -> DtoMapper.toUiRally(member, rally, bonusPointRepository, combinationRepository, combinationPointRepository))
         );
     }
 }
