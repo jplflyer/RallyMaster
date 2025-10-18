@@ -44,6 +44,7 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
+    testImplementation("net.datafaker:datafaker:2.4.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     // Lombok for tests

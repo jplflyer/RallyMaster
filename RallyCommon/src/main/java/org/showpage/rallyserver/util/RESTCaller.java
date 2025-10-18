@@ -167,8 +167,6 @@ public class RESTCaller {
         HttpRequest request = requestBuilder.build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        log.info("From {} got {}", request.uri(), response.body());
-
         T retVal = objectMapper.readValue(response.body(), typeRef);
         setResponseCode(retVal, response);
 

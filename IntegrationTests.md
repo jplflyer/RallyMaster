@@ -1,164 +1,53 @@
-# Creating Integration Tests
-So far, I've been testing manually with curl. It's time to start creating integration tests.
+# New Integration Tests needed
+We create Integration Tests in RallyServer under src/test. They end in IT so we know they are Integration
+Tests instead of Unit Tests (which end in Test). We currently have a very small RallyControllerIT. We need to
+expand this.
 
-In the day job, we separate the concept of unit tests (which are small and easily run standalone) with
-integration tests, which need to perform REST calls against a running server. To do this, we separate
-them. Unit tests end with Test such as StringToolsTest.java. Integration tests end in IT for
-Integration Test such as MemberControllerIT.
+Our first test just verifies all the plumbing in getting tests running.
 
-All Integration Tests inherit from a common IntegrationTest parent class, which knows all sorts of things.
+There is more background on how to write the tests below.
 
-We then use surefire to run unit tests and failsafe to run Integration tests.
+# New Tests
+We need a lot more tests. We want to test full CRUD.
 
-# Task One: Update RallyServer's build.gradle.kts
-I believe we're already configured to be able to run unit tests. I'm accustomed to using Maven at work.
-I don't know what we need to do to be able to keep unit tests and integration tests separate.
-
-Please do the magic on build.gradle.kts and also comment how to run each set of tests.
-
-# Task Two: Create RESTCaller.java in RallyCommon under org.showpage.rallyserver.util.
-This class will provide general REST calling services. We'll need an appropriate HTTP client.
-I think at work we're using Apache's, but I'm open-minded. Let's decide which to use.
-
-* The constructor should take the server and optional port.
-* We should be able to define standard headers to always include.
-  * By default, create Content-Type: application/json
-* We need methods for get, put, post, and delete.
-    * All methods should be generic, as we'll pass in a TypeReference for conversion.
-    * Get should take 3 arguments:
-      * Path relative to the server. We already specified the server, so http://localhost/foo would mean the path here is /foo.
-      * The Authorization header, which can be null.
-      * a TypeReferences for converting the output.
-    * The other 3 calls should accept the body as an Object. Ask Jackson to convert it to JSON.
-
-Sample RESTCaller methods:
+# Background
+All Integration Tests inherit from IntegrationTest. He has a BeforeEach which logs in for us and sets
+headers. So we can use these methods:
 
 ```
-public <T> T get(String path, String authHeader, TypeReference<?> typeRef) throws ...;
-public <T> T put(String path, String body, String authHeader, TypeReference<?> typeRef) throws ...;
-public <T> T post(String path, String body, String authHeader, TypeReference<?> typeRef) throws ...;
-public <T> T delete(String path, String authHeader, TypeReference<?> typeRef) throws ...;
+    protected <T> T get_ForRM(String path, TypeReference<T> typeRef) throws IOException, InterruptedException {
+        return restCaller.get(path, organizerAuthHeader, typeRef);
+    }
+
+    protected <T> T post_ForRM(String path, Object body, TypeReference<T> typeRef) throws IOException, InterruptedException {
+        return restCaller.post(path, body, organizerAuthHeader, typeRef);
+    }
+
+    protected <T> T put_ForRM(String path, Object body, TypeReference<T> typeRef) throws IOException, InterruptedException {
+        return restCaller.put(path, body, organizerAuthHeader, typeRef);
+    }
+
+    protected <T> T delete_ForRM(String path, TypeReference<T> typeRef) throws IOException, InterruptedException {
+        return restCaller.delete(path, organizerAuthHeader, typeRef);
+    }
+
+    protected <T> T get_ForRider(String path, TypeReference<T> typeRef) throws IOException, InterruptedException {
+        return restCaller.get(path, riderAuthHeader, typeRef);
+    }
+
+    protected <T> T post_ForRider(String path, Object body, TypeReference<T> typeRef) throws IOException, InterruptedException {
+        return restCaller.post(path, body, riderAuthHeader, typeRef);
+    }
+
+    protected <T> T put_ForRider(String path, Object body, TypeReference<T> typeRef) throws IOException, InterruptedException {
+        return restCaller.put(path, body, riderAuthHeader, typeRef);
+    }
+
+    protected <T> T delete_ForRider(String path, TypeReference<T> typeRef) throws IOException, InterruptedException {
+        return restCaller.delete(path, riderAuthHeader, typeRef);
+    }
 ```
 
-They should NOT eat any exceptions but should throw them.
-
-# Task Three: Move the DTOs from RallyServer to RallyCommon.
-See RallyServer/src/main/java/org/showpage/rallyserver/dto.
-
-This will be a refactor. Put them in the same package as the other dto's already in RallyCommon (package name ui instead of dto).
-
-# Task Four: Create IntegrationTest.java
-Create this in RallyServer/src/test.
-
-IntegrationTest.java's main job is to provide the common frameworks. An integration test is going to need to log in,
-receiving an AuthResponse record. It will then use that as the Authorization: Bearer token for all subsequent calls.
-To avoid committing passwords in the code itself, we'll read .integration.properties from the top RallyMaster directory.
-See the description below.
-
-## Step A: Create these variables:
-
-* boolean initialized = false
-* String organizerEmail
-* String organizerPassword
-* String riderEmail
-* String riderPassord
-* String organizerAuthHeader -- will be null for now
-* String riderAuthHeader -- will be null for now
-
-## Step B: Create an @BeforeEach called setup
-This should call initialize().
-
-Also create that method. It should check initialized and only do more if not set. Set the value and continue.
-
-Read integration properties and use Java Reflection to set fields. This should populate the organizer and
-rider information.
-
-## Step C: Setup for TypeReference Definitions
-All REST calls so far return Resposnse_Entity<RestResponse<Foo>>. On the client side, this means we
-can use TypeReference<RestResponse<Foo>> as the type reference that gets passed to the various methods
-from RestCaller.
-
-I like to do this:
-
-```
-public static class RR_AuthResponse extends RestResponse<AuthResponse> {}
-
-public static final TypeReference<RR_AuthResponse> tr_AuthResponse = new TypeReference<>();
-```
-
-Then in my code I can do:
-
-```
-AuthResponse rrAuth = restCaller.get("/auth/login", authHeader, tr_AuthResponse);
-```
-
-## Step C: Create a convenience method check()
-It should take a single argument of type RestResponse<?>. It should fail() if:
-
-* The argument is null. Pass "null return" as the argument to fail().
-* getSuccess is false. Pass getMessage() as the argument to fail().
-
-Thus, we can do this:
-
-FooResponse rrFoo = get_AsRM("/api/foo", tr_Foo);
-check(rrFoo);
-
-This will do both the null check and the success check. The curl equivalent is found in this function:
-
-```
-function getAuth() {  export AUTH=`curl -s -X POST -u "jpl@showpage.org:MyPw" "http://localhost:8080/api/auth/login" | jq -r .accessToken`; }
-```
-
-After that, I can manually test other calls like this:
-```
-curl -s -H "Authorization: Bearer ${AUTH}" http://localhost:8080/path" | jq
-```
-
-
-## Step D: Create a loginAs method
-It should take a username and password. It will perform a login then create the auth header from the auth token
-in the return structure. The login method returns AuthResponse, which already exists.
-
-Back in initialize(), login as both users and store their auth headers.
-
-This can use the existing /auth/login method already working in server. See LoginController. It accepts Basic
-authentication.
-
-## Step E: Create the REST methods
-Create 8 methods, 2 each of these:
-
-* get -- accepts path and TypeReference, which are passed to RESTCaller
-* put -- also takes a body argument as the middle argument
-* post -- 3 args
-* delete -- 3 args
-
-Make one called get_ForRM (rally master -- the organizer) and one called get_ForRider. Follow the same pattern
-for the other 3 types of calls.
-
-These methods will call the equivalent method in RESTCaller, adding the appropate Bearer authorization header created by using hte loginAs method.
-
-
-## Step F: Create RallyControllerIT
-It should extend IntegrationTest. Set it up to use @Order annotation. I like my tests run in the order they
-appear in the file.
-
-For now, create a single test to get all rallies using /api/rallies with no arguments, and have it do
-so as the rallyOrganizer using get_ForRM.
-
-# .integration.properties
-This is a very simple file with lines like `variable_name = value`. Blank lines and lines beginning with `#` are
-ignored.
-
-Use Java Reflection. Assume if you see `foo = bar` that you can call setFoo("bar"). Convert snake_case to camelCase.
-
-We'll need to define two users with password:
-
-server_url = http://localhost:8080
-
-organizer_email = jpl@showpage.org
-organizer_password = 12345
-
-rider_email = joe@showpage.org
-rider_password = 67890
-
-This file should be added to .gitignore.
+The first set are when we want a RallyMaster (or organizer) to make the call. We use the second set when
+we want a Rally Rider to make the call. Rally Masters own the rallies they are organizing and have more
+privileges.
