@@ -1,6 +1,7 @@
 package org.showpage.rallyserver.util;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.showpage.rallyserver.RestResponse;
@@ -36,6 +37,8 @@ public class RESTCaller {
                 .version(HttpClient.Version.HTTP_1_1)
                 .build();
         objectMapper = new ObjectMapper();
+        objectMapper.findAndRegisterModules(); // Register JSR310 module for Java 8 date/time types
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false); // Ignore unknown fields
         defaultHeaders = new HashMap<>();
 
         // Set default Content-Type header

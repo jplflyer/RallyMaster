@@ -1,6 +1,7 @@
 package org.showpage.rallyserver.controller;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.showpage.rallyserver.interfaces.HasId;
 import org.showpage.rallyserver.RestResponse;
 import org.showpage.rallyserver.entity.Member;
@@ -13,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
@@ -20,6 +22,7 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class ServiceCaller {
     private final MemberRepository memberRepository;
 
@@ -34,6 +37,7 @@ public class ServiceCaller {
     /**
      * Simple call with no authentication.
      */
+    @Transactional
     public <T> ResponseEntity<RestResponse<T>> call(Lambda<T> lambda) {
         try {
             T result = lambda.process();
@@ -52,6 +56,7 @@ public class ServiceCaller {
     /**
      * This is the most common -- lambda takes the member represented by the JWT.
      */
+    @Transactional
     public <T> ResponseEntity<RestResponse<T>> call(MemberLambda<T> lambda) {
         try {
             T result = lambda.process(getCurrentMember());
@@ -63,15 +68,28 @@ public class ServiceCaller {
                     .build()
             );
         }
-        catch (NotFoundException e)     { return error(HttpStatus.NOT_FOUND, e); }
-        catch (ValidationException e)   { return error(HttpStatus.BAD_REQUEST, e); }
-        catch (UnauthorizedException e) { return error(HttpStatus.UNAUTHORIZED, e); }
-        catch (Exception e)             { return error(HttpStatus.INTERNAL_SERVER_ERROR, e); }
+        catch (NotFoundException e)     {
+            log.warn("NotFoundException", e);
+            return error(HttpStatus.NOT_FOUND, e);
+        }
+        catch (ValidationException e)   {
+            log.warn("ValidationException", e);
+            return error(HttpStatus.BAD_REQUEST, e);
+        }
+        catch (UnauthorizedException e) {
+            log.warn("UnauthorizedException", e);
+            return error(HttpStatus.UNAUTHORIZED, e);
+        }
+        catch (Exception e)             {
+            log.warn("Exception", e);
+            return error(HttpStatus.INTERNAL_SERVER_ERROR, e);
+        }
     }
 
     /**
      * Use this for a create.
      */
+    @Transactional
     public <T extends HasId<T>> ResponseEntity<RestResponse<T>> call(String prefix, MemberLambda<T> lambda) {
         try {
             T result = lambda.process(getCurrentMember());
@@ -90,10 +108,22 @@ public class ServiceCaller {
                         .build()
                 );
         }
-        catch (NotFoundException e)     { return error(HttpStatus.NOT_FOUND, e); }
-        catch (ValidationException e)   { return error(HttpStatus.BAD_REQUEST, e); }
-        catch (UnauthorizedException e) { return error(HttpStatus.UNAUTHORIZED, e); }
-        catch (Exception e)             { return error(HttpStatus.INTERNAL_SERVER_ERROR, e); }
+        catch (NotFoundException e)     {
+            log.warn("NotFoundException", e);
+            return error(HttpStatus.NOT_FOUND, e);
+        }
+        catch (ValidationException e)   {
+            log.warn("ValidationException", e);
+            return error(HttpStatus.BAD_REQUEST, e);
+        }
+        catch (UnauthorizedException e) {
+            log.warn("UnauthorizedException", e);
+            return error(HttpStatus.UNAUTHORIZED, e);
+        }
+        catch (Exception e)             {
+            log.warn("Exception", e);
+            return error(HttpStatus.INTERNAL_SERVER_ERROR, e);
+        }
     }
 
 

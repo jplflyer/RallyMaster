@@ -6,14 +6,12 @@ import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.showpage.rallyserver.entity.*;
-import org.showpage.rallyserver.repository.BonusPointRepository;
-import org.showpage.rallyserver.repository.CombinationPointRepository;
-import org.showpage.rallyserver.repository.CombinationRepository;
+import org.showpage.rallyserver.repository.*;
 import org.showpage.rallyserver.exception.NotFoundException;
 import org.showpage.rallyserver.exception.ValidationException;
-import org.showpage.rallyserver.repository.RallyParticipantRepository;
-import org.showpage.rallyserver.repository.RallyRepository;
 import org.showpage.rallyserver.ui.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.transaction.annotation.Transactional;
 import org.showpage.rallyserver.util.DataValidator;
 import org.springframework.data.domain.Page;
@@ -37,6 +35,11 @@ public class RallyService {
     private final BonusPointRepository bonusPointRepository;
     private final CombinationRepository combinationRepository;
     private final CombinationPointRepository combinationPointRepository;
+    private final EarnedCombinationRepository earnedCombinationRepository;
+    private final EarnedBonusPointRepository earnedBonusPointRepository;
+
+    @Value("${rallymaster.options.can-delete-rallies:false}")
+    private boolean canDeleteRallies;
 
     /**
      * Get a Rally by ID.
@@ -153,6 +156,39 @@ public class RallyService {
     }
 
     /**
+     * Delete a Rally. You can't do this if there are participants unless the flag is set (which it will
+     * be in dev mode but not prod).
+     */
+    public boolean deleteRally(Member member, Integer rallyId) throws NotFoundException, ValidationException {
+        Rally rally = rallyRepository.findById(rallyId)
+                .orElseThrow(() -> new NotFoundException("Rally not found"));
+        checkAccess(member, rally, true);
+
+        if (rally.getParticipants() != null && rally.getParticipants().size() > 1 && !canDeleteRallies) {
+            throw new ValidationException("You can not delete a rally once people have signed up");
+        }
+
+        // We get weird issues trying to delete with cascade, so we're going to cascade directly.
+
+        for (RallyParticipant participant : rally.getParticipants()) {
+            earnedCombinationRepository.deleteAll(participant.getEarnedCombinations());
+            earnedBonusPointRepository.deleteAll(participant.getEarnedBonusPoints());
+        }
+        rallyParticipantRepository.deleteAll(rally.getParticipants());
+
+        for (Combination combination : rally.getCombinations()) {
+            combinationPointRepository.deleteAll(combination.getCombinationPoints());
+        }
+        combinationRepository.deleteAll(rally.getCombinations());
+
+        bonusPointRepository.deleteAll(rally.getBonusPoints());
+
+        rallyRepository.delete(rally);
+
+        return true;
+    }
+
+    /**
      * Register a rider for a rally. Prevents duplicate registration.
      */
     public RallyParticipant registerRider(Member member, Integer rallyId) throws NotFoundException, ValidationException {
@@ -212,6 +248,7 @@ public class RallyService {
 
         BonusPoint bonusPoint = new BonusPoint();
         bonusPoint.setRally(rally);
+        bonusPoint.setRallyId(rallyId);  // Manually set rallyId since it's insertable=false, updatable=false
         bonusPoint.setCode(request.getCode());
         bonusPoint.setName(request.getName());
         bonusPoint.setDescription(request.getDescription());
@@ -323,6 +360,7 @@ public class RallyService {
 
         Combination combination = new Combination();
         combination.setRally(rally);
+        combination.setRallyId(rallyId);  // Manually set rallyId since it's insertable=false, updatable=false
         combination.setCode(request.getCode());
         combination.setName(request.getName());
         combination.setDescription(request.getDescription());
@@ -340,7 +378,9 @@ public class RallyService {
 
                 CombinationPoint cp = new CombinationPoint();
                 cp.setCombination(saved);
+                cp.setCombinationId(saved.getId());  // Manually set IDs since they're insertable=false, updatable=false
                 cp.setBonusPoint(bonusPoint);
+                cp.setBonusPointId(bonusPoint.getId());
                 cp.setRequired(cpRequest.getRequired());
                 combinationPointRepository.save(cp);
             }
@@ -448,7 +488,9 @@ public class RallyService {
 
         CombinationPoint cp = new CombinationPoint();
         cp.setCombination(combination);
+        cp.setCombinationId(combination.getId());  // Manually set IDs since they're insertable=false, updatable=false
         cp.setBonusPoint(bonusPoint);
+        cp.setBonusPointId(bonusPoint.getId());
         cp.setRequired(request.getRequired());
 
         return combinationPointRepository.save(cp);
@@ -505,6 +547,7 @@ public class RallyService {
           Double nearLng,
           Double radiusMiles,
 
+          boolean all,
           Pageable pageable
     ){
         Specification<Rally> spec = Specification.<Rally>unrestricted()
@@ -514,6 +557,10 @@ public class RallyService {
                 .and(regionMatches(region))
                 .and(withinRadius(nearLat, nearLng, radiusMiles));
 
+        if (all) {
+            List<Rally> list = rallyRepository.findAll(spec); // unpaged
+            return new PageImpl<>(list, Pageable.unpaged(), list.size());
+        }
         return rallyRepository.findAll(spec, pageable);
     }
 

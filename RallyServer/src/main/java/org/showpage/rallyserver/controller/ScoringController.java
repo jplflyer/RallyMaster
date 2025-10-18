@@ -8,6 +8,7 @@ import org.showpage.rallyserver.service.DtoMapper;
 import org.showpage.rallyserver.service.ScoringService;
 import org.showpage.rallyserver.ui.*;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

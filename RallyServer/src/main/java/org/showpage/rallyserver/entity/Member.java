@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import org.showpage.rallyserver.interfaces.HasId;
 
+import java.util.List;
+
 @Entity
 @Table(name = "member")
 @Data
@@ -25,4 +27,12 @@ public class Member implements HasId<Member> {
     private String password;
 
     private String spotwallaUsername;
+
+    @OneToMany(
+            mappedBy = "member",                // owning side is RallyParticipant.rally
+            cascade = CascadeType.ALL,         // persist/update/remove participants with the rally
+            orphanRemoval = true,              // remove rows when detached from collection
+            fetch = FetchType.LAZY
+    )
+    private List<Motorcycle> motorcycles;
 }

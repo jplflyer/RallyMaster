@@ -18,7 +18,7 @@ public class CombinationPoint {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false,  cascade = CascadeType.ALL)
     @JoinColumn(name = "combination_id")
     private Combination combination;
 

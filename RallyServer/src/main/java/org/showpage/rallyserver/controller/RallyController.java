@@ -1,6 +1,7 @@
 package org.showpage.rallyserver.controller;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.showpage.rallyserver.RestResponse;
 import org.showpage.rallyserver.repository.BonusPointRepository;
 import org.showpage.rallyserver.repository.CombinationPointRepository;
@@ -8,15 +9,13 @@ import org.showpage.rallyserver.repository.CombinationRepository;
 import org.showpage.rallyserver.service.DtoMapper;
 import org.showpage.rallyserver.service.RallyService;
 import org.showpage.rallyserver.ui.*;
-import org.showpage.rallyserver.entity.BonusPoint;
-import org.showpage.rallyserver.entity.Combination;
-import org.showpage.rallyserver.entity.CombinationPoint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -25,12 +24,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
+@Slf4j
 public class RallyController {
     private final ServiceCaller serviceCaller;
     private final RallyService rallyService;
-    private final BonusPointRepository bonusPointRepository;
-    private final CombinationRepository combinationRepository;
-    private final CombinationPointRepository combinationPointRepository;
 
     /**
      * Register a new rally.
@@ -38,7 +35,7 @@ public class RallyController {
     @PostMapping("/rally")
     ResponseEntity<RestResponse<UiRally>> createRally(@RequestBody CreateRallyRequest request) {
         return serviceCaller.call("/api/rally/", (member) ->
-            DtoMapper.toUiRally(member, rallyService.createRally(member, request), bonusPointRepository, combinationRepository, combinationPointRepository));
+            DtoMapper.toUiRally(member, rallyService.createRally(member, request)));
     }
 
     /**
@@ -50,13 +47,44 @@ public class RallyController {
             @RequestBody UpdateRallyRequest request
     ) {
         return serviceCaller.call((member) ->
-            DtoMapper.toUiRally(member, rallyService.updateRally(member, id, request), bonusPointRepository, combinationRepository, combinationPointRepository));
+            DtoMapper.toUiRally(member, rallyService.updateRally(member, id, request)));
     }
 
     @GetMapping("/rally/{id}")
     ResponseEntity<RestResponse<UiRally>> getRally(@PathVariable Integer id) {
         return serviceCaller.call((member) ->
-            DtoMapper.toUiRally(member, rallyService.getRally(member, id), bonusPointRepository, combinationRepository, combinationPointRepository));
+            DtoMapper.toUiRally(member, rallyService.getRally(member, id)));
+    }
+
+    /**
+     * This performs a search.
+     */
+    @GetMapping("/rallies")
+    ResponseEntity<RestResponse<Page<UiRally>>> searchRallies(
+            // text search: case-insensitive "contains"
+            @RequestParam(required = false) String name,
+
+            // date range (inclusive)
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+
+            // location filters
+            @RequestParam(required = false) String country,   // e.g., "US", "United States", "CA", "Canada"
+            @RequestParam(required = false, name = "region") String region, // state/province/territory text
+
+            // optional "within radius of point" (no PostGIS required)
+            @RequestParam(required = false) Double nearLat,
+            @RequestParam(required = false) Double nearLng,
+            @RequestParam(required = false, defaultValue = "100") Double radiusMiles,
+
+            @RequestParam(required = false) Boolean all,
+            @PageableDefault(size = 20, sort = "startDate", direction = Sort.Direction.ASC) Pageable pageable
+    ) {
+        log.info("searchRallies");
+        return serviceCaller.call((member) ->
+                rallyService.search(name, from, to, country, region, nearLat, nearLng, radiusMiles, all != null && all, pageable)
+                        .map(rally -> DtoMapper.toUiRally(member, rally))
+        );
     }
 
     /**
@@ -76,9 +104,14 @@ public class RallyController {
             @PathVariable Integer rallyId,
             @RequestBody PromoteParticipantRequest request
     ) {
-        return serviceCaller.call((member) ->
+         return serviceCaller.call((member) ->
             DtoMapper.toUiRallyParticipant(rallyService.promoteParticipant(
                 member, rallyId, request.getTargetMemberId(), request.getNewType())));
+    }
+
+    @DeleteMapping("/rally/{rallyId}")
+    ResponseEntity<RestResponse<Boolean>> deleteRally(@PathVariable Integer rallyId) {
+        return serviceCaller.call((member) -> rallyService.deleteRally(member, rallyId));
     }
 
     //======================================================================
@@ -153,7 +186,7 @@ public class RallyController {
             @RequestBody CreateCombinationRequest request
     ) {
         return serviceCaller.call((member) ->
-            DtoMapper.toUiCombination(rallyService.createCombination(member, rallyId, request), combinationPointRepository));
+            DtoMapper.toUiCombination(rallyService.createCombination(member, rallyId, request)));
     }
 
     /**
@@ -165,7 +198,7 @@ public class RallyController {
             @RequestBody UpdateCombinationRequest request
     ) {
         return serviceCaller.call((member) ->
-            DtoMapper.toUiCombination(rallyService.updateCombination(member, id, request), combinationPointRepository));
+            DtoMapper.toUiCombination(rallyService.updateCombination(member, id, request)));
     }
 
     /**
@@ -185,7 +218,7 @@ public class RallyController {
     @GetMapping("/combination/{id}")
     ResponseEntity<RestResponse<UiCombination>> getCombination(@PathVariable Integer id) {
         return serviceCaller.call((member) ->
-            DtoMapper.toUiCombination(rallyService.getCombination(member, id), combinationPointRepository));
+            DtoMapper.toUiCombination(rallyService.getCombination(member, id)));
     }
 
     /**
@@ -195,7 +228,7 @@ public class RallyController {
     ResponseEntity<RestResponse<List<UiCombination>>> listCombinations(@PathVariable Integer rallyId) {
         return serviceCaller.call((member) ->
             rallyService.listCombinations(member, rallyId).stream()
-                    .map(c -> DtoMapper.toUiCombination(c, combinationPointRepository))
+                    .map(c -> DtoMapper.toUiCombination(c))
                     .toList());
     }
 
@@ -237,32 +270,4 @@ public class RallyController {
                     .toList());
     }
 
-    /**
-     * This performs a search.
-     */
-    @GetMapping("/rallies")
-    ResponseEntity<RestResponse<Page<UiRally>>> searchRallies(
-            // text search: case-insensitive "contains"
-            @RequestParam(required = false) String name,
-
-            // date range (inclusive)
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-
-            // location filters
-            @RequestParam(required = false) String country,   // e.g., "US", "United States", "CA", "Canada"
-            @RequestParam(required = false, name = "region") String region, // state/province/territory text
-
-            // optional "within radius of point" (no PostGIS required)
-            @RequestParam(required = false) Double nearLat,
-            @RequestParam(required = false) Double nearLng,
-            @RequestParam(required = false, defaultValue = "100") Double radiusMiles,
-
-            @PageableDefault(size = 20, sort = "startDate", direction = Sort.Direction.ASC) Pageable pageable
-    ) {
-        return serviceCaller.call((member) ->
-                rallyService.search(name, from, to, country, region, nearLat, nearLng, radiusMiles, pageable)
-                        .map(rally -> DtoMapper.toUiRally(member, rally, bonusPointRepository, combinationRepository, combinationPointRepository))
-        );
-    }
 }

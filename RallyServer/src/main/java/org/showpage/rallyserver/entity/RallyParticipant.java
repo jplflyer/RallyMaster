@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.util.List;
+
 /**
  * This represents a participant in the rally.
  */
@@ -44,6 +46,22 @@ public class RallyParticipant {
     private Integer odometerOut;
     private Boolean finisher;
     private Integer finalScore;
+
+    @OneToMany(
+            mappedBy = "rallyParticipant",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    List<EarnedBonusPoint> earnedBonusPoints;
+
+    @OneToMany(
+            mappedBy = "rallyParticipant",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    List<EarnedCombination> earnedCombinations;
 
     @JsonIgnore
     public boolean isRallyMaster() {

@@ -41,4 +41,20 @@ public class Rally implements HasId<Rally> {
             fetch = FetchType.LAZY
     )
     private List<RallyParticipant> participants;
+
+    @OneToMany(
+            mappedBy = "rally",                // owning side is RallyParticipant.rally
+            cascade = CascadeType.ALL,         // persist/update/remove participants with the rally
+            orphanRemoval = true,              // remove rows when detached from collection
+            fetch = FetchType.LAZY
+    )
+    private List<BonusPoint> bonusPoints;
+
+    @OneToMany(
+            mappedBy = "rally",                // owning side is RallyParticipant.rally
+            cascade = CascadeType.ALL,         // persist/update/remove participants with the rally
+            orphanRemoval = true,              // remove rows when detached from collection
+            fetch = FetchType.LAZY
+    )
+    private List<Combination> combinations;
 }

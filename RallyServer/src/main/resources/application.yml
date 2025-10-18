@@ -16,6 +16,7 @@ spring:
             non_contextual_creation: true
         format_sql: true
         generate_statistics: false
+        default_batch_fetch_size: 50
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -32,3 +33,7 @@ logging:
   level:
     root: INFO
 
+
+rallymaster:
+  options:
+    can-delete-rallies: true

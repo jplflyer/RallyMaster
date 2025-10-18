@@ -3,16 +3,19 @@ package org.showpage.rallyserver.controller;
 import lombok.RequiredArgsConstructor;
 import org.showpage.rallyserver.RestResponse;
 import org.showpage.rallyserver.config.JwtUtil;
+import org.showpage.rallyserver.service.DtoMapper;
 import org.showpage.rallyserver.ui.AuthResponse;
 import org.showpage.rallyserver.ui.TokenRequest;
 import org.showpage.rallyserver.entity.Member;
 import org.showpage.rallyserver.service.MemberService;
+import org.showpage.rallyserver.ui.UiMember;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Base64;
@@ -77,11 +80,11 @@ public class LoginController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<RestResponse<Member>> register(
+    public ResponseEntity<RestResponse<UiMember>> register(
             @RequestParam String email,
             @RequestParam String password
     ) {
-        return serviceCaller.call(() -> memberService.createMember(email, password));
+        return serviceCaller.call(() -> DtoMapper.toUiMember(memberService.createMember(email, password)));
     }
 
     private String[] extractCredentials(String authHeader) {

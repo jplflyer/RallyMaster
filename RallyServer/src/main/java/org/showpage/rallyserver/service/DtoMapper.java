@@ -7,6 +7,7 @@ import org.showpage.rallyserver.repository.CombinationRepository;
 import org.showpage.rallyserver.ui.*;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,10 +17,7 @@ import java.util.stream.Collectors;
 public class DtoMapper {
     public static UiRally toUiRally(
             Member member,
-            Rally rally,
-            BonusPointRepository bonusPointRepository,
-            CombinationRepository combinationRepository,
-            CombinationPointRepository combinationPointRepository
+            Rally rally
     ) {
         if (rally == null) {
             return null;
@@ -30,25 +28,31 @@ public class DtoMapper {
         // Conditionally populate arrays based on organizer status or public flags
         List<UiRallyParticipant> participants = null;
         if (isOrganizer || (rally.getRidersPublic() != null && rally.getRidersPublic())) {
-            participants = rally.getParticipants() != null
-                    ? rally.getParticipants().stream()
-                            .map(DtoMapper::toUiRallyParticipant)
-                            .collect(Collectors.toList())
-                    : null;
+            if (rally.getParticipants() != null) {
+                participants = rally.getParticipants() != null
+                        ? rally.getParticipants().stream()
+                        .map(DtoMapper::toUiRallyParticipant)
+                        .collect(Collectors.toList())
+                        : null;
+            }
         }
 
         List<UiBonusPoint> bonusPoints = null;
         if (isOrganizer || (rally.getPointsPublic() != null && rally.getPointsPublic())) {
-            bonusPoints = bonusPointRepository.findByRallyId(rally.getId()).stream()
-                    .map(DtoMapper::toUiBonusPoint)
-                    .collect(Collectors.toList());
+            if (rally.getBonusPoints() != null) {
+                bonusPoints = rally.getBonusPoints().stream()
+                        .map(DtoMapper::toUiBonusPoint)
+                        .collect(Collectors.toList());
+            }
         }
 
         List<UiCombination> combinations = null;
         if (isOrganizer || (rally.getPointsPublic() != null && rally.getPointsPublic())) {
-            combinations = combinationRepository.findByRallyId(rally.getId()).stream()
-                    .map(c -> toUiCombination(c, combinationPointRepository))
-                    .collect(Collectors.toList());
+            if (rally.getCombinations() != null) {
+                combinations = rally.getCombinations().stream()
+                        .map(c -> toUiCombination(c))
+                        .collect(Collectors.toList());
+            }
         }
 
         return UiRally
@@ -123,13 +127,13 @@ public class DtoMapper {
                 .build();
     }
 
-    public static UiCombination toUiCombination(Combination combination, CombinationPointRepository combinationPointRepository) {
+    public static UiCombination toUiCombination(Combination combination) {
         if (combination == null) {
             return null;
         }
 
-        List<UiCombinationPoint> combinationPoints = combinationPointRepository
-                .findByCombinationId(combination.getId()).stream()
+        List<UiCombinationPoint> combinationPoints = combination.getCombinationPoints()
+                .stream()
                 .map(DtoMapper::toUiCombinationPoint)
                 .collect(Collectors.toList());
 
@@ -158,5 +162,46 @@ public class DtoMapper {
         return rally.getParticipants().stream()
                 .anyMatch(p -> p.getMemberId().equals(member.getId())
                         && RallyParticipantType.ORGANIZER.equals(p.getParticipantType()));
+    }
+
+    public static UiMember toUiMember(Member member) {
+        if (member == null) {
+            return null;
+        }
+
+        List<Motorcycle> motorcycles = member.getMotorcycles();
+        List<UiMotorcycle> uiMotorcycles = null;
+
+        if (motorcycles == null || !motorcycles.isEmpty()) {
+            uiMotorcycles = new ArrayList<>(motorcycles.size());
+            for (Motorcycle motorcycle : motorcycles) {
+                uiMotorcycles.add(toUiMotorcycle(motorcycle));
+            }
+        }
+
+        return UiMember
+                .builder()
+                .id(member.getId())
+                .email(member.getEmail())
+                .spotwallaUsername(member.getSpotwallaUsername())
+                .motorcycles(uiMotorcycles)
+                .build();
+    }
+
+    public static UiMotorcycle toUiMotorcycle(Motorcycle motorcycle) {
+        if (motorcycle == null) {
+            return null;
+        }
+        return UiMotorcycle
+                .builder()
+                .id(motorcycle.getId())
+                .memberId(motorcycle.getMemberId())
+                .make(motorcycle.getMake())
+                .model(motorcycle.getModel())
+                .year(motorcycle.getYear())
+                .color(motorcycle.getColor())
+                .status(motorcycle.getStatus())
+                .active(motorcycle.getActive())
+                .build();
     }
 }
