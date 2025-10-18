@@ -37,17 +37,20 @@ dependencies {
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("io.jsonwebtoken:jjwt-api:0.12.3")
+
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.3")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.3")
-    compileOnly("org.projectlombok:lombok")
     runtimeOnly("org.postgresql:postgresql")
+
+    compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
-    testImplementation("net.datafaker:datafaker:2.4.2")
+    testImplementation("net.datafaker:datafaker:2.5.2")
+
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    // Lombok for tests
     testCompileOnly("org.projectlombok:lombok")
     testAnnotationProcessor("org.projectlombok:lombok")
 }
