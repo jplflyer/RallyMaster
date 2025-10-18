@@ -7,9 +7,10 @@ import org.showpage.rallyserver.repository.CombinationPointRepository;
 import org.showpage.rallyserver.repository.CombinationRepository;
 import org.showpage.rallyserver.service.DtoMapper;
 import org.showpage.rallyserver.service.RallyService;
-import org.showpage.rallyserver.ui.CreateRallyRequest;
-import org.showpage.rallyserver.ui.UiRally;
-import org.showpage.rallyserver.ui.UpdateRallyRequest;
+import org.showpage.rallyserver.ui.*;
+import org.showpage.rallyserver.entity.BonusPoint;
+import org.showpage.rallyserver.entity.Combination;
+import org.showpage.rallyserver.entity.CombinationPoint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -56,6 +57,184 @@ public class RallyController {
     ResponseEntity<RestResponse<UiRally>> getRally(@PathVariable Integer id) {
         return serviceCaller.call((member) ->
             DtoMapper.toUiRally(member, rallyService.getRally(member, id), bonusPointRepository, combinationRepository, combinationPointRepository));
+    }
+
+    /**
+     * Register a rider for a rally.
+     */
+    @PostMapping("/rally/{rallyId}/register")
+    ResponseEntity<RestResponse<UiRallyParticipant>> registerForRally(@PathVariable Integer rallyId) {
+        return serviceCaller.call((member) ->
+            DtoMapper.toUiRallyParticipant(rallyService.registerRider(member, rallyId)));
+    }
+
+    /**
+     * Promote a participant to ORGANIZER or AIDE.
+     */
+    @PutMapping("/rally/{rallyId}/promote")
+    ResponseEntity<RestResponse<UiRallyParticipant>> promoteParticipant(
+            @PathVariable Integer rallyId,
+            @RequestBody PromoteParticipantRequest request
+    ) {
+        return serviceCaller.call((member) ->
+            DtoMapper.toUiRallyParticipant(rallyService.promoteParticipant(
+                member, rallyId, request.getTargetMemberId(), request.getNewType())));
+    }
+
+    //======================================================================
+    // BonusPoint CRUD
+    //======================================================================
+
+    /**
+     * Create a bonus point for a rally.
+     */
+    @PostMapping("/rally/{rallyId}/bonuspoint")
+    ResponseEntity<RestResponse<UiBonusPoint>> createBonusPoint(
+            @PathVariable Integer rallyId,
+            @RequestBody CreateBonusPointRequest request
+    ) {
+        return serviceCaller.call((member) ->
+            DtoMapper.toUiBonusPoint(rallyService.createBonusPoint(member, rallyId, request)));
+    }
+
+    /**
+     * Update a bonus point.
+     */
+    @PutMapping("/bonuspoint/{id}")
+    ResponseEntity<RestResponse<UiBonusPoint>> updateBonusPoint(
+            @PathVariable Integer id,
+            @RequestBody UpdateBonusPointRequest request
+    ) {
+        return serviceCaller.call((member) ->
+            DtoMapper.toUiBonusPoint(rallyService.updateBonusPoint(member, id, request)));
+    }
+
+    /**
+     * Delete a bonus point.
+     */
+    @DeleteMapping("/bonuspoint/{id}")
+    ResponseEntity<RestResponse<Void>> deleteBonusPoint(@PathVariable Integer id) {
+        return serviceCaller.call((member) -> {
+            rallyService.deleteBonusPoint(member, id);
+            return null;
+        });
+    }
+
+    /**
+     * Get a bonus point by ID.
+     */
+    @GetMapping("/bonuspoint/{id}")
+    ResponseEntity<RestResponse<UiBonusPoint>> getBonusPoint(@PathVariable Integer id) {
+        return serviceCaller.call((member) ->
+            DtoMapper.toUiBonusPoint(rallyService.getBonusPoint(member, id)));
+    }
+
+    /**
+     * List all bonus points for a rally.
+     */
+    @GetMapping("/rally/{rallyId}/bonuspoints")
+    ResponseEntity<RestResponse<List<UiBonusPoint>>> listBonusPoints(@PathVariable Integer rallyId) {
+        return serviceCaller.call((member) ->
+            rallyService.listBonusPoints(member, rallyId).stream()
+                    .map(DtoMapper::toUiBonusPoint)
+                    .toList());
+    }
+
+    //======================================================================
+    // Combination CRUD
+    //======================================================================
+
+    /**
+     * Create a combination for a rally.
+     */
+    @PostMapping("/rally/{rallyId}/combination")
+    ResponseEntity<RestResponse<UiCombination>> createCombination(
+            @PathVariable Integer rallyId,
+            @RequestBody CreateCombinationRequest request
+    ) {
+        return serviceCaller.call((member) ->
+            DtoMapper.toUiCombination(rallyService.createCombination(member, rallyId, request), combinationPointRepository));
+    }
+
+    /**
+     * Update a combination.
+     */
+    @PutMapping("/combination/{id}")
+    ResponseEntity<RestResponse<UiCombination>> updateCombination(
+            @PathVariable Integer id,
+            @RequestBody UpdateCombinationRequest request
+    ) {
+        return serviceCaller.call((member) ->
+            DtoMapper.toUiCombination(rallyService.updateCombination(member, id, request), combinationPointRepository));
+    }
+
+    /**
+     * Delete a combination.
+     */
+    @DeleteMapping("/combination/{id}")
+    ResponseEntity<RestResponse<Void>> deleteCombination(@PathVariable Integer id) {
+        return serviceCaller.call((member) -> {
+            rallyService.deleteCombination(member, id);
+            return null;
+        });
+    }
+
+    /**
+     * Get a combination by ID.
+     */
+    @GetMapping("/combination/{id}")
+    ResponseEntity<RestResponse<UiCombination>> getCombination(@PathVariable Integer id) {
+        return serviceCaller.call((member) ->
+            DtoMapper.toUiCombination(rallyService.getCombination(member, id), combinationPointRepository));
+    }
+
+    /**
+     * List all combinations for a rally.
+     */
+    @GetMapping("/rally/{rallyId}/combinations")
+    ResponseEntity<RestResponse<List<UiCombination>>> listCombinations(@PathVariable Integer rallyId) {
+        return serviceCaller.call((member) ->
+            rallyService.listCombinations(member, rallyId).stream()
+                    .map(c -> DtoMapper.toUiCombination(c, combinationPointRepository))
+                    .toList());
+    }
+
+    //======================================================================
+    // CombinationPoint CRUD
+    //======================================================================
+
+    /**
+     * Add a bonus point to a combination.
+     */
+    @PostMapping("/combination/{combinationId}/bonuspoint")
+    ResponseEntity<RestResponse<UiCombinationPoint>> addCombinationPoint(
+            @PathVariable Integer combinationId,
+            @RequestBody CreateCombinationPointRequest request
+    ) {
+        return serviceCaller.call((member) ->
+            DtoMapper.toUiCombinationPoint(rallyService.addCombinationPoint(member, combinationId, request)));
+    }
+
+    /**
+     * Remove a bonus point from a combination.
+     */
+    @DeleteMapping("/combinationpoint/{id}")
+    ResponseEntity<RestResponse<Void>> deleteCombinationPoint(@PathVariable Integer id) {
+        return serviceCaller.call((member) -> {
+            rallyService.deleteCombinationPoint(member, id);
+            return null;
+        });
+    }
+
+    /**
+     * List all bonus points for a combination.
+     */
+    @GetMapping("/combination/{combinationId}/bonuspoints")
+    ResponseEntity<RestResponse<List<UiCombinationPoint>>> listCombinationPoints(@PathVariable Integer combinationId) {
+        return serviceCaller.call((member) ->
+            rallyService.listCombinationPoints(member, combinationId).stream()
+                    .map(DtoMapper::toUiCombinationPoint)
+                    .toList());
     }
 
     /**

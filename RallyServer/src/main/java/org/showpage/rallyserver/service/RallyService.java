@@ -5,16 +5,16 @@ import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.showpage.rallyserver.entity.Member;
-import org.showpage.rallyserver.entity.Rally;
-import org.showpage.rallyserver.entity.RallyParticipant;
-import org.showpage.rallyserver.entity.RallyParticipantType;
+import org.showpage.rallyserver.entity.*;
+import org.showpage.rallyserver.repository.BonusPointRepository;
+import org.showpage.rallyserver.repository.CombinationPointRepository;
+import org.showpage.rallyserver.repository.CombinationRepository;
 import org.showpage.rallyserver.exception.NotFoundException;
 import org.showpage.rallyserver.exception.ValidationException;
 import org.showpage.rallyserver.repository.RallyParticipantRepository;
 import org.showpage.rallyserver.repository.RallyRepository;
-import org.showpage.rallyserver.ui.CreateRallyRequest;
-import org.showpage.rallyserver.ui.UpdateRallyRequest;
+import org.showpage.rallyserver.ui.*;
+import org.springframework.transaction.annotation.Transactional;
 import org.showpage.rallyserver.util.DataValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * CRUD on Rallies -- but not on riding one.
@@ -33,6 +34,9 @@ import java.util.List;
 public class RallyService {
     private final RallyRepository rallyRepository;
     private final RallyParticipantRepository rallyParticipantRepository;
+    private final BonusPointRepository bonusPointRepository;
+    private final CombinationRepository combinationRepository;
+    private final CombinationPointRepository combinationPointRepository;
 
     /**
      * Get a Rally by ID.
@@ -146,6 +150,339 @@ public class RallyService {
         Rally updated = rallyRepository.save(rally);
 
         return updated;
+    }
+
+    /**
+     * Register a rider for a rally. Prevents duplicate registration.
+     */
+    public RallyParticipant registerRider(Member member, Integer rallyId) throws NotFoundException, ValidationException {
+        Rally rally = rallyRepository.findById(rallyId)
+                .orElseThrow(() -> new NotFoundException("Rally not found"));
+
+        // Check if rider is already registered
+        Optional<RallyParticipant> existing = rallyParticipantRepository.findByRallyIdAndMemberId(rallyId, member.getId());
+        if (existing.isPresent()) {
+            throw new ValidationException("Member is already registered for this rally");
+        }
+
+        RallyParticipant participant = RallyParticipant.builder()
+                .rally(rally)
+                .member(member)
+                .participantType(RallyParticipantType.RIDER)
+                .build();
+
+        return rallyParticipantRepository.save(participant);
+    }
+
+    /**
+     * Promote a rider to ORGANIZER or AIDE. Only existing organizers can do this.
+     */
+    public RallyParticipant promoteParticipant(Member member, Integer rallyId, Integer targetMemberId, RallyParticipantType newType)
+            throws NotFoundException, ValidationException {
+        if (newType == RallyParticipantType.RIDER) {
+            throw new ValidationException("Cannot promote to RIDER type. Use this endpoint only for ORGANIZER or AIDE.");
+        }
+
+        Rally rally = rallyRepository.findById(rallyId)
+                .orElseThrow(() -> new NotFoundException("Rally not found"));
+
+        // Check that the current member is an organizer for this rally
+        checkAccess(member, rally, true);
+
+        // Find the target participant
+        RallyParticipant targetParticipant = rallyParticipantRepository.findByRallyIdAndMemberId(rallyId, targetMemberId)
+                .orElseThrow(() -> new NotFoundException("Target member is not registered for this rally"));
+
+        targetParticipant.setParticipantType(newType);
+        return rallyParticipantRepository.save(targetParticipant);
+    }
+
+    //======================================================================
+    // BonusPoint CRUD
+    //======================================================================
+
+    /**
+     * Create a bonus point for a rally. Only organizers can do this.
+     */
+    public BonusPoint createBonusPoint(Member member, Integer rallyId, CreateBonusPointRequest request)
+            throws NotFoundException, ValidationException {
+        Rally rally = rallyRepository.findById(rallyId)
+                .orElseThrow(() -> new NotFoundException("Rally not found"));
+        checkAccess(member, rally, true);
+
+        BonusPoint bonusPoint = new BonusPoint();
+        bonusPoint.setRally(rally);
+        bonusPoint.setCode(request.getCode());
+        bonusPoint.setName(request.getName());
+        bonusPoint.setDescription(request.getDescription());
+        bonusPoint.setLatitude(request.getLatitude());
+        bonusPoint.setLongitude(request.getLongitude());
+        bonusPoint.setAddress(request.getAddress());
+        bonusPoint.setPoints(request.getPoints());
+        bonusPoint.setRequired(request.getRequired());
+        bonusPoint.setRepeatable(request.getRepeatable());
+
+        return bonusPointRepository.save(bonusPoint);
+    }
+
+    /**
+     * Update a bonus point. Only organizers can do this.
+     */
+    public BonusPoint updateBonusPoint(Member member, Integer bonusPointId, UpdateBonusPointRequest request)
+            throws NotFoundException, ValidationException {
+        BonusPoint bonusPoint = bonusPointRepository.findById(bonusPointId)
+                .orElseThrow(() -> new NotFoundException("Bonus point not found"));
+
+        Rally rally = rallyRepository.findById(bonusPoint.getRallyId())
+                .orElseThrow(() -> new NotFoundException("Rally not found"));
+        checkAccess(member, rally, true);
+
+        if (DataValidator.nonEmpty(request.getCode())) {
+            bonusPoint.setCode(request.getCode());
+        }
+        if (DataValidator.nonEmpty(request.getName())) {
+            bonusPoint.setName(request.getName());
+        }
+        if (DataValidator.nonEmpty(request.getDescription())) {
+            bonusPoint.setDescription(request.getDescription());
+        }
+        if (request.getLatitude() != null) {
+            bonusPoint.setLatitude(request.getLatitude());
+        }
+        if (request.getLongitude() != null) {
+            bonusPoint.setLongitude(request.getLongitude());
+        }
+        if (DataValidator.nonEmpty(request.getAddress())) {
+            bonusPoint.setAddress(request.getAddress());
+        }
+        if (request.getPoints() != null) {
+            bonusPoint.setPoints(request.getPoints());
+        }
+        if (request.getRequired() != null) {
+            bonusPoint.setRequired(request.getRequired());
+        }
+        if (request.getRepeatable() != null) {
+            bonusPoint.setRepeatable(request.getRepeatable());
+        }
+
+        return bonusPointRepository.save(bonusPoint);
+    }
+
+    /**
+     * Delete a bonus point. Only organizers can do this.
+     */
+    public void deleteBonusPoint(Member member, Integer bonusPointId) throws NotFoundException, ValidationException {
+        BonusPoint bonusPoint = bonusPointRepository.findById(bonusPointId)
+                .orElseThrow(() -> new NotFoundException("Bonus point not found"));
+
+        Rally rally = rallyRepository.findById(bonusPoint.getRallyId())
+                .orElseThrow(() -> new NotFoundException("Rally not found"));
+        checkAccess(member, rally, true);
+
+        bonusPointRepository.delete(bonusPoint);
+    }
+
+    /**
+     * Get a bonus point by ID.
+     */
+    public BonusPoint getBonusPoint(Member member, Integer bonusPointId) throws NotFoundException {
+        BonusPoint bonusPoint = bonusPointRepository.findById(bonusPointId)
+                .orElseThrow(() -> new NotFoundException("Bonus point not found"));
+
+        Rally rally = rallyRepository.findById(bonusPoint.getRallyId())
+                .orElseThrow(() -> new NotFoundException("Rally not found"));
+        checkAccess(member, rally, false);
+
+        return bonusPoint;
+    }
+
+    /**
+     * List all bonus points for a rally.
+     */
+    public List<BonusPoint> listBonusPoints(Member member, Integer rallyId) throws NotFoundException {
+        Rally rally = rallyRepository.findById(rallyId)
+                .orElseThrow(() -> new NotFoundException("Rally not found"));
+        checkAccess(member, rally, false);
+
+        return bonusPointRepository.findByRallyId(rallyId);
+    }
+
+    //======================================================================
+    // Combination CRUD
+    //======================================================================
+
+    /**
+     * Create a combination for a rally. Only organizers can do this.
+     */
+    @Transactional
+    public Combination createCombination(Member member, Integer rallyId, CreateCombinationRequest request)
+            throws NotFoundException, ValidationException {
+        Rally rally = rallyRepository.findById(rallyId)
+                .orElseThrow(() -> new NotFoundException("Rally not found"));
+        checkAccess(member, rally, true);
+
+        Combination combination = new Combination();
+        combination.setRally(rally);
+        combination.setCode(request.getCode());
+        combination.setName(request.getName());
+        combination.setDescription(request.getDescription());
+        combination.setPoints(request.getPoints());
+        combination.setRequiresAll(request.getRequiresAll());
+        combination.setNumRequired(request.getNumRequired());
+
+        Combination saved = combinationRepository.save(combination);
+
+        // Create the combination points
+        if (request.getCombinationPoints() != null) {
+            for (CreateCombinationPointRequest cpRequest : request.getCombinationPoints()) {
+                BonusPoint bonusPoint = bonusPointRepository.findById(cpRequest.getBonusPointId())
+                        .orElseThrow(() -> new NotFoundException("Bonus point not found: " + cpRequest.getBonusPointId()));
+
+                CombinationPoint cp = new CombinationPoint();
+                cp.setCombination(saved);
+                cp.setBonusPoint(bonusPoint);
+                cp.setRequired(cpRequest.getRequired());
+                combinationPointRepository.save(cp);
+            }
+        }
+
+        return saved;
+    }
+
+    /**
+     * Update a combination. Only organizers can do this.
+     */
+    public Combination updateCombination(Member member, Integer combinationId, UpdateCombinationRequest request)
+            throws NotFoundException, ValidationException {
+        Combination combination = combinationRepository.findById(combinationId)
+                .orElseThrow(() -> new NotFoundException("Combination not found"));
+
+        Rally rally = rallyRepository.findById(combination.getRallyId())
+                .orElseThrow(() -> new NotFoundException("Rally not found"));
+        checkAccess(member, rally, true);
+
+        if (DataValidator.nonEmpty(request.getCode())) {
+            combination.setCode(request.getCode());
+        }
+        if (DataValidator.nonEmpty(request.getName())) {
+            combination.setName(request.getName());
+        }
+        if (DataValidator.nonEmpty(request.getDescription())) {
+            combination.setDescription(request.getDescription());
+        }
+        if (request.getPoints() != null) {
+            combination.setPoints(request.getPoints());
+        }
+        if (request.getRequiresAll() != null) {
+            combination.setRequiresAll(request.getRequiresAll());
+        }
+        if (request.getNumRequired() != null) {
+            combination.setNumRequired(request.getNumRequired());
+        }
+
+        return combinationRepository.save(combination);
+    }
+
+    /**
+     * Delete a combination. Only organizers can do this.
+     */
+    @Transactional
+    public void deleteCombination(Member member, Integer combinationId) throws NotFoundException, ValidationException {
+        Combination combination = combinationRepository.findById(combinationId)
+                .orElseThrow(() -> new NotFoundException("Combination not found"));
+
+        Rally rally = rallyRepository.findById(combination.getRallyId())
+                .orElseThrow(() -> new NotFoundException("Rally not found"));
+        checkAccess(member, rally, true);
+
+        // Delete all combination points first
+        List<CombinationPoint> points = combinationPointRepository.findByCombinationId(combinationId);
+        combinationPointRepository.deleteAll(points);
+
+        combinationRepository.delete(combination);
+    }
+
+    /**
+     * Get a combination by ID.
+     */
+    public Combination getCombination(Member member, Integer combinationId) throws NotFoundException {
+        Combination combination = combinationRepository.findById(combinationId)
+                .orElseThrow(() -> new NotFoundException("Combination not found"));
+
+        Rally rally = rallyRepository.findById(combination.getRallyId())
+                .orElseThrow(() -> new NotFoundException("Rally not found"));
+        checkAccess(member, rally, false);
+
+        return combination;
+    }
+
+    /**
+     * List all combinations for a rally.
+     */
+    public List<Combination> listCombinations(Member member, Integer rallyId) throws NotFoundException {
+        Rally rally = rallyRepository.findById(rallyId)
+                .orElseThrow(() -> new NotFoundException("Rally not found"));
+        checkAccess(member, rally, false);
+
+        return combinationRepository.findByRallyId(rallyId);
+    }
+
+    //======================================================================
+    // CombinationPoint CRUD
+    //======================================================================
+
+    /**
+     * Add a bonus point to a combination. Only organizers can do this.
+     */
+    public CombinationPoint addCombinationPoint(Member member, Integer combinationId, CreateCombinationPointRequest request)
+            throws NotFoundException, ValidationException {
+        Combination combination = combinationRepository.findById(combinationId)
+                .orElseThrow(() -> new NotFoundException("Combination not found"));
+
+        Rally rally = rallyRepository.findById(combination.getRallyId())
+                .orElseThrow(() -> new NotFoundException("Rally not found"));
+        checkAccess(member, rally, true);
+
+        BonusPoint bonusPoint = bonusPointRepository.findById(request.getBonusPointId())
+                .orElseThrow(() -> new NotFoundException("Bonus point not found"));
+
+        CombinationPoint cp = new CombinationPoint();
+        cp.setCombination(combination);
+        cp.setBonusPoint(bonusPoint);
+        cp.setRequired(request.getRequired());
+
+        return combinationPointRepository.save(cp);
+    }
+
+    /**
+     * Remove a bonus point from a combination. Only organizers can do this.
+     */
+    public void deleteCombinationPoint(Member member, Integer combinationPointId) throws NotFoundException, ValidationException {
+        CombinationPoint cp = combinationPointRepository.findById(combinationPointId)
+                .orElseThrow(() -> new NotFoundException("Combination point not found"));
+
+        Combination combination = combinationRepository.findById(cp.getCombinationId())
+                .orElseThrow(() -> new NotFoundException("Combination not found"));
+
+        Rally rally = rallyRepository.findById(combination.getRallyId())
+                .orElseThrow(() -> new NotFoundException("Rally not found"));
+        checkAccess(member, rally, true);
+
+        combinationPointRepository.delete(cp);
+    }
+
+    /**
+     * List all combination points for a combination.
+     */
+    public List<CombinationPoint> listCombinationPoints(Member member, Integer combinationId) throws NotFoundException {
+        Combination combination = combinationRepository.findById(combinationId)
+                .orElseThrow(() -> new NotFoundException("Combination not found"));
+
+        Rally rally = rallyRepository.findById(combination.getRallyId())
+                .orElseThrow(() -> new NotFoundException("Rally not found"));
+        checkAccess(member, rally, false);
+
+        return combinationPointRepository.findByCombinationId(combinationId);
     }
 
     /**
