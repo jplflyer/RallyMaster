@@ -31,12 +31,25 @@ I think at work we're using Apache's, but I'm open-minded. Let's decide which to
       * a TypeReferences for converting the output.
     * The other 3 calls should accept the body as an Object. Ask Jackson to convert it to JSON.
 
-# Task Three: Move the DTOs from RallyServer to RallyCommon.
-See org.showpage.rallyserver.dto.
+Sample RESTCaller methods:
 
-This will be a refactor. Put them in the same package as the other dto's already in RallyCommon.
+```
+public <T> T get(String path, String authHeader, TypeReference<?> typeRef) throws ...;
+public <T> T put(String path, String body, String authHeader, TypeReference<?> typeRef) throws ...;
+public <T> T post(String path, String body, String authHeader, TypeReference<?> typeRef) throws ...;
+public <T> T delete(String path, String authHeader, TypeReference<?> typeRef) throws ...;
+```
+
+They should NOT eat any exceptions but should throw them.
+
+# Task Three: Move the DTOs from RallyServer to RallyCommon.
+See RallyServer/src/main/java/org/showpage/rallyserver/dto.
+
+This will be a refactor. Put them in the same package as the other dto's already in RallyCommon (package name ui instead of dto).
 
 # Task Four: Create IntegrationTest.java
+Create this in RallyServer/src/test.
+
 IntegrationTest.java's main job is to provide the common frameworks. An integration test is going to need to log in,
 receiving an AuthResponse record. It will then use that as the Authorization: Bearer token for all subsequent calls.
 To avoid committing passwords in the code itself, we'll read .integration.properties from the top RallyMaster directory.
@@ -76,7 +89,7 @@ public static final TypeReference<RR_AuthResponse> tr_AuthResponse = new TypeRef
 Then in my code I can do:
 
 ```
-AuthResponse rrAuth = restCaller.get("/auth/login", tr_AuthResponse);
+AuthResponse rrAuth = restCaller.get("/auth/login", authHeader, tr_AuthResponse);
 ```
 
 ## Step C: Create a convenience method check()
@@ -87,16 +100,29 @@ It should take a single argument of type RestResponse<?>. It should fail() if:
 
 Thus, we can do this:
 
-FooResponse rrFoo = get_AsSM("/api/foo", tr_Foo);
+FooResponse rrFoo = get_AsRM("/api/foo", tr_Foo);
 check(rrFoo);
 
-This will do both the null check and the success check.
+This will do both the null check and the success check. The curl equivalent is found in this function:
 
-## Step D: Create a LoginAs method
+```
+function getAuth() {  export AUTH=`curl -s -X POST -u "jpl@showpage.org:MyPw" "http://localhost:8080/api/auth/login" | jq -r .accessToken`; }
+```
+
+After that, I can manually test other calls like this:
+```
+curl -s -H "Authorization: Bearer ${AUTH}" http://localhost:8080/path" | jq
+```
+
+
+## Step D: Create a loginAs method
 It should take a username and password. It will perform a login then create the auth header from the auth token
 in the return structure. The login method returns AuthResponse, which already exists.
 
 Back in initialize(), login as both users and store their auth headers.
+
+This can use the existing /auth/login method already working in server. See LoginController. It accepts Basic
+authentication.
 
 ## Step E: Create the REST methods
 Create 8 methods, 2 each of these:
@@ -106,15 +132,18 @@ Create 8 methods, 2 each of these:
 * post -- 3 args
 * delete -- 3 args
 
-Make one called get_ForRM (rally master -- the organizer) and one called getForRider. Follow the same pattern
+Make one called get_ForRM (rally master -- the organizer) and one called get_ForRider. Follow the same pattern
 for the other 3 types of calls.
+
+These methods will call the equivalent method in RESTCaller, adding the appropate Bearer authorization header created by using hte loginAs method.
+
 
 ## Step F: Create RallyControllerIT
 It should extend IntegrationTest. Set it up to use @Order annotation. I like my tests run in the order they
 appear in the file.
 
 For now, create a single test to get all rallies using /api/rallies with no arguments, and have it do
-so as the rallyOrganizer using get_ForSM.
+so as the rallyOrganizer using get_ForRM.
 
 # .integration.properties
 This is a very simple file with lines like `variable_name = value`. Blank lines and lines beginning with `#` are
@@ -124,8 +153,12 @@ Use Java Reflection. Assume if you see `foo = bar` that you can call setFoo("bar
 
 We'll need to define two users with password:
 
+server_url = http://localhost:8080
+
 organizer_email = jpl@showpage.org
 organizer_password = 12345
 
 rider_email = joe@showpage.org
 rider_password = 67890
+
+This file should be added to .gitignore.

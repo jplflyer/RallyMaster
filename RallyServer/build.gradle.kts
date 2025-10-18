@@ -2,6 +2,7 @@ plugins {
     java
     id("org.springframework.boot") version "3.5.6"
     id("io.spring.dependency-management") version "1.1.7"
+    id("io.freefair.lombok") version "8.10"
 }
 
 group = "org.showpage"
@@ -44,8 +45,71 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // Lombok for tests
+    testCompileOnly("org.projectlombok:lombok")
+    testAnnotationProcessor("org.projectlombok:lombok")
 }
 
-tasks.withType<Test> {
+// Separate unit tests (*Test.java) from integration tests (*IT.java)
+// Unit tests run with: ./gradlew test
+// Integration tests run with: ./gradlew integrationTest
+// All tests run with: ./gradlew check
+
+sourceSets {
+    create("integrationTest") {
+        java {
+            compileClasspath += sourceSets.main.get().output + sourceSets.test.get().output
+            runtimeClasspath += sourceSets.main.get().output + sourceSets.test.get().output
+            srcDir("src/test/java")
+        }
+        resources {
+            srcDir("src/test/resources")
+        }
+    }
+}
+
+val integrationTestImplementation by configurations.getting {
+    extendsFrom(configurations.testImplementation.get())
+}
+
+val integrationTestRuntimeOnly by configurations.getting {
+    extendsFrom(configurations.testRuntimeOnly.get())
+}
+
+// Unit test task - runs *Test.java files
+tasks.test {
     useJUnitPlatform()
+    filter {
+        includeTestsMatching("*Test")
+        excludeTestsMatching("*IT")
+    }
+    testLogging {
+        events("passed", "skipped", "failed")
+    }
+}
+
+// Integration test task - runs *IT.java files
+val integrationTest = tasks.register<Test>("integrationTest") {
+    description = "Runs integration tests (*IT.java)"
+    group = "verification"
+
+    testClassesDirs = sourceSets["integrationTest"].output.classesDirs
+    classpath = sourceSets["integrationTest"].runtimeClasspath
+
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching("*IT")
+        excludeTestsMatching("*Test")
+    }
+    testLogging {
+        events("passed", "skipped", "failed")
+    }
+
+    shouldRunAfter(tasks.test)
+}
+
+// Make 'check' run both unit and integration tests
+tasks.check {
+    dependsOn(integrationTest)
 }

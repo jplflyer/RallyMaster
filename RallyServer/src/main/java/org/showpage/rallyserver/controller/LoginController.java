@@ -3,8 +3,8 @@ package org.showpage.rallyserver.controller;
 import lombok.RequiredArgsConstructor;
 import org.showpage.rallyserver.RestResponse;
 import org.showpage.rallyserver.config.JwtUtil;
-import org.showpage.rallyserver.dto.AuthResponse;
-import org.showpage.rallyserver.dto.TokenRequest;
+import org.showpage.rallyserver.ui.AuthResponse;
+import org.showpage.rallyserver.ui.TokenRequest;
 import org.showpage.rallyserver.entity.Member;
 import org.showpage.rallyserver.service.MemberService;
 import org.springframework.http.HttpStatus;
@@ -34,7 +34,7 @@ public class LoginController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestHeader("Authorization") String authHeader) {
-        try {
+        return serviceCaller.call( () -> {
             // Extract credentials from Basic Auth header
             String[] credentials = extractCredentials(authHeader);
             String email = credentials[0];
@@ -49,13 +49,8 @@ public class LoginController {
             String accessToken = jwtUtil.generateAccessToken(email);
             String refreshToken = jwtUtil.generateRefreshToken(email);
 
-            return ResponseEntity.ok(new AuthResponse(accessToken, refreshToken));
-
-        } catch (AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid request format");
-        }
+            return new AuthResponse(accessToken, refreshToken);
+        });
     }
 
     @PostMapping("/token")

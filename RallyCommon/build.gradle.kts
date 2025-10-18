@@ -23,6 +23,13 @@ dependencies {
     api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")       // java.time
     api("com.fasterxml.jackson.module:jackson-module-parameter-names")  // ctor binding
 
+    // Lombok for boilerplate reduction
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok")
+
+    // SLF4J for logging
+    implementation("org.slf4j:slf4j-api")
+
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

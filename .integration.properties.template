@@ -1,0 +1,15 @@
+# Integration Test Configuration Template
+# Copy this file to .integration.properties and fill in your values
+# Note: .integration.properties is ignored by git for security
+
+# Server Configuration
+server_url = http://localhost:8080
+
+# Test User Credentials
+# Organizer (Rally Master) - has full access to rallies
+organizer_email = your_organizer@example.com
+organizer_password = your_password_here
+
+# Rider - has limited access to rallies
+rider_email = your_rider@example.com
+rider_password = your_password_here

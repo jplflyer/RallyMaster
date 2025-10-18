@@ -40,3 +40,6 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Integration Test Properties ###
+.integration.properties

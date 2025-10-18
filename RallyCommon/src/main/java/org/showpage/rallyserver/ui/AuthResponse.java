@@ -1,4 +1,4 @@
-package org.showpage.rallyserver.dto;
+package org.showpage.rallyserver.ui;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
