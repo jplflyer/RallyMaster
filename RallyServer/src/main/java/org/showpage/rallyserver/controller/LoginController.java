@@ -3,6 +3,7 @@ package org.showpage.rallyserver.controller;
 import lombok.RequiredArgsConstructor;
 import org.showpage.rallyserver.RestResponse;
 import org.showpage.rallyserver.config.JwtUtil;
+import org.showpage.rallyserver.exception.UnauthorizedException;
 import org.showpage.rallyserver.service.DtoMapper;
 import org.showpage.rallyserver.ui.AuthResponse;
 import org.showpage.rallyserver.ui.TokenRequest;
@@ -36,7 +37,7 @@ public class LoginController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<RestResponse<AuthResponse>> login(@RequestHeader("Authorization") String authHeader) {
         return serviceCaller.call( () -> {
             // Extract credentials from Basic Auth header
             String[] credentials = extractCredentials(authHeader);
@@ -48,35 +49,44 @@ public class LoginController {
                     new UsernamePasswordAuthenticationToken(email, password)
             );
 
+            // Get the member
+            Member member = memberService.findByEmail(email)
+                    .orElseThrow(() -> new UnauthorizedException("User not found"));
+
             // Generate tokens
             String accessToken = jwtUtil.generateAccessToken(email);
             String refreshToken = jwtUtil.generateRefreshToken(email);
+
+            // Store the refresh token for one-time use validation
+            memberService.storeRefreshToken(member, refreshToken);
 
             return new AuthResponse(accessToken, refreshToken);
         });
     }
 
     @PostMapping("/token")
-    public ResponseEntity<?> refreshToken(@RequestBody TokenRequest tokenRequest) {
-        try {
+    public ResponseEntity<RestResponse<AuthResponse>> refreshToken(@RequestBody TokenRequest tokenRequest) {
+        return serviceCaller.call(() -> {
             String refreshToken = tokenRequest.getRefreshToken();
+
+            // Extract email and validate token structure
             String email = jwtUtil.extractEmail(refreshToken);
-
-            // Validate refresh token
-            Optional<Member> member = memberService.findByEmail(email);
-            if (member.isPresent() && jwtUtil.validateToken(refreshToken, email)) {
-                // Generate new tokens
-                String newAccessToken = jwtUtil.generateAccessToken(email);
-                String newRefreshToken = jwtUtil.generateRefreshToken(email);
-
-                return ResponseEntity.ok(new AuthResponse(newAccessToken, newRefreshToken));
-            } else {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid refresh token");
+            if (!jwtUtil.validateToken(refreshToken, email)) {
+                throw new UnauthorizedException("Invalid refresh token");
             }
 
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid refresh token");
-        }
+            // Validate and consume the refresh token (can only be used once)
+            Member member = memberService.validateAndConsumeRefreshToken(refreshToken, email);
+
+            // Generate new tokens
+            String newAccessToken = jwtUtil.generateAccessToken(email);
+            String newRefreshToken = jwtUtil.generateRefreshToken(email);
+
+            // Store the new refresh token
+            memberService.storeRefreshToken(member, newRefreshToken);
+
+            return new AuthResponse(newAccessToken, newRefreshToken);
+        });
     }
 
     @PostMapping("/register")

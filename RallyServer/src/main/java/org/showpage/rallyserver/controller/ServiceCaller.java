@@ -6,6 +6,7 @@ import org.showpage.rallyserver.interfaces.HasId;
 import org.showpage.rallyserver.RestResponse;
 import org.showpage.rallyserver.entity.Member;
 import org.showpage.rallyserver.exception.NotFoundException;
+import org.showpage.rallyserver.exception.UnauthorizedException;
 import org.showpage.rallyserver.exception.ValidationException;
 import org.showpage.rallyserver.repository.MemberRepository;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -28,11 +29,11 @@ public class ServiceCaller {
     private final MemberRepository memberRepository;
 
     public interface Lambda<T> {
-        T process() throws NotFoundException, ValidationException, DataIntegrityViolationException;
+        T process() throws NotFoundException, ValidationException, UnauthorizedException, DataIntegrityViolationException;
     }
 
     public interface MemberLambda<T> {
-        T process(Member member) throws NotFoundException, ValidationException, DataIntegrityViolationException;
+        T process(Member member) throws NotFoundException, ValidationException, UnauthorizedException, DataIntegrityViolationException;
     }
 
     /**
@@ -56,6 +57,10 @@ public class ServiceCaller {
         catch (ValidationException e) {
             log.warn("ValidationException", e);
             return error(HttpStatus.BAD_REQUEST, e);
+        }
+        catch (UnauthorizedException e) {
+            log.warn("UnauthorizedException", e);
+            return error(HttpStatus.UNAUTHORIZED, e);
         }
         catch (DataIntegrityViolationException e) {
             log.warn("DataIntegrityViolationException", e);
@@ -198,10 +203,6 @@ public class ServiceCaller {
         return "bearer".equalsIgnoreCase(scheme) && !token.isEmpty()
                 ? Optional.of(token)
                 : Optional.empty();
-    }
-
-    public static class UnauthorizedException extends RuntimeException {
-        public UnauthorizedException(String msg) { super(msg); }
     }
 
 }

@@ -4,8 +4,10 @@ CREATE TABLE IF NOT EXISTS member
     email TEXT NOT NULL UNIQUE,
     real_name TEXT,
     password TEXT NOT NULL,
-    spotwalla_username TEXT
- );
+    spotwalla_username TEXT,
+    is_admin BOOLEAN NOT NULL DEFAULT FALSE,
+    refresh_token TEXT
+);
 
 CREATE TYPE ownership_status AS ENUM
     ('OWNED', 'BORROWED', 'RENTED', 'SOLD', 'WRECKED');

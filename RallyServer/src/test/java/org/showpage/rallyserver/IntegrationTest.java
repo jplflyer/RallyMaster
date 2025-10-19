@@ -29,6 +29,7 @@ public abstract class IntegrationTest {
     // Helper classes that just make the code a little more compact.
     public static class RR_AuthResponse extends RestResponse<AuthResponse> {}
     public static class RR_UiMember extends RestResponse<UiMember> {}
+    public static class RR_ListUiMember extends RestResponse<List<UiMember>> {}
     public static class RR_PageUiRally extends RestResponse<PageResponse<UiRally>> {}
     public static class RR_UiRally extends RestResponse<UiRally> {}
     public static class RR_UiRallyParticipant extends RestResponse<UiRallyParticipant> {}
@@ -37,6 +38,7 @@ public abstract class IntegrationTest {
     public static class RR_UiCombinationPoint extends RestResponse<UiCombinationPoint> {}
     public static class RR_UiEarnedBonusPoint extends RestResponse<UiEarnedBonusPoint> {}
     public static class RR_UiEarnedCombination extends RestResponse<UiEarnedCombination> {}
+    public static class RR_UiMotorcycle extends RestResponse<UiMotorcycle> {}
     public static class RR_ListUiBonusPoint extends RestResponse<List<UiBonusPoint>> {}
     public static class RR_ListUiCombination extends RestResponse<List<UiCombination>> {}
     public static class RR_ListUiEarnedBonusPoint extends RestResponse<List<UiEarnedBonusPoint>> {}
@@ -51,6 +53,8 @@ public abstract class IntegrationTest {
     public static final TypeReference<RR_UiCombinationPoint> tr_UiCombinationPoint = new TypeReference<>() {};
     public static final TypeReference<RR_UiEarnedCombination> tr_UiEarnedCombination = new TypeReference<>() {};
     public static final TypeReference<RR_UiMember> tr_UiMember = new TypeReference<>() {};
+    public static final TypeReference<RR_ListUiMember> tr_ListUiMember = new TypeReference<>() {};
+    public static final TypeReference<RR_UiMotorcycle> tr_UiMotorcycle = new TypeReference<>() {};
     public static final TypeReference<RR_UiRally> tr_UiRally = new TypeReference<>() {};
     public static final TypeReference<RR_UiRallyParticipant> tr_UiRallyParticipant = new TypeReference<>() {};
     public static final TypeReference<RR_UiEarnedBonusPoint> tr_UiEarnedBonusPoint = new TypeReference<>() {};
@@ -65,6 +69,11 @@ public abstract class IntegrationTest {
     //----------------------------------------------------------------------
     protected static boolean initialized = false;
     protected static String serverUrl;
+
+    protected static String adminEmail;
+    protected static String adminPassword;
+    protected static String adminAuthHeader;
+
     protected static String organizerEmail;
     protected static String organizerPassword;
     protected static String riderEmail;
@@ -105,6 +114,7 @@ public abstract class IntegrationTest {
         faker = new Faker();
 
         // Login as both users
+        adminAuthHeader = loginAs(adminEmail, adminPassword);
         organizerAuthHeader = loginAs(organizerEmail, organizerPassword);
         riderAuthHeader = loginAs(riderEmail, riderPassword);
 
@@ -125,17 +135,17 @@ public abstract class IntegrationTest {
 
     /**
      * Clean up old test data from previous test runs.
-     * Deletes all rallies starting with "AutoTest".
+     * Deletes all rallies starting with "AutoTest" and all users with @nowhere.com emails.
      */
     private void cleanupTestData() {
         try {
             log.info("Cleaning up old test data...");
 
-            // Search for all rallies with name starting with "AutoTest"
-            RR_PageUiRally response = get_ForRM("/api/rallies?name=AutoTest&all=true", tr_PageUiRally);
+            // Clean up test rallies
+            RR_PageUiRally rallyResponse = get_ForRM("/api/rallies?name=AutoTest&all=true", tr_PageUiRally);
 
-            if (response != null && response.isSuccess() && response.getData() != null) {
-                List<UiRally> rallies = response.getData().getContent();
+            if (rallyResponse != null && rallyResponse.isSuccess() && rallyResponse.getData() != null) {
+                List<UiRally> rallies = rallyResponse.getData().getContent();
                 log.info("Found {} test rallies to clean up", rallies.size());
 
                 for (UiRally rally : rallies) {
@@ -144,6 +154,27 @@ public abstract class IntegrationTest {
                         delete_ForRM("/api/rally/" + rally.getId(), tr_Void);
                     } catch (Exception e) {
                         log.warn("Failed to delete rally {}: {}", rally.getId(), e.getMessage());
+                    }
+                }
+            }
+
+            // Clean up test users with @nowhere.com emails
+            RR_ListUiMember memberResponse = get_Admin("/api/admin/members", tr_ListUiMember);
+
+            if (memberResponse != null && memberResponse.isSuccess() && memberResponse.getData() != null) {
+                List<UiMember> members = memberResponse.getData();
+                List<UiMember> testUsers = members.stream()
+                        .filter(m -> m.getEmail() != null && m.getEmail().endsWith("@nowhere.com"))
+                        .toList();
+
+                log.info("Found {} test users to clean up", testUsers.size());
+
+                for (UiMember testUser : testUsers) {
+                    try {
+                        log.info("Deleting test user: {} (ID: {})", testUser.getEmail(), testUser.getId());
+                        delete_Admin("/api/admin/member/" + testUser.getId(), tr_Void);
+                    } catch (Exception e) {
+                        log.warn("Failed to delete user {}: {}", testUser.getId(), e.getMessage());
                     }
                 }
             }
@@ -228,6 +259,14 @@ public abstract class IntegrationTest {
         serverUrl = value;
     }
 
+    public static void setAdminEmail(String value) {
+        adminEmail = value;
+    }
+
+    public static void setAdminPassword(String value) {
+        adminPassword = value;
+    }
+
     public static void setOrganizerEmail(String value) {
         organizerEmail = value;
     }
@@ -283,6 +322,23 @@ public abstract class IntegrationTest {
     protected void checkFailed(RestResponse<?> response) {
         assertNotNull(response, "Null response");
         assertFalse(response.isSuccess(), response.getMessage());
+    }
+
+    // REST methods for Admin
+    protected <T> T get_Admin(String path, TypeReference<T> typeRef) throws IOException, InterruptedException {
+        return restCaller.get(path, adminAuthHeader, typeRef);
+    }
+
+    protected <T> T post_Admin(String path, Object body, TypeReference<T> typeRef) throws IOException, InterruptedException {
+        return restCaller.post(path, body, adminAuthHeader, typeRef);
+    }
+
+    protected <T> T put_Admin(String path, Object body, TypeReference<T> typeRef) throws IOException, InterruptedException {
+        return restCaller.put(path, body, adminAuthHeader, typeRef);
+    }
+
+    protected <T> T delete_Admin(String path, TypeReference<T> typeRef) throws IOException, InterruptedException {
+        return restCaller.delete(path, adminAuthHeader, typeRef);
     }
 
     // Step E: REST methods for Rally Master (Organizer)
@@ -448,5 +504,52 @@ public abstract class IntegrationTest {
         String lastName = faker.name().lastName().toLowerCase().replaceAll("[^a-z]", "");
         String company = faker.company().name().replaceAll("[^a-zA-Z]", "").substring(0, Math.min(5, faker.company().name().length())).toLowerCase();
         return firstName + "." + lastName + "@" + company + ".nowhere.com";
+    }
+
+    /**
+     * Register a test user and return their auth token and member info.
+     * Uses the /api/auth/register endpoint.
+     */
+    protected AuthResponse registerTestUser(String email, String password)
+        throws IOException, InterruptedException
+    {
+        log.info("Registering test user: {}", email);
+
+        // Call register endpoint with query parameters
+        RR_UiMember response = restCaller.post(
+            "/api/auth/register?email=" + email + "&password=" + password,
+            null,
+            null,  // No auth header needed for registration
+            tr_UiMember
+        );
+
+        if (response == null || !response.isSuccess() || response.getData() == null) {
+            fail("Failed to register test user: " + email);
+        }
+
+        // Now login to get the auth tokens
+        return loginAndGetAuthResponse(email, password);
+    }
+
+    /**
+     * Login and return the full AuthResponse including access and refresh tokens.
+     */
+    protected AuthResponse loginAndGetAuthResponse(String username, String password)
+        throws IOException, InterruptedException
+    {
+        log.info("Logging in as: {}", username);
+
+        // Create Basic auth header
+        String credentials = username + ":" + password;
+        String basicAuth = "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes());
+
+        // Call login endpoint
+        RR_AuthResponse response = restCaller.post("/api/auth/login", null, basicAuth, tr_AuthResponse);
+
+        if (response == null || !response.isSuccess() || response.getData() == null) {
+            fail("Login failed for user: " + username);
+        }
+
+        return response.getData();
     }
 }

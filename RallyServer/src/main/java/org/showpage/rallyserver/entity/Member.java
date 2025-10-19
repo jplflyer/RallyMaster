@@ -2,6 +2,7 @@ package org.showpage.rallyserver.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -12,6 +13,7 @@ import java.util.List;
 @Entity
 @Table(name = "member")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Member implements HasId<Member> {
@@ -27,6 +29,13 @@ public class Member implements HasId<Member> {
     private String password;
 
     private String spotwallaUsername;
+
+    @JsonIgnore
+    @Column(length = 512)
+    private String refreshToken;
+
+    @Builder.Default
+    private Boolean isAdmin = Boolean.FALSE;
 
     @OneToMany(
             mappedBy = "member",                // owning side is RallyParticipant.rally
