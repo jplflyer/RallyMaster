@@ -8,6 +8,7 @@ import org.showpage.rallyserver.entity.Member;
 import org.showpage.rallyserver.exception.NotFoundException;
 import org.showpage.rallyserver.exception.ValidationException;
 import org.showpage.rallyserver.repository.MemberRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -27,11 +28,11 @@ public class ServiceCaller {
     private final MemberRepository memberRepository;
 
     public interface Lambda<T> {
-        T process() throws NotFoundException, ValidationException;
+        T process() throws NotFoundException, ValidationException, DataIntegrityViolationException;
     }
 
     public interface MemberLambda<T> {
-        T process(Member member) throws NotFoundException, ValidationException;
+        T process(Member member) throws NotFoundException, ValidationException, DataIntegrityViolationException;
     }
 
     /**
@@ -48,9 +49,22 @@ public class ServiceCaller {
                     .build()
             );
         }
-        catch (NotFoundException e)   { return error(HttpStatus.NOT_FOUND, e); }
-        catch (ValidationException e) { return error(HttpStatus.BAD_REQUEST, e); }
-        catch (Exception e)           { return error(HttpStatus.INTERNAL_SERVER_ERROR, e); }
+        catch (NotFoundException e)   {
+            log.warn("NotFoundException", e);
+            return error(HttpStatus.NOT_FOUND, e);
+        }
+        catch (ValidationException e) {
+            log.warn("ValidationException", e);
+            return error(HttpStatus.BAD_REQUEST, e);
+        }
+        catch (DataIntegrityViolationException e) {
+            log.warn("DataIntegrityViolationException", e);
+            return error(HttpStatus.CONFLICT, e);
+        }
+        catch (Exception e)           {
+            log.warn("Exception", e);
+            return error(HttpStatus.INTERNAL_SERVER_ERROR, e);
+        }
     }
 
     /**
@@ -79,6 +93,9 @@ public class ServiceCaller {
         catch (UnauthorizedException e) {
             log.warn("UnauthorizedException", e);
             return error(HttpStatus.UNAUTHORIZED, e);
+        }
+        catch (DataIntegrityViolationException e) {
+            return error(HttpStatus.CONFLICT, e);
         }
         catch (Exception e)             {
             log.warn("Exception", e);
@@ -119,6 +136,9 @@ public class ServiceCaller {
         catch (UnauthorizedException e) {
             log.warn("UnauthorizedException", e);
             return error(HttpStatus.UNAUTHORIZED, e);
+        }
+        catch (DataIntegrityViolationException e) {
+            return error(HttpStatus.CONFLICT, e);
         }
         catch (Exception e)             {
             log.warn("Exception", e);

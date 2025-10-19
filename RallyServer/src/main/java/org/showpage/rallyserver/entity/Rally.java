@@ -25,6 +25,8 @@ public class Rally implements HasId<Rally> {
 
     private LocalDate startDate;
     private LocalDate endDate;
+    private Float latitude;
+    private Float longitude;
     private String locationCity;
     private String locationState;
     private String locationCountry; /** 2-digit code. */

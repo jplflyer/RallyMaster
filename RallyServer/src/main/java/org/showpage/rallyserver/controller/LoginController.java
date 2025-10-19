@@ -40,8 +40,8 @@ public class LoginController {
         return serviceCaller.call( () -> {
             // Extract credentials from Basic Auth header
             String[] credentials = extractCredentials(authHeader);
-            String email = credentials[0];
-            String password = credentials[1];
+            String email = credentials[0].trim().toLowerCase();
+            String password = credentials[1].trim();
 
             // Authenticate user
             Authentication authentication = authenticationManager.authenticate(
@@ -84,7 +84,7 @@ public class LoginController {
             @RequestParam String email,
             @RequestParam String password
     ) {
-        return serviceCaller.call(() -> DtoMapper.toUiMember(memberService.createMember(email, password)));
+        return serviceCaller.call(() -> DtoMapper.toUiMember(memberService.createMember(email.trim().toLowerCase(), password.trim())));
     }
 
     private String[] extractCredentials(String authHeader) {

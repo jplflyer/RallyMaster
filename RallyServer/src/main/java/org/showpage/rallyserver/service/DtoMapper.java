@@ -174,7 +174,7 @@ public class DtoMapper {
         List<Motorcycle> motorcycles = member.getMotorcycles();
         List<UiMotorcycle> uiMotorcycles = null;
 
-        if (motorcycles == null || !motorcycles.isEmpty()) {
+        if (motorcycles != null && !motorcycles.isEmpty()) {
             uiMotorcycles = new ArrayList<>(motorcycles.size());
             for (Motorcycle motorcycle : motorcycles) {
                 uiMotorcycles.add(toUiMotorcycle(motorcycle));

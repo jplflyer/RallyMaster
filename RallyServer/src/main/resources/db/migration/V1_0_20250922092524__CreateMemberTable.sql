@@ -1,9 +1,9 @@
 CREATE TABLE IF NOT EXISTS member
 (
     id SERIAL PRIMARY KEY,
-    email TEXT,
+    email TEXT NOT NULL UNIQUE,
     real_name TEXT,
-    password TEXT,
+    password TEXT NOT NULL,
     spotwalla_username TEXT
  );
 
@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS rally
     description TEXT,
     start_date DATE,
     end_date DATE,
+    latitude FLOAT,
+    longitude FLOAT,
     location_city TEXT,
     location_state TEXT,
     location_country TEXT,

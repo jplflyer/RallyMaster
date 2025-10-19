@@ -62,9 +62,13 @@ public class RallyService {
                 .builder()
                 .name(request.getName().trim())
                 .description(request.getDescription().trim())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
                 .locationCity(request.getLocationCity().trim())
                 .locationState(request.getLocationState() != null ? request.getLocationState().trim() : null)
                 .locationCountry(request.getLocationCountry().trim())
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
                 .isPublic(request.getIsPublic() != null && request.getIsPublic())
                 .pointsPublic(request.getPointsPublic() != null ? request.getPointsPublic() : false)
                 .ridersPublic(request.getRidersPublic() != null ? request.getRidersPublic() : false)
@@ -104,6 +108,12 @@ public class RallyService {
             throw new ValidationException("Start date cannot be after end date");
         }
 
+        if (request.getLatitude() != null) {
+            rally.setLatitude(request.getLatitude());
+        }
+        if (request.getLongitude() != null) {
+            rally.setLongitude(request.getLongitude());
+        }
         if (DataValidator.nonEmpty(request.getName())) {
             rally.setName(request.getName().trim());
         }
@@ -644,13 +654,11 @@ public class RallyService {
 
         return (root, q, cb) -> {
             // assume entity has: countryCode (e.g., "US") and countryName (e.g., "United States")
-            Expression<String> code = cb.upper(root.get("countryCode"));
-            Expression<String> name = cb.upper(root.get("countryName"));
+            Expression<String> name = cb.upper(root.get("locationCountry"));
             String like = "%" + norm.toUpperCase() + "%";
 
             // match by exact code OR contains in name
             return cb.or(
-                    cb.equal(code, norm.toUpperCase()),
                     cb.like(name, like)
             );
         };

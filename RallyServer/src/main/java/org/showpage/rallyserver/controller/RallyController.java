@@ -80,6 +80,9 @@ public class RallyController {
             @RequestParam(required = false) Boolean all,
             @PageableDefault(size = 20, sort = "startDate", direction = Sort.Direction.ASC) Pageable pageable
     ) {
+        if (from != null) {
+            log.info("Searching for rallys from {} to {}", from, to);
+        }
         return serviceCaller.call((member) -> {
                 Page<UiRally> page = rallyService.search(name, from, to, country, region, nearLat, nearLng, radiusMiles, all != null && all, pageable)
                         .map(rally -> DtoMapper.toUiRally(member, rally));

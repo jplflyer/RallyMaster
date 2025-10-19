@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import net.datafaker.Faker;
 import org.junit.jupiter.api.BeforeEach;
-import org.showpage.rallyserver.controller.RallyControllerIT;
 import org.showpage.rallyserver.ui.*;
 import org.showpage.rallyserver.util.RESTCaller;
 
@@ -18,7 +17,7 @@ import java.time.LocalDate;
 import java.util.Base64;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Base class for all integration tests.
@@ -325,18 +324,22 @@ public abstract class IntegrationTest {
      * Create a test rally at a specific location.
      */
     protected UiRally createTestRally(String city, String country, Double latitude, Double longitude) throws Exception {
-        CreateRallyRequest request = new CreateRallyRequest();
-        request.setName("AutoTest " + faker.company().buzzword() + " Rally");
-        request.setDescription("Automated test rally created by integration tests");
-        request.setLocationCity(city != null ? city : faker.address().city());
-        request.setLocationState(faker.address().state());
-        request.setLocationCountry(country != null ? country : "US");
-        request.setStartDate(LocalDate.now().plusDays(7));
-        request.setEndDate(LocalDate.now().plusDays(14));
-        request.setIsPublic(true);
-        request.setPointsPublic(true);
-        request.setRidersPublic(true);
-        request.setOrganizersPublic(true);
+        CreateRallyRequest request = CreateRallyRequest
+                .builder()
+                .name("AutoTest " + faker.company().buzzword() + " Rally")
+                .description("Automated test rally created by integration tests")
+                .latitude(latitude != null ? latitude.floatValue() : null)
+                .longitude(latitude != null ? longitude.floatValue() : null)
+                .locationCity(city != null ? city : faker.address().city())
+                .locationState(faker.address().state())
+                .locationCountry(country != null ? country : "US")
+                .startDate(LocalDate.now().plusDays(7))
+                .endDate(LocalDate.now().plusDays(14))
+                .isPublic(true)
+                .pointsPublic(true)
+                .ridersPublic(true)
+                .organizersPublic(true)
+                .build();
 
         RR_UiRally response = post_ForRM("/api/rally", request, tr_UiRally);
         check(response);
@@ -347,21 +350,31 @@ public abstract class IntegrationTest {
      * Create a test rally with full control over parameters.
      */
     protected UiRally createTestRally(String name, LocalDate startDate, LocalDate endDate) throws Exception {
-        CreateRallyRequest request = new CreateRallyRequest();
-        request.setName(name != null ? name : ("AutoTest " + faker.company().buzzword() + " Rally"));
-        request.setDescription("Automated test rally created by integration tests");
-        request.setLocationCity(faker.address().city());
-        request.setLocationState(faker.address().state());
-        request.setLocationCountry("US");
-        request.setStartDate(startDate != null ? startDate : LocalDate.now().plusDays(7));
-        request.setEndDate(endDate != null ? endDate : LocalDate.now().plusDays(14));
-        request.setIsPublic(true);
-        request.setPointsPublic(true);
-        request.setRidersPublic(true);
-        request.setOrganizersPublic(true);
+        startDate = startDate != null ? startDate : LocalDate.now().plusDays(7);
+        endDate = endDate != null ? endDate : startDate;
+
+        CreateRallyRequest request = CreateRallyRequest
+                .builder()
+                .name(name != null ? name : ("AutoTest " + faker.company().buzzword() + " Rally"))
+                .description("Automated test rally created by integration tests")
+                .locationCity(faker.address().city())
+                .locationState(faker.address().state())
+                .locationCountry("US")
+                .startDate(startDate)
+                .endDate(endDate)
+                .isPublic(true)
+                .pointsPublic(true)
+                .ridersPublic(true)
+                .organizersPublic(true)
+                .build();
 
         RR_UiRally response = post_ForRM("/api/rally", request, tr_UiRally);
         check(response);
+        UiRally rally = response.getData();
+        assertNotNull(rally);
+
+        assertEquals(startDate, rally.getStartDate());
+        assertEquals(endDate, rally.getEndDate());
         return response.getData();
     }
 
