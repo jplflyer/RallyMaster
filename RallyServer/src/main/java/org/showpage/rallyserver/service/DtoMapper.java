@@ -132,10 +132,12 @@ public class DtoMapper {
             return null;
         }
 
-        List<UiCombinationPoint> combinationPoints = combination.getCombinationPoints()
+        List<UiCombinationPoint> combinationPoints = combination.getCombinationPoints() != null
+            ? combination.getCombinationPoints()
                 .stream()
                 .map(DtoMapper::toUiCombinationPoint)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList())
+            : null;
 
         return UiCombination
                 .builder()

@@ -3,13 +3,16 @@ package org.showpage.rallyserver.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Combination {
@@ -38,4 +41,21 @@ public class Combination {
             fetch = FetchType.LAZY
     )
     private List<CombinationPoint> combinationPoints;
+
+    public Combination addCombinationPoint(CombinationPoint cp) {
+        if (combinationPoints == null) {
+            combinationPoints = new ArrayList<>();
+        }
+        combinationPoints.add(cp);
+        cp.setCombination(this);
+        return this;
+    }
+
+    public Combination removeCombinationPoint(CombinationPoint cp) {
+        if (combinationPoints != null) {
+            combinationPoints.remove(cp);
+        }
+        cp.setCombination(null);
+        return this;
+    }
 }

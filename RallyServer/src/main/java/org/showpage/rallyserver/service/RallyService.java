@@ -12,7 +12,6 @@ import org.showpage.rallyserver.exception.ValidationException;
 import org.showpage.rallyserver.ui.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.transaction.annotation.Transactional;
 import org.showpage.rallyserver.util.DataValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -246,18 +245,20 @@ public class RallyService {
                 .orElseThrow(() -> new NotFoundException("Rally not found"));
         checkAccess(member, rally, true);
 
-        BonusPoint bonusPoint = new BonusPoint();
-        bonusPoint.setRally(rally);
-        bonusPoint.setRallyId(rallyId);  // Manually set rallyId since it's insertable=false, updatable=false
-        bonusPoint.setCode(request.getCode());
-        bonusPoint.setName(request.getName());
-        bonusPoint.setDescription(request.getDescription());
-        bonusPoint.setLatitude(request.getLatitude());
-        bonusPoint.setLongitude(request.getLongitude());
-        bonusPoint.setAddress(request.getAddress());
-        bonusPoint.setPoints(request.getPoints());
-        bonusPoint.setRequired(request.getRequired());
-        bonusPoint.setRepeatable(request.getRepeatable());
+        BonusPoint bonusPoint = BonusPoint
+                .builder()
+                .rally(rally)
+                .rallyId(rallyId)
+                .code(request.getCode())
+                .name(request.getName())
+                .description(request.getDescription())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
+                .address(request.getAddress())
+                .points(request.getPoints())
+                .required(request.getRequired() != null ? request.getRequired() : false)
+                .repeatable(request.getRepeatable() != null ? request.getRepeatable() : false)
+                .build();
 
         return bonusPointRepository.save(bonusPoint);
     }
@@ -351,24 +352,27 @@ public class RallyService {
     /**
      * Create a combination for a rally. Only organizers can do this.
      */
-    @Transactional
     public Combination createCombination(Member member, Integer rallyId, CreateCombinationRequest request)
-            throws NotFoundException, ValidationException {
+            throws NotFoundException, ValidationException
+    {
         Rally rally = rallyRepository.findById(rallyId)
                 .orElseThrow(() -> new NotFoundException("Rally not found"));
         checkAccess(member, rally, true);
 
-        Combination combination = new Combination();
-        combination.setRally(rally);
-        combination.setRallyId(rallyId);  // Manually set rallyId since it's insertable=false, updatable=false
-        combination.setCode(request.getCode());
-        combination.setName(request.getName());
-        combination.setDescription(request.getDescription());
-        combination.setPoints(request.getPoints());
-        combination.setRequiresAll(request.getRequiresAll());
-        combination.setNumRequired(request.getNumRequired());
+        Combination combination = Combination
+                .builder()
+                .rally(rally)
+                .rallyId(rallyId)
+                .code(request.getCode())
+                .name(request.getName())
+                .description(request.getDescription())
+                .points(request.getPoints())
+                .requiresAll(request.getRequiresAll())
+                .numRequired(request.getNumRequired())
+                .build();
 
         Combination saved = combinationRepository.save(combination);
+        log.info("Created combination: {}", saved.getId());
 
         // Create the combination points
         if (request.getCombinationPoints() != null) {
@@ -376,14 +380,21 @@ public class RallyService {
                 BonusPoint bonusPoint = bonusPointRepository.findById(cpRequest.getBonusPointId())
                         .orElseThrow(() -> new NotFoundException("Bonus point not found: " + cpRequest.getBonusPointId()));
 
-                CombinationPoint cp = new CombinationPoint();
-                cp.setCombination(saved);
-                cp.setCombinationId(saved.getId());  // Manually set IDs since they're insertable=false, updatable=false
-                cp.setBonusPoint(bonusPoint);
-                cp.setBonusPointId(bonusPoint.getId());
-                cp.setRequired(cpRequest.getRequired());
-                combinationPointRepository.save(cp);
+                CombinationPoint cp = CombinationPoint
+                        .builder()
+                        .combination(saved)
+                        .combinationId(saved.getId())
+                        .bonusPoint(bonusPoint)
+                        .bonusPointId(bonusPoint.getId())
+                        .required(cpRequest.getRequired())
+                        .build();
+
+                cp = combinationPointRepository.save(cp);
+                saved.addCombinationPoint(cp);
             }
+            log.info("Created {} combination points. Saved shows {}",
+                    request.getCombinationPoints().size(),
+                    saved.getCombinationPoints() != null ? saved.getCombinationPoints().size() : 0);
         }
 
         return saved;
@@ -426,7 +437,6 @@ public class RallyService {
     /**
      * Delete a combination. Only organizers can do this.
      */
-    @Transactional
     public void deleteCombination(Member member, Integer combinationId) throws NotFoundException, ValidationException {
         Combination combination = combinationRepository.findById(combinationId)
                 .orElseThrow(() -> new NotFoundException("Combination not found"));

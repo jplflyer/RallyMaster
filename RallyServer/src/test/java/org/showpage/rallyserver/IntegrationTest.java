@@ -369,16 +369,18 @@ public abstract class IntegrationTest {
      * Create a bonus point for a rally.
      */
     protected UiBonusPoint createTestBonusPoint(Integer rallyId, String code, Integer points) throws Exception {
-        CreateBonusPointRequest request = new CreateBonusPointRequest();
-        request.setCode(code != null ? code : ("BP" + faker.number().numberBetween(1, 999)));
-        request.setName(faker.address().cityName() + " Bonus");
-        request.setDescription("Test bonus point at " + faker.address().fullAddress());
-        request.setLatitude(faker.number().randomDouble(6, -90, 90));
-        request.setLongitude(faker.number().randomDouble(6, -180, 180));
-        request.setAddress(faker.address().fullAddress());
-        request.setPoints(points != null ? points : faker.number().numberBetween(10, 100));
-        request.setRequired(false);
-        request.setRepeatable(false);
+        CreateBonusPointRequest request = CreateBonusPointRequest
+                .builder()
+                .code(code != null ? code : ("BP" + faker.number().numberBetween(1, 999)))
+                .name(faker.address().cityName() + " Bonus")
+                .description("Test bonus point at " + faker.address().fullAddress())
+                .latitude(faker.number().randomDouble(6, -90, 90))
+                .longitude(faker.number().randomDouble(6, -180, 180))
+                .address(faker.address().fullAddress())
+                .points(points != null ? points : faker.number().numberBetween(10, 100))
+                .required(false)
+                .repeatable(false)
+                .build();
 
         RR_UiBonusPoint response = post_ForRM("/api/rally/" + rallyId + "/bonuspoint", request, tr_UiBonusPoint);
         check(response);
@@ -389,13 +391,15 @@ public abstract class IntegrationTest {
      * Create a combination for a rally.
      */
     protected UiCombination createTestCombination(Integer rallyId, List<Integer> bonusPointIds) throws Exception {
-        CreateCombinationRequest request = new CreateCombinationRequest();
-        request.setCode("COMBO" + faker.number().numberBetween(1, 99));
-        request.setName(faker.company().buzzword() + " Combination");
-        request.setDescription("Test combination bonus");
-        request.setPoints(faker.number().numberBetween(50, 200));
-        request.setRequiresAll(true);
-        request.setNumRequired(bonusPointIds.size());
+        CreateCombinationRequest request = CreateCombinationRequest
+                .builder()
+                .code("COMBO" + faker.number().numberBetween(1, 99))
+                .name(faker.company().buzzword() + " Combination")
+                .description("Test combination bonus")
+                .points(faker.number().numberBetween(50, 200))
+                .requiresAll(true)
+                .numRequired(bonusPointIds.size())
+                .build();
 
         // Add combination points
         List<CreateCombinationPointRequest> combinationPoints = bonusPointIds.stream()

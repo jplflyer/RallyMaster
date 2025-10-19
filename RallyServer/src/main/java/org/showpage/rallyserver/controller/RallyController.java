@@ -60,7 +60,7 @@ public class RallyController {
      * This performs a search.
      */
     @GetMapping("/rallies")
-    ResponseEntity<RestResponse<Page<UiRally>>> searchRallies(
+    ResponseEntity<RestResponse<RestPage<UiRally>>> searchRallies(
             // text search: case-insensitive "contains"
             @RequestParam(required = false) String name,
 
@@ -80,10 +80,11 @@ public class RallyController {
             @RequestParam(required = false) Boolean all,
             @PageableDefault(size = 20, sort = "startDate", direction = Sort.Direction.ASC) Pageable pageable
     ) {
-        log.info("searchRallies");
-        return serviceCaller.call((member) ->
-                rallyService.search(name, from, to, country, region, nearLat, nearLng, radiusMiles, all != null && all, pageable)
-                        .map(rally -> DtoMapper.toUiRally(member, rally))
+        return serviceCaller.call((member) -> {
+                Page<UiRally> page = rallyService.search(name, from, to, country, region, nearLat, nearLng, radiusMiles, all != null && all, pageable)
+                        .map(rally -> DtoMapper.toUiRally(member, rally));
+                return RestPage.from(page);
+            }
         );
     }
 
