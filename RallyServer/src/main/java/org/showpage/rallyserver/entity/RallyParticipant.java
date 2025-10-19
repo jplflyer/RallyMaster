@@ -39,7 +39,7 @@ public class RallyParticipant {
     Integer memberId;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)               // <-- key part
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private RallyParticipantType participantType;
 
     private Integer odometerIn;

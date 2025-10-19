@@ -20,19 +20,38 @@ public class EditRiderIT extends IntegrationTest {
     private static String testUserEmail;
     private static String testUserAuthHeader;
 
-    @Test
-    @Order(1)
-    @DisplayName("Create test user for editing tests")
-    public void setupTestUser() throws Exception {
-        testUserEmail = generateTestUserEmail();
-        String password = testUserPassword;
+    private static boolean setupDone = false;
 
-        testUserAuth = registerTestUser(testUserEmail, password);
-        testUserAuthHeader = "Bearer " + testUserAuth.getAccessToken();
+    @BeforeEach
+    public void beforeEach() {
+        if (setupDone) {
+            return;
+        }
 
-        assertNotNull(testUserAuth);
-        assertNotNull(testUserAuth.getAccessToken());
-        log.info("Created test user: {}", testUserEmail);
+        try {
+            initialize();
+            setupTestUser();
+
+            setupDone = true;
+        }
+        catch (Exception e) {
+            log.error("Startup exception", e);
+            fail("Exception");
+        }
+    }
+
+    private void setupTestUser() throws Exception {
+        if (testUserAuth == null) {
+            testUserEmail = generateTestUserEmail();
+            String password = testUserPassword;
+
+            testUserAuth = registerTestUser(testUserEmail, password);
+            testUserAuthHeader = "Bearer " + testUserAuth.getAccessToken();
+
+            assertNotNull(testUserAuth);
+            assertNotNull(testUserAuth.getAccessToken());
+            log.info("Created test user: {}", testUserEmail);
+        }
     }
 
     //----------------------------------------------------------------------
