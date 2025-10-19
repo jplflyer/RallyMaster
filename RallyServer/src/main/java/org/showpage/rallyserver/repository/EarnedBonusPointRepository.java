@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface EarnedBonusPointRepository extends JpaRepository<EarnedBonusPoint, Integer> {
     List<EarnedBonusPoint> findByRallyParticipantId(Integer rallyParticipantId);
+
+    List<EarnedBonusPoint> findByRallyParticipantIdAndBonusPointId(Integer rallyParticipantId, Integer bonusPointId);
 }

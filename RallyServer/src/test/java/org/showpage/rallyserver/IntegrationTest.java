@@ -28,6 +28,7 @@ public abstract class IntegrationTest {
 
     // Helper classes that just make the code a little more compact.
     public static class RR_AuthResponse extends RestResponse<AuthResponse> {}
+    public static class RR_UiMember extends RestResponse<UiMember> {}
     public static class RR_PageUiRally extends RestResponse<PageResponse<UiRally>> {}
     public static class RR_UiRally extends RestResponse<UiRally> {}
     public static class RR_UiRallyParticipant extends RestResponse<UiRallyParticipant> {}
@@ -45,13 +46,14 @@ public abstract class IntegrationTest {
     // Type references for the above.
     public static final TypeReference<RR_AuthResponse> tr_AuthResponse = new TypeReference<>() {};
     public static final TypeReference<RR_PageUiRally> tr_PageUiRally = new TypeReference<>() {};
-    public static final TypeReference<RR_UiRally> tr_UiRally = new TypeReference<>() {};
-    public static final TypeReference<RR_UiRallyParticipant> tr_UiRallyParticipant = new TypeReference<>() {};
     public static final TypeReference<RR_UiBonusPoint> tr_UiBonusPoint = new TypeReference<>() {};
     public static final TypeReference<RR_UiCombination> tr_UiCombination = new TypeReference<>() {};
     public static final TypeReference<RR_UiCombinationPoint> tr_UiCombinationPoint = new TypeReference<>() {};
-    public static final TypeReference<RR_UiEarnedBonusPoint> tr_UiEarnedBonusPoint = new TypeReference<>() {};
     public static final TypeReference<RR_UiEarnedCombination> tr_UiEarnedCombination = new TypeReference<>() {};
+    public static final TypeReference<RR_UiMember> tr_UiMember = new TypeReference<>() {};
+    public static final TypeReference<RR_UiRally> tr_UiRally = new TypeReference<>() {};
+    public static final TypeReference<RR_UiRallyParticipant> tr_UiRallyParticipant = new TypeReference<>() {};
+    public static final TypeReference<RR_UiEarnedBonusPoint> tr_UiEarnedBonusPoint = new TypeReference<>() {};
     public static final TypeReference<RR_ListUiBonusPoint> tr_ListUiBonusPoint = new TypeReference<>() {};
     public static final TypeReference<RR_ListUiCombination> tr_ListUiCombination = new TypeReference<>() {};
     public static final TypeReference<RR_ListUiEarnedBonusPoint> tr_ListUiEarnedBonusPoint = new TypeReference<>() {};
@@ -75,16 +77,11 @@ public abstract class IntegrationTest {
     protected static RESTCaller restCaller;
     protected static Faker faker;
 
-    // Additional test users created by tests
-    protected static String aide1Email;
-    protected static String aide1AuthHeader;
-    protected static String rider2Email;
-    protected static String rider2AuthHeader;
-    protected static String organizer2Email;
-    protected static String organizer2AuthHeader;
+    protected static UiMember organizer;
+    protected static UiMember rider;
 
     /**
-     * Step B: Setup method called before each test.
+     * Setup method called before each test.
      */
     @BeforeEach
     public void setup() throws Exception {
@@ -92,7 +89,7 @@ public abstract class IntegrationTest {
     }
 
     /**
-     * Step B: Initialize method - loads properties and logs in users.
+     * Initialize method - loads properties and logs in users.
      * Only runs once per test suite.
      */
     protected void initialize() throws Exception {
@@ -110,6 +107,15 @@ public abstract class IntegrationTest {
         // Login as both users
         organizerAuthHeader = loginAs(organizerEmail, organizerPassword);
         riderAuthHeader = loginAs(riderEmail, riderPassword);
+
+        RR_UiMember rrRider = get_ForRider("/api/member/info", tr_UiMember);
+        RR_UiMember rrOrganizer = get_ForRM("/api/member/info", tr_UiMember);
+
+        check(rrRider);
+        check(rrOrganizer);
+
+        rider = rrRider.getData();
+        organizer = rrOrganizer.getData();
 
         // Clean up old test data
         cleanupTestData();
@@ -264,15 +270,19 @@ public abstract class IntegrationTest {
     }
 
     /**
-     * Step C: Check that a RestResponse is valid (not null and success=true).
+     * Check that a RestResponse is valid (not null and success=true).
      */
     protected void check(RestResponse<?> response) {
-        if (response == null) {
-            fail("null return");
-        }
-        if (!response.isSuccess()) {
-            fail(response.getMessage());
-        }
+        assertNotNull(response, "Null response");
+        assertTrue(response.isSuccess(), response.getMessage());
+    }
+
+    /**
+     * Some tests should intentionally fail.
+     */
+    protected void checkFailed(RestResponse<?> response) {
+        assertNotNull(response, "Null response");
+        assertFalse(response.isSuccess(), response.getMessage());
     }
 
     // Step E: REST methods for Rally Master (Organizer)

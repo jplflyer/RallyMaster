@@ -3,7 +3,8 @@ package org.showpage.rallyserver.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.showpage.rallyserver.RestResponse;
-import org.showpage.rallyserver.entity.Member;
+import org.showpage.rallyserver.service.DtoMapper;
+import org.showpage.rallyserver.ui.UiMember;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +21,7 @@ public class MemberController {
      * Return my information.
      */
     @GetMapping("/member/info")
-    ResponseEntity<RestResponse<Member>> myInfo() {
-        return serviceCaller.call((member) -> member);
+    ResponseEntity<RestResponse<UiMember>> myInfo() {
+        return serviceCaller.call((member) -> DtoMapper.toUiMember(member));
     }
 }

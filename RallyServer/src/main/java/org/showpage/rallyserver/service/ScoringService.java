@@ -30,12 +30,12 @@ public class ScoringService {
      * Update starting odometer for a rider. Can be done by scorer (ORGANIZER/AIDE) or by the rider themselves.
      */
     public RallyParticipant updateStartingOdometer(Member currentMember, Integer rallyId, UpdateOdometerRequest request)
-            throws NotFoundException, ValidationException {
-        RallyParticipant participant = rallyParticipantRepository.findByRallyIdAndMemberId(rallyId, request.getRiderId())
-                .orElseThrow(() -> new NotFoundException("Rider not registered for this rally"));
+            throws NotFoundException, ValidationException
+    {
+        validateRequest(request);
+        checkIsScorerForRally(currentMember, rallyId);
 
-        // Permission check: must be scorer (ORGANIZER/AIDE) or the rider themselves
-        checkScoringPermission(currentMember, participant);
+        RallyParticipant participant = rallyParticipantRepository.getRiderForRally(rallyId, request.getRiderId());
 
         participant.setOdometerIn(request.getOdometer());
         return rallyParticipantRepository.save(participant);
@@ -45,12 +45,12 @@ public class ScoringService {
      * Update ending odometer for a rider. Can be done by scorer (ORGANIZER/AIDE) or by the rider themselves.
      */
     public RallyParticipant updateEndingOdometer(Member currentMember, Integer rallyId, UpdateOdometerRequest request)
-            throws NotFoundException, ValidationException {
-        RallyParticipant participant = rallyParticipantRepository.findByRallyIdAndMemberId(rallyId, request.getRiderId())
-                .orElseThrow(() -> new NotFoundException("Rider not registered for this rally"));
+            throws NotFoundException, ValidationException
+    {
+        validateRequest(request);
+        checkIsScorerForRally(currentMember, rallyId);
 
-        // Permission check: must be scorer (ORGANIZER/AIDE) or the rider themselves
-        checkScoringPermission(currentMember, participant);
+        RallyParticipant participant = rallyParticipantRepository.getRiderForRally(rallyId, request.getRiderId());
 
         participant.setOdometerOut(request.getOdometer());
         return rallyParticipantRepository.save(participant);
@@ -60,27 +60,35 @@ public class ScoringService {
      * Create an earned bonus point entry. Can be done by scorer (ORGANIZER/AIDE) or by the rider themselves.
      */
     public EarnedBonusPoint createEarnedBonusPoint(Member currentMember, Integer rallyId, CreateEarnedBonusPointRequest request)
-            throws NotFoundException, ValidationException {
-        RallyParticipant participant = rallyParticipantRepository.findByRallyIdAndMemberId(rallyId, request.getRiderId())
-                .orElseThrow(() -> new NotFoundException("Rider not registered for this rally"));
+            throws NotFoundException, ValidationException
+    {
+        int riderId = request.getRiderId() != null ? request.getRiderId() : currentMember.getId();
+        RallyParticipant participant = rallyParticipantRepository.getRiderForRally(rallyId, riderId);
 
         // Permission check: must be scorer (ORGANIZER/AIDE) or the rider themselves
         checkScoringPermission(currentMember, participant);
 
-        BonusPoint bonusPoint = bonusPointRepository.findById(request.getBonusPointId())
-                .orElseThrow(() -> new NotFoundException("Bonus point not found"));
+        BonusPoint bonusPoint = bonusPointRepository.findById_WithThrow(request.getBonusPointId());
 
         // Verify bonus point belongs to this rally
         if (!bonusPoint.getRallyId().equals(rallyId)) {
             throw new ValidationException("Bonus point does not belong to this rally");
         }
 
-        EarnedBonusPoint earned = new EarnedBonusPoint();
-        earned.setRallyParticipant(participant);
-        earned.setBonusPoint(bonusPoint);
-        earned.setOdometer(request.getOdometer());
-        earned.setEarnedAt(request.getEarnedAt());
-        earned.setConfirmed(request.getConfirmed() != null ? request.getConfirmed() : false);
+        // Verify they don't already have one.
+        if (!earnedBonusPointRepository.findByRallyParticipantIdAndBonusPointId(rallyId, bonusPoint.getId()).isEmpty()) {
+            throw new ValidationException("This earned bonus point already exists");
+        }
+
+        EarnedBonusPoint earned = EarnedBonusPoint
+                .builder()
+                .rallyParticipant(participant)
+                .bonusPoint(bonusPoint)
+                .bonusPointId(bonusPoint.getId())
+                .odometer(request.getOdometer())
+                .earnedAt(request.getEarnedAt())
+                .confirmed(request.getConfirmed() != null ? request.getConfirmed() : false)
+                .build();
 
         return earnedBonusPointRepository.save(earned);
     }
@@ -106,8 +114,10 @@ public class ScoringService {
      * Create an earned combination entry. Can be done by scorer (ORGANIZER/AIDE) or by the rider themselves.
      */
     public EarnedCombination createEarnedCombination(Member currentMember, Integer rallyId, CreateEarnedCombinationRequest request)
-            throws NotFoundException, ValidationException {
-        RallyParticipant participant = rallyParticipantRepository.findByRallyIdAndMemberId(rallyId, request.getRiderId())
+            throws NotFoundException, ValidationException
+    {
+        int riderId = request.getRiderId() != null ? request.getRiderId() : currentMember.getId();
+        RallyParticipant participant = rallyParticipantRepository.findByRallyIdAndMemberId(rallyId, riderId)
                 .orElseThrow(() -> new NotFoundException("Rider not registered for this rally"));
 
         // Permission check: must be scorer (ORGANIZER/AIDE) or the rider themselves
@@ -121,10 +131,16 @@ public class ScoringService {
             throw new ValidationException("Combination does not belong to this rally");
         }
 
-        EarnedCombination earned = new EarnedCombination();
-        earned.setRallyParticipant(participant);
-        earned.setCombination(combination);
-        earned.setConfirmed(request.getConfirmed() != null ? request.getConfirmed() : false);
+        // We also set IDs. The repo ignores them but also doesn't populate them for us.
+        // We want them when we return to the user, and it's harmless.
+        EarnedCombination earned = EarnedCombination
+                .builder()
+                .rallyParticipant(participant)
+                .rallyParticipantId(participant.getId())
+                .combination(combination)
+                .combinationId(combination.getId())
+                .confirmed(request.getConfirmed() != null ? request.getConfirmed() : false)
+                .build();
 
         return earnedCombinationRepository.save(earned);
     }
@@ -177,6 +193,22 @@ public class ScoringService {
     //======================================================================
     // Permission Helpers
     //======================================================================
+
+    /**
+     * Make sure this is a valid request.
+     */
+    private void validateRequest(UpdateOdometerRequest request) throws ValidationException {
+        if (request == null) {
+            throw new ValidationException("Request is null");
+        }
+        if (request.getRiderId() == null || request.getRiderId() == 0) {
+            throw new ValidationException("RIDER ID is required");
+        }
+        if (request.getOdometer() == null || request.getOdometer() == 0) {
+            throw new ValidationException("ODOMETER is required");
+        }
+    }
+
 
     /**
      * Check if the current member can perform scoring operations for the given participant.
