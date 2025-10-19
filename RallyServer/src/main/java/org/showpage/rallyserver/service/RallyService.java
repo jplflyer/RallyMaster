@@ -213,6 +213,7 @@ public class RallyService {
         RallyParticipant participant = RallyParticipant.builder()
                 .rally(rally)
                 .member(member)
+                .memberId(member.getId())
                 .participantType(RallyParticipantType.RIDER)
                 .build();
 
@@ -220,23 +221,16 @@ public class RallyService {
     }
 
     /**
-     * Promote a rider to ORGANIZER or AIDE. Only existing organizers can do this.
+     * Alter a participant's participant type. Only organizers can do this.
      */
     public RallyParticipant promoteParticipant(Member member, Integer rallyId, Integer targetMemberId, RallyParticipantType newType)
-            throws NotFoundException, ValidationException {
-        if (newType == RallyParticipantType.RIDER) {
-            throw new ValidationException("Cannot promote to RIDER type. Use this endpoint only for ORGANIZER or AIDE.");
-        }
-
-        Rally rally = rallyRepository.findById(rallyId)
-                .orElseThrow(() -> new NotFoundException("Rally not found"));
-
-        // Check that the current member is an organizer for this rally
+            throws NotFoundException, ValidationException
+    {
+        Rally rally = rallyRepository.findById_WithThrow(rallyId);
         checkAccess(member, rally, true);
 
         // Find the target participant
-        RallyParticipant targetParticipant = rallyParticipantRepository.findByRallyIdAndMemberId(rallyId, targetMemberId)
-                .orElseThrow(() -> new NotFoundException("Target member is not registered for this rally"));
+        RallyParticipant targetParticipant = rallyParticipantRepository.getRiderForRally(rallyId, targetMemberId);
 
         targetParticipant.setParticipantType(newType);
         return rallyParticipantRepository.save(targetParticipant);
@@ -593,7 +587,7 @@ public class RallyService {
      * registered.
      */
     private void checkAccess(Member member, Rally rally, boolean mustBeMaster) throws NotFoundException {
-        if (rally.getIsPublic()) {
+        if (rally.getIsPublic() && !mustBeMaster) {
             return;
         }
 

@@ -366,17 +366,13 @@ public class ScorerOperationsIT extends IntegrationTest {
         request.setTargetMemberId(rider1MemberId);
         request.setNewType(RallyParticipantType.AIDE);
 
-        try {
-            RR_UiRallyParticipant response = put_ForRider(
-                "/api/rally/" + rally.getId() + "/promote",
-                request,
-                tr_UiRallyParticipant
-            );
-            if (response.isSuccess()) {
-                fail("Rider should not be able to promote participants");
-            }
-        } catch (Exception e) {
-            log.info("Correctly prevented rider from promoting: {}", e.getMessage());
+        RR_UiRallyParticipant response = put_ForRider(
+            "/api/rally/" + rally.getId() + "/promote",
+            request,
+            tr_UiRallyParticipant
+        );
+        if (response.isSuccess()) {
+            fail("Rider should not be able to promote participants");
         }
     }
 
