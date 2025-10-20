@@ -69,11 +69,17 @@ fun RallyMasterApp() {
 
         // Ensure splash screen shows for at least 3 seconds
         val elapsed = System.currentTimeMillis() - startTime
-        val remainingTime = 3000 - elapsed
+        val minimumSplashTime = 3000L
+        val remainingTime = minimumSplashTime - elapsed
+
+        logger.info("Splash screen: elapsed={}ms, remaining={}ms", elapsed, remainingTime)
+
         if (remainingTime > 0) {
+            logger.info("Delaying for {}ms to meet minimum splash time", remainingTime)
             delay(remainingTime)
         }
 
+        logger.info("Hiding splash screen")
         appState.hideSplash()
     }
 

@@ -15,6 +15,10 @@ class PreferencesService {
     companion object {
         private const val KEY_SERVER_URL = "serverUrl"
         private const val KEY_EMAIL = "email"
+        private const val KEY_WINDOW_X = "windowX"
+        private const val KEY_WINDOW_Y = "windowY"
+        private const val KEY_WINDOW_WIDTH = "windowWidth"
+        private const val KEY_WINDOW_HEIGHT = "windowHeight"
         private const val DEFAULT_SERVER_URL = "http://localhost:8080"
     }
 
@@ -68,5 +72,57 @@ class PreferencesService {
      */
     fun hasStoredCredentials(): Boolean {
         return getEmail() != null
+    }
+
+    //----------------------------------------------------------------------
+    // Window Position and Size
+    //----------------------------------------------------------------------
+
+    /**
+     * Get stored window X position.
+     * Returns null if not stored.
+     */
+    fun getWindowX(): Int? {
+        val value = prefs.getInt(KEY_WINDOW_X, -1)
+        return if (value >= 0) value else null
+    }
+
+    /**
+     * Get stored window Y position.
+     * Returns null if not stored.
+     */
+    fun getWindowY(): Int? {
+        val value = prefs.getInt(KEY_WINDOW_Y, -1)
+        return if (value >= 0) value else null
+    }
+
+    /**
+     * Get stored window width.
+     * Returns null if not stored.
+     */
+    fun getWindowWidth(): Int? {
+        val value = prefs.getInt(KEY_WINDOW_WIDTH, -1)
+        return if (value > 0) value else null
+    }
+
+    /**
+     * Get stored window height.
+     * Returns null if not stored.
+     */
+    fun getWindowHeight(): Int? {
+        val value = prefs.getInt(KEY_WINDOW_HEIGHT, -1)
+        return if (value > 0) value else null
+    }
+
+    /**
+     * Save window position and size.
+     */
+    fun saveWindowBounds(x: Int, y: Int, width: Int, height: Int) {
+        prefs.putInt(KEY_WINDOW_X, x)
+        prefs.putInt(KEY_WINDOW_Y, y)
+        prefs.putInt(KEY_WINDOW_WIDTH, width)
+        prefs.putInt(KEY_WINDOW_HEIGHT, height)
+        prefs.flush()
+        logger.debug("Saved window bounds: x={}, y={}, width={}, height={}", x, y, width, height)
     }
 }

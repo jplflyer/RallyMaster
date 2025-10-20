@@ -5,6 +5,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 
@@ -21,6 +22,17 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isRegisterMode by remember { mutableStateOf(false) }
+
+    // Helper function to handle login/register action
+    val performAction = {
+        if (email.isNotBlank() && password.isNotBlank() && !isLoading) {
+            if (isRegisterMode) {
+                onRegister(email, password)
+            } else {
+                onLogin(email, password)
+            }
+        }
+    }
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -55,7 +67,17 @@ fun LoginScreen(
                     onValueChange = { email = it },
                     label = { Text("Email") },
                     enabled = !isLoading,
-                    modifier = Modifier.fillMaxWidth()
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onPreviewKeyEvent { event ->
+                            if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                performAction()
+                                true
+                            } else {
+                                false
+                            }
+                        }
                 )
 
                 OutlinedTextField(
@@ -64,17 +86,21 @@ fun LoginScreen(
                     label = { Text("Password") },
                     visualTransformation = PasswordVisualTransformation(),
                     enabled = !isLoading,
-                    modifier = Modifier.fillMaxWidth()
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onPreviewKeyEvent { event ->
+                            if (event.type == KeyEventType.KeyDown && event.key == Key.Enter) {
+                                performAction()
+                                true
+                            } else {
+                                false
+                            }
+                        }
                 )
 
                 Button(
-                    onClick = {
-                        if (isRegisterMode) {
-                            onRegister(email, password)
-                        } else {
-                            onLogin(email, password)
-                        }
-                    },
+                    onClick = performAction,
                     enabled = !isLoading && email.isNotBlank() && password.isNotBlank(),
                     modifier = Modifier.fillMaxWidth()
                 ) {
