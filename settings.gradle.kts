@@ -1,5 +1,6 @@
 rootProject.name = "RallyMaster"
 include(
     "RallyCommon",
-    "RallyServer"
+    "RallyServer",
+    "RallyDesktop"
     )

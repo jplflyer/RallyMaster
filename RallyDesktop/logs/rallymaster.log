@@ -1,0 +1,11 @@
+2025-10-19 20:34:52 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
+2025-10-19 20:34:52 [AWT-EventQueue-0] INFO  RallyMasterApp - No stored credentials found
+2025-10-19 20:35:08 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
+2025-10-19 20:35:08 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
+2025-10-19 20:35:08 [AWT-EventQueue-0] INFO  o.s.r.service.MacOSKeychainService - Successfully stored password in Keychain for account: jpl@showpage.org
+2025-10-19 20:35:34 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
+2025-10-19 20:35:34 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
+2025-10-19 20:35:34 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
+2025-10-19 20:35:34 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
+2025-10-19 20:35:34 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
+2025-10-19 20:35:34 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful

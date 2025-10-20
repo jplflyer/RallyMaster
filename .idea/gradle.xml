@@ -10,6 +10,7 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/RallyCommon" />
+            <option value="$PROJECT_DIR$/RallyDesktop" />
             <option value="$PROJECT_DIR$/RallyServer" />
           </set>
         </option>
