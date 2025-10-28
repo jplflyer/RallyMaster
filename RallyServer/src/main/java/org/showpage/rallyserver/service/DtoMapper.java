@@ -167,6 +167,10 @@ public class DtoMapper {
     }
 
     public static UiMember toUiMember(Member member) {
+        return toUiMember(member, null);
+    }
+
+    public static UiMember toUiMember(Member member, List<RallyParticipant> rallyParticipations) {
         if (member == null) {
             return null;
         }
@@ -181,12 +185,32 @@ public class DtoMapper {
             }
         }
 
+        List<UiRallyParticipation> uiParticipations = null;
+        if (rallyParticipations != null && !rallyParticipations.isEmpty()) {
+            uiParticipations = rallyParticipations.stream()
+                    .map(DtoMapper::toUiRallyParticipation)
+                    .collect(Collectors.toList());
+        }
+
         return UiMember
                 .builder()
                 .id(member.getId())
                 .email(member.getEmail())
                 .spotwallaUsername(member.getSpotwallaUsername())
                 .motorcycles(uiMotorcycles)
+                .rallyParticipations(uiParticipations)
+                .build();
+    }
+
+    public static UiRallyParticipation toUiRallyParticipation(RallyParticipant participation) {
+        if (participation == null) {
+            return null;
+        }
+
+        return UiRallyParticipation
+                .builder()
+                .rally(toUiRally(participation.getMember(), participation.getRally()))
+                .participantType(participation.getParticipantType())
                 .build();
     }
 

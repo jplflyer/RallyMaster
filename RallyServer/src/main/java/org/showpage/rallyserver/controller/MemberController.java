@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.showpage.rallyserver.RestResponse;
 import org.showpage.rallyserver.entity.Member;
 import org.showpage.rallyserver.entity.Motorcycle;
+import org.showpage.rallyserver.entity.RallyParticipant;
 import org.showpage.rallyserver.service.DtoMapper;
 import org.showpage.rallyserver.service.MemberService;
 import org.showpage.rallyserver.ui.*;
@@ -23,11 +24,15 @@ public class MemberController {
     private final MemberService memberService;
 
     /**
-     * Return my information.
+     * Return my information including active rally participations.
      */
     @GetMapping("/member/info")
     ResponseEntity<RestResponse<UiMember>> myInfo() {
-        return serviceCaller.call((member) -> DtoMapper.toUiMember(member));
+        return serviceCaller.call((member) -> {
+            // Get active rally participations (future, in-progress, and recently completed)
+            List<RallyParticipant> participations = memberService.getActiveRallyParticipations(member);
+            return DtoMapper.toUiMember(member, participations);
+        });
     }
 
     //----------------------------------------------------------------------

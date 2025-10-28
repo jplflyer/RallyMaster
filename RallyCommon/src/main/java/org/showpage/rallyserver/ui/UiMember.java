@@ -16,4 +16,5 @@ public class UiMember {
     private String email;
     private String spotwallaUsername;
     private List<UiMotorcycle> motorcycles;
+    private List<UiRallyParticipation> rallyParticipations;
 }

@@ -4,11 +4,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.showpage.rallyserver.entity.Member;
 import org.showpage.rallyserver.entity.Motorcycle;
+import org.showpage.rallyserver.entity.RallyParticipant;
 import org.showpage.rallyserver.exception.NotFoundException;
 import org.showpage.rallyserver.exception.UnauthorizedException;
 import org.showpage.rallyserver.exception.ValidationException;
 import org.showpage.rallyserver.repository.MemberRepository;
 import org.showpage.rallyserver.repository.MotorcycleRepository;
+import org.showpage.rallyserver.repository.RallyParticipantRepository;
 import org.showpage.rallyserver.ui.ChangePasswordRequest;
 import org.showpage.rallyserver.ui.CreateMotorcycleRequest;
 import org.showpage.rallyserver.ui.UpdateMemberRequest;
@@ -21,6 +23,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +35,7 @@ public class MemberService implements UserDetailsService {
     private final MemberRepository memberRepository;
     private final MotorcycleRepository motorcycleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RallyParticipantRepository rallyParticipantRepository;
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -253,5 +257,23 @@ public class MemberService implements UserDetailsService {
                 currentMember.getEmail(), motorcycleId);
 
         motorcycleRepository.delete(motorcycle);
+    }
+
+    //----------------------------------------------------------------------
+    // Rally Participation Operations
+    //----------------------------------------------------------------------
+
+    /**
+     * Get all active rally participations for a member.
+     * Includes future rallies, in-progress rallies, and rallies completed within the last week.
+     */
+    public List<RallyParticipant> getActiveRallyParticipations(Member member) {
+        // Calculate cutoff date (1 week ago)
+        LocalDate cutoffDate = LocalDate.now().minusWeeks(1);
+
+        return rallyParticipantRepository.findActiveParticipationsByMemberId(
+                member.getId(),
+                cutoffDate
+        );
     }
 }
