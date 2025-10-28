@@ -1,5 +1,6 @@
 package org.showpage.rallyserver.ui;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,7 +15,11 @@ import org.showpage.rallyserver.entity.RallyParticipantType;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Schema(description = "Member's participation in a rally with their role")
 public class UiRallyParticipation {
+    @Schema(description = "Rally information")
     private UiRally rally;
+
+    @Schema(description = "Participant type/role in the rally (RIDER, ORGANIZER, STAFF)", example = "RIDER")
     private RallyParticipantType participantType;
 }

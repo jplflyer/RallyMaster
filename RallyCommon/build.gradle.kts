@@ -30,6 +30,9 @@ dependencies {
     // SLF4J for logging
     implementation("org.slf4j:slf4j-api")
 
+    // Swagger/OpenAPI annotations
+    implementation("io.swagger.core.v3:swagger-annotations:2.2.20")
+
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

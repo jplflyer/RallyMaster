@@ -1,5 +1,12 @@
 package org.showpage.rallyserver.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.showpage.rallyserver.RestResponse;
 import org.showpage.rallyserver.config.JwtUtil;
@@ -25,19 +32,39 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "User authentication and registration endpoints")
 public class LoginController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final MemberService memberService;
     private final ServiceCaller serviceCaller;
 
+    @Operation(
+        summary = "Health check endpoint",
+        description = "Simple ping endpoint to verify the API is running",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "API is running")
+        }
+    )
     @GetMapping("/ping")
     public ResponseEntity<RestResponse<Boolean>> ping() {
         return serviceCaller.call(() -> Boolean.TRUE );
     }
 
+    @Operation(
+        summary = "Login with email and password",
+        description = "Authenticate using Basic Auth (email:password in Authorization header). Returns access token and refresh token.",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Successfully authenticated"),
+            @ApiResponse(responseCode = "401", description = "Invalid credentials")
+        },
+        security = {}
+    )
     @PostMapping("/login")
-    public ResponseEntity<RestResponse<AuthResponse>> login(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<RestResponse<AuthResponse>> login(
+        @Parameter(description = "Basic Auth header with email:password", example = "Basic dXNlckBleGFtcGxlLmNvbTpwYXNzd29yZA==", required = true)
+        @RequestHeader("Authorization") String authHeader
+    ) {
         return serviceCaller.call( () -> {
             // Extract credentials from Basic Auth header
             String[] credentials = extractCredentials(authHeader);
@@ -64,8 +91,20 @@ public class LoginController {
         });
     }
 
+    @Operation(
+        summary = "Refresh access token",
+        description = "Exchange a refresh token for new access and refresh tokens. Refresh tokens are single-use.",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Tokens refreshed successfully"),
+            @ApiResponse(responseCode = "401", description = "Invalid or expired refresh token")
+        },
+        security = {}
+    )
     @PostMapping("/token")
-    public ResponseEntity<RestResponse<AuthResponse>> refreshToken(@RequestBody TokenRequest tokenRequest) {
+    public ResponseEntity<RestResponse<AuthResponse>> refreshToken(
+        @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Refresh token request", required = true)
+        @RequestBody TokenRequest tokenRequest
+    ) {
         return serviceCaller.call(() -> {
             String refreshToken = tokenRequest.getRefreshToken();
 
@@ -89,9 +128,20 @@ public class LoginController {
         });
     }
 
+    @Operation(
+        summary = "Register new member account",
+        description = "Create a new member account with email and password",
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Account created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input or email already exists")
+        },
+        security = {}
+    )
     @PostMapping("/register")
     public ResponseEntity<RestResponse<UiMember>> register(
+            @Parameter(description = "Email address", example = "rider@example.com", required = true)
             @RequestParam String email,
+            @Parameter(description = "Password (will be encrypted)", example = "securePassword123", required = true)
             @RequestParam String password
     ) {
         return serviceCaller.call(() -> DtoMapper.toUiMember(memberService.createMember(email.trim().toLowerCase(), password.trim())));
