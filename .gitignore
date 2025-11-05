@@ -43,3 +43,7 @@ bin/
 
 ### Integration Test Properties ###
 .integration.properties
+
+CreateRally.md
+Rides.md
+Desktop.md

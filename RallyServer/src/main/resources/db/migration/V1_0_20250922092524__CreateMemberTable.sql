@@ -113,3 +113,66 @@ CREATE TABLE IF NOT EXISTS earned_combination
     combination_id       INTEGER REFERENCES combination (id) ON DELETE CASCADE,
     confirmed            BOOLEAN NOT NULL
 );
+
+
+CREATE TABLE IF NOT EXISTS ride
+(
+    id                   SERIAL PRIMARY KEY,
+    rally_id             INTEGER REFERENCES rally (id) ON DELETE SET NULL,
+    member_id            INTEGER REFERENCES member (id) ON DELETE CASCADE,
+    original_id          INTEGER REFERENCES ride (id) ON DELETE SET NULL,
+    name                 TEXT,
+    description          TEXT,
+    expected_start       timestamptz,
+    expected_end         timestamptz,
+    stop_duration        INTEGER,
+    spotwalla_link       TEXT,
+    actual_start         timestamptz,
+    actual_end           timestamptz
+);
+
+CREATE TABLE IF NOT EXISTS route
+(
+    id                   SERIAL PRIMARY KEY,
+    ride_id              INTEGER REFERENCES ride (id) ON DELETE CASCADE,
+    name                 TEXT,
+    is_primary           BOOLEAN
+);
+
+CREATE TABLE IF NOT EXISTS ride_leg
+(
+    id                   SERIAL PRIMARY KEY,
+    route_id             INTEGER REFERENCES route (id) ON DELETE CASCADE,
+    is_optional          BOOLEAN,
+    seq                  INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS waypoint
+(
+    id                   SERIAL PRIMARY KEY,
+    ride_leg_id          INTEGER REFERENCES ride_leg (id) ON DELETE CASCADE,
+    bonus_point_id       INTEGER REFERENCES ride_leg (id) ON DELETE CASCADE,
+    seq                  INTEGER NOT NULL,
+    latitude             DOUBLE PRECISION,
+    longitude            DOUBLE PRECISION,
+    address              TEXT,
+    expected_arrival     timestamptz,
+    expected_departure   timestamptz,
+    stop_duration        INTEGER,
+    actual_arrival       timestamptz,
+    actual_departure     timestamptz
+
+);
+
+--
+-- Create admin and test users
+--
+INSERT INTO member (id, email, real_name, password, spotwalla_username, is_admin, refresh_token)
+VALUES (1, 'admin', 'Joe Larson', '$2a$10$716npnoapsrVPkgBQ1vOj.6WqIUd9pGSEc/5wJFQYeoXxCUXB9obK', null, true, null);
+
+INSERT INTO member (id, email, real_name, password, spotwalla_username, is_admin, refresh_token)
+VALUES (2, 'jpl@showpage.org', 'Joe', '$2a$10$fN6lMQuS1RYEK/zG0zRayOrbNPh2GQ7jIpbhfwIJkxItMqwhxluDq', null, false, null);
+
+INSERT INTO member (id, email, real_name, password, spotwalla_username, is_admin, refresh_token)
+VALUES (3, 'joe@showpage.org', 'Joseph', '$2a$10$bq2pUib7Av88zYc1cZ2deOUfHYrACfhUHMIo87ibjgqjv9Oqr1MtC', null, false, null);
+

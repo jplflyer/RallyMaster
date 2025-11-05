@@ -43,6 +43,14 @@ public abstract class IntegrationTest {
     public static class RR_ListUiCombination extends RestResponse<List<UiCombination>> {}
     public static class RR_ListUiEarnedBonusPoint extends RestResponse<List<UiEarnedBonusPoint>> {}
     public static class RR_ListUiEarnedCombination extends RestResponse<List<UiEarnedCombination>> {}
+    public static class RR_UiRide extends RestResponse<UiRide> {}
+    public static class RR_UiRoute extends RestResponse<UiRoute> {}
+    public static class RR_UiRideLeg extends RestResponse<UiRideLeg> {}
+    public static class RR_UiWaypoint extends RestResponse<UiWaypoint> {}
+    public static class RR_ListUiRide extends RestResponse<List<UiRide>> {}
+    public static class RR_ListUiRoute extends RestResponse<List<UiRoute>> {}
+    public static class RR_ListUiRideLeg extends RestResponse<List<UiRideLeg>> {}
+    public static class RR_ListUiWaypoint extends RestResponse<List<UiWaypoint>> {}
     public static class RR_Void extends RestResponse<Void> {}
 
     // Type references for the above.
@@ -62,6 +70,14 @@ public abstract class IntegrationTest {
     public static final TypeReference<RR_ListUiCombination> tr_ListUiCombination = new TypeReference<>() {};
     public static final TypeReference<RR_ListUiEarnedBonusPoint> tr_ListUiEarnedBonusPoint = new TypeReference<>() {};
     public static final TypeReference<RR_ListUiEarnedCombination> tr_ListUiEarnedCombination = new TypeReference<>() {};
+    public static final TypeReference<RR_UiRide> tr_UiRide = new TypeReference<>() {};
+    public static final TypeReference<RR_UiRoute> tr_UiRoute = new TypeReference<>() {};
+    public static final TypeReference<RR_UiRideLeg> tr_UiRideLeg = new TypeReference<>() {};
+    public static final TypeReference<RR_UiWaypoint> tr_UiWaypoint = new TypeReference<>() {};
+    public static final TypeReference<RR_ListUiRide> tr_ListUiRide = new TypeReference<>() {};
+    public static final TypeReference<RR_ListUiRoute> tr_ListUiRoute = new TypeReference<>() {};
+    public static final TypeReference<RR_ListUiRideLeg> tr_ListUiRideLeg = new TypeReference<>() {};
+    public static final TypeReference<RR_ListUiWaypoint> tr_ListUiWaypoint = new TypeReference<>() {};
     public static final TypeReference<RR_Void> tr_Void = new TypeReference<>() {};
 
     //----------------------------------------------------------------------
@@ -177,6 +193,49 @@ public abstract class IntegrationTest {
                         log.warn("Failed to delete user {}: {}", testUser.getId(), e.getMessage());
                     }
                 }
+            }
+
+            // Clean up test rides (rides are private, so each user cleans their own)
+            try {
+                RR_ListUiRide organizerRides = get_ForRM("/api/rides", tr_ListUiRide);
+                if (organizerRides != null && organizerRides.isSuccess() && organizerRides.getData() != null) {
+                    List<UiRide> rides = organizerRides.getData();
+                    log.info("Found {} rides for organizer to clean up", rides.size());
+
+                    for (UiRide ride : rides) {
+                        if (ride.getName() != null && ride.getName().startsWith("Organizer's")) {
+                            try {
+                                log.info("Deleting test ride: {} (ID: {})", ride.getName(), ride.getId());
+                                delete_ForRM("/api/ride/" + ride.getId(), tr_Void);
+                            } catch (Exception e) {
+                                log.warn("Failed to delete ride {}: {}", ride.getId(), e.getMessage());
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Error cleaning up organizer rides: {}", e.getMessage());
+            }
+
+            try {
+                RR_ListUiRide riderRides = get_ForRider("/api/rides", tr_ListUiRide);
+                if (riderRides != null && riderRides.isSuccess() && riderRides.getData() != null) {
+                    List<UiRide> rides = riderRides.getData();
+                    log.info("Found {} rides for rider to clean up", rides.size());
+
+                    for (UiRide ride : rides) {
+                        if (ride.getName() != null && ride.getName().startsWith("Rider's")) {
+                            try {
+                                log.info("Deleting test ride: {} (ID: {})", ride.getName(), ride.getId());
+                                delete_ForRider("/api/ride/" + ride.getId(), tr_Void);
+                            } catch (Exception e) {
+                                log.warn("Failed to delete ride {}: {}", ride.getId(), e.getMessage());
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Error cleaning up rider rides: {}", e.getMessage());
             }
 
             log.info("Test data cleanup complete");

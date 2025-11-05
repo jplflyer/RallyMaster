@@ -230,4 +230,94 @@ public class DtoMapper {
                 .active(motorcycle.getActive())
                 .build();
     }
+
+    public static UiRide toUiRide(Ride ride) {
+        if (ride == null) {
+            return null;
+        }
+
+        List<UiRoute> routes = null;
+        if (ride.getRoutes() != null) {
+            routes = ride.getRoutes().stream()
+                    .map(DtoMapper::toUiRoute)
+                    .collect(Collectors.toList());
+        }
+
+        return UiRide
+                .builder()
+                .id(ride.getId())
+                .memberId(ride.getMemberId())
+                .rallyId(ride.getRallyId())
+                .name(ride.getName())
+                .description(ride.getDescription())
+                .startDate(ride.getStartDate())
+                .endDate(ride.getEndDate())
+                .routes(routes)
+                .build();
+    }
+
+    public static UiRoute toUiRoute(Route route) {
+        if (route == null) {
+            return null;
+        }
+
+        List<UiRideLeg> rideLegs = null;
+        if (route.getRideLegs() != null) {
+            rideLegs = route.getRideLegs().stream()
+                    .map(DtoMapper::toUiRideLeg)
+                    .collect(Collectors.toList());
+        }
+
+        return UiRoute
+                .builder()
+                .id(route.getId())
+                .rideId(route.getRideId())
+                .name(route.getName())
+                .description(route.getDescription())
+                .isPrimary(route.getIsPrimary())
+                .rideLegs(rideLegs)
+                .build();
+    }
+
+    public static UiRideLeg toUiRideLeg(RideLeg rideLeg) {
+        if (rideLeg == null) {
+            return null;
+        }
+
+        List<UiWaypoint> waypoints = null;
+        if (rideLeg.getWaypoints() != null) {
+            waypoints = rideLeg.getWaypoints().stream()
+                    .map(DtoMapper::toUiWaypoint)
+                    .collect(Collectors.toList());
+        }
+
+        return UiRideLeg
+                .builder()
+                .id(rideLeg.getId())
+                .routeId(rideLeg.getRouteId())
+                .name(rideLeg.getName())
+                .description(rideLeg.getDescription())
+                .sequenceOrder(rideLeg.getSequenceOrder())
+                .waypoints(waypoints)
+                .build();
+    }
+
+    public static UiWaypoint toUiWaypoint(Waypoint waypoint) {
+        if (waypoint == null) {
+            return null;
+        }
+
+        return UiWaypoint
+                .builder()
+                .id(waypoint.getId())
+                .rideLegId(waypoint.getRideLegId())
+                .bonusPointId(waypoint.getBonusPointId())
+                .name(waypoint.getName())
+                .description(waypoint.getDescription())
+                .sequenceOrder(waypoint.getSequenceOrder())
+                .latitude(waypoint.getLatitude())
+                .longitude(waypoint.getLongitude())
+                .address(waypoint.getAddress())
+                .build();
+    }
 }
