@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.showpage.rallyserver.interfaces.HasId;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -39,8 +39,18 @@ public class Ride implements HasId<Ride> {
 
     private String description;
 
-    private LocalDate startDate;
-    private LocalDate endDate;
+    private LocalDateTime expectedStart;
+    private LocalDateTime expectedEnd;
+
+    /** Seconds, default stop duration for all waypoints, can be overridden individually. */
+    private Integer stopDuration;
+
+    private String spotwallaLink;
+
+    private LocalDateTime actualStart;
+    private LocalDateTime actualEnd;
+    private Integer odometerStart;
+    private Integer odometerEnd;
 
     @OneToMany(
             mappedBy = "ride",

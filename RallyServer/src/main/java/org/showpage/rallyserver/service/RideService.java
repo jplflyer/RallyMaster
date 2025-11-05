@@ -42,8 +42,10 @@ public class RideService {
                 .rallyId(request.getRallyId())
                 .name(request.getName().trim())
                 .description(request.getDescription() != null ? request.getDescription().trim() : null)
-                .startDate(request.getStartDate())
-                .endDate(request.getEndDate())
+                .expectedStart(request.getExpectedStart())
+                .expectedEnd(request.getExpectedEnd())
+                .stopDuration(request.getStopDuration())
+                .spotwallaLink(request.getSpotwallaLink())
                 .build();
 
         return rideRepository.save(ride);
@@ -66,14 +68,34 @@ public class RideService {
         if (DataValidator.nonEmpty(request.getDescription())) {
             ride.setDescription(request.getDescription().trim());
         }
-        if (request.getStartDate() != null) {
-            ride.setStartDate(request.getStartDate());
+        if (request.getExpectedStart() != null) {
+            ride.setExpectedStart(request.getExpectedStart());
         }
-        if (request.getEndDate() != null) {
-            ride.setEndDate(request.getEndDate());
+        if (request.getExpectedEnd() != null) {
+            ride.setExpectedEnd(request.getExpectedEnd());
         }
         if (request.getRallyId() != null) {
             ride.setRallyId(request.getRallyId());
+        }
+
+        if (request.getActualStart() != null) {
+            ride.setActualStart(request.getActualStart());
+        }
+        if (request.getActualEnd() != null) {
+            ride.setActualEnd(request.getActualEnd());
+        }
+
+        if (request.getSpotwallaLink() != null) {
+            ride.setSpotwallaLink(request.getSpotwallaLink());
+        }
+        if (request.getStopDuration() != null) {
+            ride.setStopDuration(request.getStopDuration());
+        }
+        if (request.getOdometerStart() != null) {
+            ride.setOdometerStart(request.getOdometerStart());
+        }
+        if (request.getOdometerEnd() != null) {
+            ride.setOdometerEnd(request.getOdometerEnd());
         }
 
         return rideRepository.save(ride);

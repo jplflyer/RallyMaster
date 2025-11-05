@@ -120,7 +120,6 @@ CREATE TABLE IF NOT EXISTS ride
     id                   SERIAL PRIMARY KEY,
     rally_id             INTEGER REFERENCES rally (id) ON DELETE SET NULL,
     member_id            INTEGER REFERENCES member (id) ON DELETE CASCADE,
-    original_id          INTEGER REFERENCES ride (id) ON DELETE SET NULL,
     name                 TEXT,
     description          TEXT,
     expected_start       timestamptz,
@@ -128,7 +127,9 @@ CREATE TABLE IF NOT EXISTS ride
     stop_duration        INTEGER,
     spotwalla_link       TEXT,
     actual_start         timestamptz,
-    actual_end           timestamptz
+    actual_end           timestamptz,
+    odometer_start       INTEGER,
+    odometer_end         INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS route

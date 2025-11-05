@@ -8,7 +8,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.showpage.rallyserver.ui.*;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -67,8 +67,8 @@ public class RideIntegrationTest extends IntegrationTest {
         CreateRideRequest request = CreateRideRequest.builder()
                 .name("Organizer's Saddlesore 1000")
                 .description("1000 miles in 24 hours")
-                .startDate(LocalDate.now().plusDays(30))
-                .endDate(LocalDate.now().plusDays(31))
+                .expectedStart(LocalDateTime.now().plusDays(30))
+                .expectedEnd(LocalDateTime.now().plusDays(31))
                 .build();
 
         RR_UiRide response = post_ForRM("/api/ride", request, tr_UiRide);
@@ -93,8 +93,8 @@ public class RideIntegrationTest extends IntegrationTest {
         CreateRideRequest request = CreateRideRequest.builder()
                 .name("Organizer's Dog Daze Rally Ride")
                 .description("My participation in Dog Daze Rally")
-                .startDate(testRally.getStartDate())
-                .endDate(testRally.getEndDate())
+                .expectedStart(testRally.getStartDate().atTime(8, 0))
+                .expectedEnd(testRally.getEndDate().atTime(18, 0))
                 .rallyId(testRally.getId())
                 .build();
 
@@ -171,8 +171,8 @@ public class RideIntegrationTest extends IntegrationTest {
         CreateRideRequest request = CreateRideRequest.builder()
                 .name("Rider's Minnesota Grand Tour")
                 .description("Multi-day tour of Minnesota")
-                .startDate(LocalDate.now().plusDays(60))
-                .endDate(LocalDate.now().plusDays(67))
+                .expectedStart(LocalDateTime.now().plusDays(60))
+                .expectedEnd(LocalDateTime.now().plusDays(67))
                 .build();
 
         RR_UiRide response = post_ForRider("/api/ride", request, tr_UiRide);
