@@ -75,7 +75,8 @@ enum class Screen {
     SPLASH,
     LOGIN,
     HOME,
-    RALLY_PLANNING,
+    RALLY_FORM,        // Create/edit rally form
+    RALLY_PLANNING,    // Rally planning workspace
     RIDE_PLANNING,
     SCORING,
     SETTINGS

@@ -1,22 +1,15 @@
 package org.showpage.rallyserver.controller;
 
+import org.showpage.rallyserver.ui.RestPage.SortOrder;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Sort;
 
-import java.util.List;
-
-public record RestPage<T>(
-        List<T> content,
-        int page,               // 0-based
-        int size,
-        long totalElements,
-        int totalPages,
-        boolean first,
-        boolean last,
-        List<SortOrder> sort    // optional
-) {
-    public static <T> RestPage<T> from(Page<T> p) {
-        return new RestPage<>(
+/**
+ * Helper class for creating RestPage from Spring's Page.
+ * The RestPage record itself is in RallyCommon for shared use.
+ */
+public class RestPageHelper {
+    public static <T> org.showpage.rallyserver.ui.RestPage<T> from(Page<T> p) {
+        return new org.showpage.rallyserver.ui.RestPage<>(
                 p.getContent(),
                 p.getNumber(),
                 p.getSize(),
@@ -29,6 +22,4 @@ public record RestPage<T>(
                         .toList()
         );
     }
-
-    public record SortOrder(String property, String direction) {}
 }

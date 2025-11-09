@@ -19,6 +19,7 @@ class PreferencesService {
         private const val KEY_WINDOW_Y = "windowY"
         private const val KEY_WINDOW_WIDTH = "windowWidth"
         private const val KEY_WINDOW_HEIGHT = "windowHeight"
+        private const val KEY_SHOW_ALL_PAST_RALLIES = "showAllPastRallies"
         private const val DEFAULT_SERVER_URL = "http://localhost:8080"
     }
 
@@ -124,5 +125,26 @@ class PreferencesService {
         prefs.putInt(KEY_WINDOW_HEIGHT, height)
         prefs.flush()
         logger.debug("Saved window bounds: x={}, y={}, width={}, height={}", x, y, width, height)
+    }
+
+    //----------------------------------------------------------------------
+    // Rally List Preferences
+    //----------------------------------------------------------------------
+
+    /**
+     * Get whether to show all past rallies in My Rallies list.
+     * Defaults to false (only show active/upcoming rallies).
+     */
+    fun getShowAllPastRallies(): Boolean {
+        return prefs.getBoolean(KEY_SHOW_ALL_PAST_RALLIES, false)
+    }
+
+    /**
+     * Set whether to show all past rallies.
+     */
+    fun setShowAllPastRallies(show: Boolean) {
+        prefs.putBoolean(KEY_SHOW_ALL_PAST_RALLIES, show)
+        prefs.flush()
+        logger.debug("Set show all past rallies: {}", show)
     }
 }

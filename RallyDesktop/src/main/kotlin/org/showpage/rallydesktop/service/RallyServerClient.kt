@@ -162,10 +162,32 @@ class RallyServerClient(private val serverUrl: String) {
     }
 
     /**
-     * Get all rallies.
+     * Create a new rally.
      */
-    fun getAllRallies(): Result<PageResponse<UiRally>> {
-        return authenticatedGet("/api/rally")
+    fun createRally(request: CreateRallyRequest): Result<UiRally> {
+        logger.info("Creating rally: {}", request.name)
+        return authenticatedPost("/api/rally", request)
+    }
+
+    /**
+     * Search rallies with optional filters.
+     * For "My Rallies", use all=true to include all rallies user is involved with.
+     */
+    fun searchRallies(
+        name: String? = null,
+        from: String? = null,  // ISO date format
+        to: String? = null,    // ISO date format
+        all: Boolean? = null,
+        page: Int = 0,
+        size: Int = 20
+    ): Result<RestPage<UiRally>> {
+        val urlBuilder = StringBuilder("$serverUrl/api/rallies?page=$page&size=$size")
+        name?.let { urlBuilder.append("&name=$it") }
+        from?.let { urlBuilder.append("&from=$it") }
+        to?.let { urlBuilder.append("&to=$it") }
+        all?.let { urlBuilder.append("&all=$it") }
+
+        return authenticatedGet(urlBuilder.toString().removePrefix(serverUrl))
     }
 
     /**
@@ -174,8 +196,11 @@ class RallyServerClient(private val serverUrl: String) {
     private inline fun <reified T> authenticatedGet(path: String): Result<T> {
         val token = accessToken ?: return Result.failure(Exception("Not authenticated"))
 
+        val fullUrl = "$serverUrl$path"
+        logger.debug("Making authenticated GET request to: {}", fullUrl)
+
         val request = Request.Builder()
-            .url("$serverUrl$path")
+            .url(fullUrl)
             .header("Authorization", "Bearer $token")
             .get()
             .build()
@@ -183,23 +208,70 @@ class RallyServerClient(private val serverUrl: String) {
         return try {
             client.newCall(request).execute().use { response ->
                 val body = response.body?.string()
+                logger.debug("Response code: {}, body length: {}", response.code, body?.length ?: 0)
 
                 if (response.isSuccessful && body != null) {
                     val restResponse: RestResponse<T> = objectMapper.readValue(body)
                     if (restResponse.isSuccess && restResponse.data != null) {
                         Result.success(restResponse.data)
                     } else {
+                        logger.error("API request failed: {}", restResponse.message)
                         Result.failure(Exception(restResponse.message ?: "Request failed"))
                     }
                 } else if (response.code == 401) {
                     // Token expired - return error (caller should handle refresh)
+                    logger.error("Authentication failed (401) for URL: {}", fullUrl)
                     Result.failure(Exception("Authentication failed: Token expired"))
                 } else {
+                    logger.error("Request failed with code {} for URL: {}, body: {}", response.code, fullUrl, body)
                     Result.failure(Exception("Request failed: ${response.code}"))
                 }
             }
         } catch (e: Exception) {
-            logger.error("Error during authenticated request", e)
+            logger.error("Error during authenticated request to {}", fullUrl, e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Make an authenticated POST request.
+     */
+    private inline fun <reified T> authenticatedPost(path: String, body: Any): Result<T> {
+        val token = accessToken ?: return Result.failure(Exception("Not authenticated"))
+
+        val json = objectMapper.writeValueAsString(body)
+        val fullUrl = "$serverUrl$path"
+        logger.debug("Making authenticated POST request to: {}", fullUrl)
+
+        val request = Request.Builder()
+            .url(fullUrl)
+            .header("Authorization", "Bearer $token")
+            .post(json.toRequestBody(jsonMediaType))
+            .build()
+
+        return try {
+            client.newCall(request).execute().use { response ->
+                val responseBody = response.body?.string()
+                logger.debug("Response code: {}, body length: {}", response.code, responseBody?.length ?: 0)
+
+                if (response.isSuccessful && responseBody != null) {
+                    val restResponse: RestResponse<T> = objectMapper.readValue(responseBody)
+                    if (restResponse.isSuccess && restResponse.data != null) {
+                        Result.success(restResponse.data)
+                    } else {
+                        logger.error("API request failed: {}", restResponse.message)
+                        Result.failure(Exception(restResponse.message ?: "Request failed"))
+                    }
+                } else if (response.code == 401) {
+                    logger.error("Authentication failed (401) for URL: {}", fullUrl)
+                    Result.failure(Exception("Authentication failed: Token expired"))
+                } else {
+                    logger.error("Request failed with code {} for URL: {}, body: {}", response.code, fullUrl, responseBody)
+                    Result.failure(Exception("Request failed: ${response.code}"))
+                }
+            }
+        } catch (e: Exception) {
+            logger.error("Error during authenticated POST request to {}", fullUrl, e)
             Result.failure(e)
         }
     }

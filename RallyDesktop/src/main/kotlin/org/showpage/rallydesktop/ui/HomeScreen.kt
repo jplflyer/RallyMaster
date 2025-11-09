@@ -1,30 +1,83 @@
 package org.showpage.rallydesktop.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+import org.showpage.rallydesktop.service.PreferencesService
+import org.showpage.rallydesktop.service.RallyServerClient
 import org.showpage.rallyserver.ui.UiMember
+import org.showpage.rallyserver.ui.UiRally
+import org.slf4j.LoggerFactory
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
-@OptIn(ExperimentalMaterial3Api::class)
+private val logger = LoggerFactory.getLogger("HomeScreen")
 
 /**
- * Home screen - main application screen after login.
- * Will contain navigation to Rally Planning, Ride Planning, and Scoring.
+ * Home screen - displays "My Rallies" list and action buttons.
  */
 @Composable
 fun HomeScreen(
     user: UiMember,
-    onNavigateToRallyPlanning: () -> Unit,
+    serverClient: RallyServerClient,
+    preferencesService: PreferencesService,
+    onNavigateToCreateRally: () -> Unit,
     onNavigateToRidePlanning: () -> Unit,
     onNavigateToScoring: () -> Unit
 ) {
+    val scope = rememberCoroutineScope()
+
+    var rallies by remember { mutableStateOf<List<UiRally>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showAllPastRallies by remember { mutableStateOf(preferencesService.getShowAllPastRallies()) }
+
+    // Load rallies on first composition
+    LaunchedEffect(showAllPastRallies) {
+        // Check if authenticated before making API call
+        if (!serverClient.isAuthenticated()) {
+            logger.warn("HomeScreen loaded but client not authenticated yet")
+            errorMessage = "Not authenticated"
+            return@LaunchedEffect
+        }
+
+        isLoading = true
+        errorMessage = null
+
+        logger.info("Loading rallies, showAllPastRallies={}, isAuthenticated={}", showAllPastRallies, serverClient.isAuthenticated())
+
+        // For "My Rallies", filter by date unless showAllPastRallies is checked
+        val from = if (!showAllPastRallies) {
+            // Show rallies ending today or later
+            LocalDate.now().toString()
+        } else null
+
+        serverClient.searchRallies(from = from, size = 100).fold(
+            onSuccess = { page ->
+                logger.info("Loaded {} rallies", page.content().size)
+                rallies = page.content()
+                isLoading = false
+            },
+            onFailure = { error ->
+                logger.error("Failed to load rallies", error)
+                errorMessage = "Failed to load rallies: ${error.message}"
+                isLoading = false
+            }
+        )
+    }
+
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp)
     ) {
-        // Top bar with user info
+        // Header with user info
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -36,77 +89,201 @@ fun HomeScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // Main content - navigation cards
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+        // Action buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Rally Planning Card
-            Card(
-                onClick = onNavigateToRallyPlanning,
-                modifier = Modifier.fillMaxWidth().height(120.dp)
-            ) {
+            Button(onClick = { /* TODO: Browse Rallies */ }) {
+                Text("Browse Rallies")
+            }
+            Button(onClick = onNavigateToCreateRally) {
+                Text("Create Rally")
+            }
+            Button(onClick = onNavigateToRidePlanning) {
+                Text("Create Ride")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // "My Rallies" section header with checkbox
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "My Rallies",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = showAllPastRallies,
+                    onCheckedChange = { checked ->
+                        showAllPastRallies = checked
+                        preferencesService.setShowAllPastRallies(checked)
+                    }
+                )
+                Text("All Past Rallies", style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Rally list or loading/error states
+        when {
+            isLoading -> {
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                    contentAlignment = Alignment.CenterStart
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column {
+                    CircularProgressIndicator()
+                }
+            }
+            errorMessage != null -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "Rally Planning",
-                            style = MaterialTheme.typography.headlineMedium
+                            text = errorMessage ?: "Unknown error",
+                            color = MaterialTheme.colorScheme.error
                         )
-                        Text(
-                            text = "Create and manage rallies, bonus points, and combinations",
-                            style = MaterialTheme.typography.bodyMedium
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = {
+                            scope.launch {
+                                isLoading = true
+                                errorMessage = null
+                                serverClient.searchRallies(size = 100).fold(
+                                    onSuccess = { page ->
+                                        rallies = page.content()
+                                        isLoading = false
+                                    },
+                                    onFailure = { error ->
+                                        errorMessage = "Failed to load rallies: ${error.message}"
+                                        isLoading = false
+                                    }
+                                )
+                            }
+                        }) {
+                            Text("Retry")
+                        }
+                    }
+                }
+            }
+            rallies.isEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No rallies found",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(rallies) { rally ->
+                        RallyListItem(
+                            rally = rally,
+                            onClick = {
+                                // TODO: Navigate to rally details
+                                logger.info("Clicked rally: {}", rally.name)
+                            }
                         )
                     }
                 }
             }
+        }
+    }
+}
 
-            // Ride Planning Card
-            Card(
-                onClick = onNavigateToRidePlanning,
-                modifier = Modifier.fillMaxWidth().height(120.dp)
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    Column {
-                        Text(
-                            text = "Ride Planning",
-                            style = MaterialTheme.typography.headlineMedium
-                        )
-                        Text(
-                            text = "Plan your route and optimize bonus point collection",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+@Composable
+fun RallyListItem(
+    rally: UiRally,
+    onClick: () -> Unit
+) {
+    val dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            // Rally name
+            Text(
+                text = rally.name ?: "Unnamed Rally",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Dates
+            val dateText = buildString {
+                if (rally.startDate != null) {
+                    append(rally.startDate.format(dateFormatter))
+                    if (rally.endDate != null && rally.endDate != rally.startDate) {
+                        append(" - ")
+                        append(rally.endDate.format(dateFormatter))
                     }
                 }
             }
+            if (dateText.isNotEmpty()) {
+                Text(
+                    text = dateText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
-            // Scoring Card
-            Card(
-                onClick = onNavigateToScoring,
-                modifier = Modifier.fillMaxWidth().height(120.dp)
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    Column {
-                        Text(
-                            text = "Scoring",
-                            style = MaterialTheme.typography.headlineMedium
-                        )
-                        Text(
-                            text = "Score rider submissions and manage rally results",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
+            // Location
+            val location = buildString {
+                if (!rally.locationCity.isNullOrBlank()) {
+                    append(rally.locationCity)
                 }
+                if (!rally.locationState.isNullOrBlank()) {
+                    if (isNotEmpty()) append(", ")
+                    append(rally.locationState)
+                }
+                if (!rally.locationCountry.isNullOrBlank()) {
+                    if (isNotEmpty()) append(", ")
+                    append(rally.locationCountry)
+                }
+            }
+            if (location.isNotEmpty()) {
+                Text(
+                    text = location,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Description (if present)
+            if (!rally.description.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = rally.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2
+                )
             }
         }
     }

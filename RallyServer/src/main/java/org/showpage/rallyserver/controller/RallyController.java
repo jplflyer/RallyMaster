@@ -136,7 +136,7 @@ public class RallyController {
         return serviceCaller.call((member) -> {
                 Page<UiRally> page = rallyService.search(name, from, to, country, region, nearLat, nearLng, radiusMiles, all != null && all, pageable)
                         .map(rally -> DtoMapper.toUiRally(member, rally));
-                return RestPage.from(page);
+                return RestPageHelper.from(page);
             }
         );
     }

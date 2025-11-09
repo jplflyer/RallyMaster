@@ -159,9 +159,10 @@ fun RallyMasterApp(
                 appState.currentUser?.let { user ->
                     HomeScreen(
                         user = user,
-                        onNavigateToRallyPlanning = {
-                            // TODO: Implement Rally Planning screen
-                            appState.navigateTo(Screen.RALLY_PLANNING)
+                        serverClient = serverClient,
+                        preferencesService = preferencesService,
+                        onNavigateToCreateRally = {
+                            appState.navigateTo(Screen.RALLY_FORM)
                         },
                         onNavigateToRidePlanning = {
                             // TODO: Implement Ride Planning screen
@@ -184,6 +185,20 @@ fun RallyMasterApp(
                         serverClient = RallyServerClient(newUrl)
                     },
                     onBack = {
+                        appState.navigateTo(Screen.HOME)
+                    }
+                )
+            }
+
+            Screen.RALLY_FORM -> {
+                RallyFormScreen(
+                    serverClient = serverClient,
+                    onRallyCreated = { rallyId ->
+                        logger.info("Rally created with ID: {}", rallyId)
+                        // TODO: Navigate to Rally Planning screen with the new rally
+                        appState.navigateTo(Screen.HOME)
+                    },
+                    onCancel = {
                         appState.navigateTo(Screen.HOME)
                     }
                 )
