@@ -15,11 +15,12 @@ import org.slf4j.LoggerFactory
  * Main application component that manages the application state and navigation.
  */
 @Composable
-fun RallyMasterApp() {
+fun RallyMasterApp(
+    appState: AppState,
+    preferencesService: PreferencesService,
+    credentialService: CredentialService
+) {
     val logger = LoggerFactory.getLogger("RallyMasterApp")
-    val appState = remember { AppState() }
-    val preferencesService = remember { PreferencesService() }
-    val credentialService = remember { CredentialService.create() }
     val scope = rememberCoroutineScope()
 
     // Initialize server client with stored or default URL
@@ -158,16 +159,6 @@ fun RallyMasterApp() {
                 appState.currentUser?.let { user ->
                     HomeScreen(
                         user = user,
-                        onLogout = {
-                            // Clear credentials and logout
-                            val email = preferencesService.getEmail()
-                            if (email != null) {
-                                credentialService.deletePassword("RallyMaster", email)
-                            }
-                            preferencesService.clear()
-                            serverClient.logout()
-                            appState.clearAuthentication()
-                        },
                         onNavigateToRallyPlanning = {
                             // TODO: Implement Rally Planning screen
                             appState.navigateTo(Screen.RALLY_PLANNING)
@@ -179,9 +170,6 @@ fun RallyMasterApp() {
                         onNavigateToScoring = {
                             // TODO: Implement Scoring screen
                             appState.navigateTo(Screen.SCORING)
-                        },
-                        onNavigateToSettings = {
-                            appState.navigateTo(Screen.SETTINGS)
                         }
                     )
                 }

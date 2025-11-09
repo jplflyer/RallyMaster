@@ -17,16 +17,14 @@ import org.showpage.rallyserver.ui.UiMember
 @Composable
 fun HomeScreen(
     user: UiMember,
-    onLogout: () -> Unit,
     onNavigateToRallyPlanning: () -> Unit,
     onNavigateToRidePlanning: () -> Unit,
-    onNavigateToScoring: () -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToScoring: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp)
     ) {
-        // Top bar with user info and logout
+        // Top bar with user info
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -34,17 +32,8 @@ fun HomeScreen(
         ) {
             Text(
                 text = "Welcome, ${user.email}",
-                style = MaterialTheme.typography.headlineSmall
+                style = MaterialTheme.typography.headlineMedium
             )
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = onNavigateToSettings) {
-                    Text("Settings")
-                }
-                Button(onClick = onLogout) {
-                    Text("Logout")
-                }
-            }
         }
 
         Spacer(modifier = Modifier.height(32.dp))

@@ -121,3 +121,16 @@ Caused by: java.net.ConnectException: Connection refused
 2025-11-09 11:54:50 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=460ms, remaining=2540ms
 2025-11-09 11:54:50 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2540ms to meet minimum splash time
 2025-11-09 11:54:53 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
+2025-11-09 12:03:38 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
+2025-11-09 12:03:38 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=528, y=61, width=1200, height=800
+2025-11-09 12:03:47 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
+2025-11-09 12:03:47 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
+2025-11-09 12:03:47 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
+2025-11-09 12:03:47 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
+2025-11-09 12:03:47 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
+2025-11-09 12:03:47 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
+2025-11-09 12:03:47 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=204ms, remaining=2796ms
+2025-11-09 12:03:47 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2796ms to meet minimum splash time
+2025-11-09 12:03:50 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
+2025-11-09 12:04:07 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
+2025-11-09 12:04:07 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=528, y=61, width=1200, height=800

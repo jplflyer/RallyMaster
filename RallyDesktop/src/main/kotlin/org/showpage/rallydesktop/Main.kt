@@ -6,15 +6,18 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.WindowPosition
-import androidx.compose.ui.window.application
-import androidx.compose.ui.window.rememberWindowState
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyShortcut
+import androidx.compose.ui.window.*
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import org.showpage.rallydesktop.model.AppState
+import org.showpage.rallydesktop.model.Screen
+import org.showpage.rallydesktop.service.CredentialService
 import org.showpage.rallydesktop.service.PreferencesService
 import org.showpage.rallydesktop.ui.RallyMasterApp
 import org.slf4j.LoggerFactory
+import java.awt.event.KeyEvent
 
 private val logger = LoggerFactory.getLogger("RallyMaster")
 
@@ -25,6 +28,8 @@ fun main() {
 
     application {
     val preferencesService = remember { PreferencesService() }
+    val credentialService = remember { CredentialService.create() }
+    val appState = remember { AppState() }
 
     // Restore window position and size from preferences, or use defaults
     val initialWidth = preferencesService.getWindowWidth()?.dp ?: 1200.dp
@@ -57,6 +62,47 @@ fun main() {
         title = "RallyMaster",
         icon = painterResource("icon.png")
     ) {
+        // Menu bar
+        MenuBar {
+            // File menu (or RallyMaster menu on macOS)
+            Menu("File") {
+                // Settings - only show when authenticated
+                if (appState.isAuthenticated) {
+                    Item(
+                        "Settings...",
+                        onClick = {
+                            appState.navigateTo(Screen.SETTINGS)
+                        },
+                        shortcut = KeyShortcut(Key.Comma, meta = true) // Cmd+, on Mac, Ctrl+, on Windows
+                    )
+                    Separator()
+                }
+
+                // Logout - only show when authenticated
+                if (appState.isAuthenticated) {
+                    Item(
+                        "Logout",
+                        onClick = {
+                            // Clear credentials and logout
+                            val email = preferencesService.getEmail()
+                            if (email != null) {
+                                credentialService.deletePassword("RallyMaster", email)
+                            }
+                            preferencesService.clear()
+                            appState.clearAuthentication()
+                        },
+                        shortcut = KeyShortcut(Key.L, meta = true, shift = true) // Cmd+Shift+L / Ctrl+Shift+L
+                    )
+                    Separator()
+                }
+
+                Item(
+                    "Quit",
+                    onClick = { exitApplication() },
+                    shortcut = KeyShortcut(Key.Q, meta = true) // Cmd+Q on Mac, Ctrl+Q on Windows
+                )
+            }
+        }
         // Monitor window position and size changes and save them
         LaunchedEffect(windowState) {
             snapshotFlow { windowState.position }
@@ -74,7 +120,11 @@ fun main() {
                 .launchIn(this)
         }
 
-        RallyMasterApp()
+        RallyMasterApp(
+            appState = appState,
+            preferencesService = preferencesService,
+            credentialService = credentialService
+        )
     }
     }
 }
