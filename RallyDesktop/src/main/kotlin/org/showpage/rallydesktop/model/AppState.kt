@@ -36,6 +36,9 @@ class AppState {
     var currentScreen by mutableStateOf(Screen.SPLASH)
         private set
 
+    var currentRallyId by mutableStateOf<Int?>(null)
+        private set
+
     fun hideSplash() {
         showSplash = false
         currentScreen = if (isAuthenticated) Screen.HOME else Screen.LOGIN
@@ -68,6 +71,20 @@ class AppState {
 
     fun navigateTo(screen: Screen) {
         currentScreen = screen
+        // Clear rallyId when navigating away from rally-specific screens
+        if (screen != Screen.RALLY_PLANNING && screen != Screen.RALLY_FORM) {
+            currentRallyId = null
+        }
+    }
+
+    fun navigateToRallyPlanning(rallyId: Int) {
+        currentRallyId = rallyId
+        currentScreen = Screen.RALLY_PLANNING
+    }
+
+    fun navigateToRallyForm(rallyId: Int? = null) {
+        currentRallyId = rallyId
+        currentScreen = Screen.RALLY_FORM
     }
 }
 

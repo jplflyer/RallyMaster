@@ -42,6 +42,15 @@ public class UiRally implements HasId<UiRally> {
     @Schema(description = "Rally location country (2-digit code)", example = "US")
     private String locationCountry;
 
+    @Schema(description = "Rally latitude coordinate", example = "42.8864")
+    private Float latitude;
+
+    @Schema(description = "Rally longitude coordinate", example = "-78.8784")
+    private Float longitude;
+
+    @Schema(description = "Whether rally is publicly visible", example = "true")
+    private Boolean isPublic;
+
     @Schema(description = "Whether bonus points are publicly visible", example = "true")
     private Boolean pointsPublic;
 

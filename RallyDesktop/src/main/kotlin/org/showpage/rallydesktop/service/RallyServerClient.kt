@@ -162,6 +162,14 @@ class RallyServerClient(private val serverUrl: String) {
     }
 
     /**
+     * Get a rally by ID.
+     */
+    fun getRally(rallyId: Int): Result<UiRally> {
+        logger.info("Getting rally with ID: {}", rallyId)
+        return authenticatedGet("/api/rally/$rallyId")
+    }
+
+    /**
      * Create a new rally.
      */
     fun createRally(request: CreateRallyRequest): Result<UiRally> {

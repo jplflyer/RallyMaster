@@ -19,8 +19,8 @@ Created a basic rally creation form that captures:
 - `RallyDesktop/src/main/kotlin/org/showpage/rallydesktop/model/AppState.kt` (added RALLY_FORM screen)
 - `RallyDesktop/src/main/kotlin/org/showpage/rallydesktop/ui/RallyMasterApp.kt` (wired navigation)
 
-## Phase 2: Rally Planning Screen Structure
-**Status**: Not started
+## Phase 2: Rally Planning Screen Structure ✅ COMPLETED
+**Status**: Completed and tested
 
 Create the main Rally Planning workspace with a 4-panel layout:
 
@@ -65,9 +65,14 @@ Create the main Rally Planning workspace with a 4-panel layout:
 - Need to pass rallyId to Rally Planning screen
 - After creating rally, navigate to Rally Planning (not HOME)
 
-### New Files
-- `RallyDesktop/src/main/kotlin/org/showpage/rallydesktop/ui/RallyPlanningScreen.kt`
-- Update `AppState.kt` screen enum (RALLY_PLANNING already exists)
+### Files Created/Modified
+- `RallyDesktop/src/main/kotlin/org/showpage/rallydesktop/ui/RallyPlanningScreen.kt` (new - 4-panel layout)
+- `RallyDesktop/src/main/kotlin/org/showpage/rallydesktop/model/AppState.kt` (added currentRallyId, navigateToRallyPlanning, navigateToRallyForm)
+- `RallyDesktop/src/main/kotlin/org/showpage/rallydesktop/service/RallyServerClient.kt` (added getRally method)
+- `RallyDesktop/src/main/kotlin/org/showpage/rallydesktop/ui/HomeScreen.kt` (wire rally click to navigation)
+- `RallyDesktop/src/main/kotlin/org/showpage/rallydesktop/ui/RallyMasterApp.kt` (wired Rally Planning screen)
+- `RallyCommon/src/main/java/org/showpage/rallyserver/ui/UiRally.java` (added latitude, longitude, isPublic fields)
+- `RallyServer/src/main/java/org/showpage/rallyserver/service/DtoMapper.java` (map new rally fields)
 
 ## Phase 3: Bonus Points CRUD
 **Status**: Not started

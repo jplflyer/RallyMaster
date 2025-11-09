@@ -30,6 +30,7 @@ fun HomeScreen(
     serverClient: RallyServerClient,
     preferencesService: PreferencesService,
     onNavigateToCreateRally: () -> Unit,
+    onNavigateToRallyPlanning: (Int) -> Unit,
     onNavigateToRidePlanning: () -> Unit,
     onNavigateToScoring: () -> Unit
 ) {
@@ -198,8 +199,8 @@ fun HomeScreen(
                         RallyListItem(
                             rally = rally,
                             onClick = {
-                                // TODO: Navigate to rally details
-                                logger.info("Clicked rally: {}", rally.name)
+                                logger.info("Navigating to rally planning: {}", rally.name)
+                                rally.id?.let { onNavigateToRallyPlanning(it) }
                             }
                         )
                     }

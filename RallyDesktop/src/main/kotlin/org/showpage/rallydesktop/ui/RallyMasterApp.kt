@@ -162,7 +162,10 @@ fun RallyMasterApp(
                         serverClient = serverClient,
                         preferencesService = preferencesService,
                         onNavigateToCreateRally = {
-                            appState.navigateTo(Screen.RALLY_FORM)
+                            appState.navigateToRallyForm()
+                        },
+                        onNavigateToRallyPlanning = { rallyId ->
+                            appState.navigateToRallyPlanning(rallyId)
                         },
                         onNavigateToRidePlanning = {
                             // TODO: Implement Ride Planning screen
@@ -195,8 +198,7 @@ fun RallyMasterApp(
                     serverClient = serverClient,
                     onRallyCreated = { rallyId ->
                         logger.info("Rally created with ID: {}", rallyId)
-                        // TODO: Navigate to Rally Planning screen with the new rally
-                        appState.navigateTo(Screen.HOME)
+                        appState.navigateToRallyPlanning(rallyId)
                     },
                     onCancel = {
                         appState.navigateTo(Screen.HOME)
@@ -205,10 +207,18 @@ fun RallyMasterApp(
             }
 
             Screen.RALLY_PLANNING -> {
-                // TODO: Implement Rally Planning screen
-                PlaceholderScreen("Rally Planning (Coming Soon)", onBack = {
-                    appState.navigateTo(Screen.HOME)
-                })
+                appState.currentRallyId?.let { rallyId ->
+                    RallyPlanningScreen(
+                        rallyId = rallyId,
+                        serverClient = serverClient,
+                        onEditRally = { editRallyId ->
+                            appState.navigateToRallyForm(editRallyId)
+                        },
+                        onBack = {
+                            appState.navigateTo(Screen.HOME)
+                        }
+                    )
+                }
             }
 
             Screen.RIDE_PLANNING -> {
