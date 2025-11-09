@@ -1,60 +1,123 @@
-2025-10-19 20:34:52 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-10-19 20:34:52 [AWT-EventQueue-0] INFO  RallyMasterApp - No stored credentials found
-2025-10-19 20:35:08 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-10-19 20:35:08 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-10-19 20:35:08 [AWT-EventQueue-0] INFO  o.s.r.service.MacOSKeychainService - Successfully stored password in Keychain for account: jpl@showpage.org
-2025-10-19 20:35:34 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-10-19 20:35:34 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
-2025-10-19 20:35:34 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
-2025-10-19 20:35:34 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-10-19 20:35:34 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-10-19 20:35:34 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
-2025-10-19 20:40:20 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-10-19 20:40:20 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
-2025-10-19 20:40:20 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
-2025-10-19 20:40:20 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-10-19 20:40:20 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-10-19 20:40:20 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
-2025-10-19 20:40:23 [AWT-EventQueue-0] INFO  o.s.r.service.PreferencesService - Clearing all preferences
-2025-10-19 20:40:23 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Logging out
-2025-10-19 20:40:43 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-10-19 20:40:44 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-10-19 20:40:44 [AWT-EventQueue-0] INFO  o.s.r.service.MacOSKeychainService - Successfully stored password in Keychain for account: jpl@showpage.org
-2025-10-19 20:42:28 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-10-19 20:42:28 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
-2025-10-19 20:42:28 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
-2025-10-19 20:42:28 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-10-19 20:42:28 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-10-19 20:42:28 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
-2025-10-19 20:42:30 [AWT-EventQueue-0] INFO  o.s.r.service.PreferencesService - Clearing all preferences
-2025-10-19 20:42:30 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Logging out
-2025-10-19 20:42:38 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-10-19 20:42:38 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-10-19 20:42:38 [AWT-EventQueue-0] INFO  o.s.r.service.MacOSKeychainService - Successfully stored password in Keychain for account: jpl@showpage.org
-2025-10-19 20:44:48 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-10-19 20:44:48 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
-2025-10-19 20:44:48 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
-2025-10-19 20:44:48 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-10-19 20:44:48 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-10-19 20:44:48 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
-2025-10-19 20:44:52 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
-2025-10-19 20:44:52 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=1115, y=85, width=1200, height=800
-2025-10-19 20:44:55 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-10-19 20:44:55 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
-2025-10-19 20:44:55 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
-2025-10-19 20:44:55 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-10-19 20:44:56 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-10-19 20:44:56 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
-2025-10-19 20:45:23 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
-2025-10-19 20:45:23 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=1184, y=64, width=1200, height=800
-2025-10-19 20:46:40 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-10-19 20:46:41 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
-2025-10-19 20:46:41 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
-2025-10-19 20:46:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-10-19 20:46:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-10-19 20:46:41 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
-2025-10-19 20:46:41 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=207ms, remaining=2793ms
-2025-10-19 20:46:41 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2793ms to meet minimum splash time
-2025-10-19 20:46:43 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
-2025-10-19 20:46:47 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
-2025-10-19 20:46:47 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=1194, y=62, width=1200, height=800
+2025-11-09 11:28:28 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
+2025-11-09 11:28:28 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
+2025-11-09 11:28:28 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
+2025-11-09 11:28:28 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
+2025-11-09 11:28:28 [AWT-EventQueue-0] ERROR o.s.r.service.RallyServerClient - Error during login
+java.net.ConnectException: Failed to connect to localhost/[0:0:0:0:0:0:0:1]:8080
+	at okhttp3.internal.connection.RealConnection.connectSocket(RealConnection.kt:297)
+	at okhttp3.internal.connection.RealConnection.connect(RealConnection.kt:207)
+	at okhttp3.internal.connection.ExchangeFinder.findConnection(ExchangeFinder.kt:226)
+	at okhttp3.internal.connection.ExchangeFinder.findHealthyConnection(ExchangeFinder.kt:106)
+	at okhttp3.internal.connection.ExchangeFinder.find(ExchangeFinder.kt:74)
+	at okhttp3.internal.connection.RealCall.initExchange$okhttp(RealCall.kt:255)
+	at okhttp3.internal.connection.ConnectInterceptor.intercept(ConnectInterceptor.kt:32)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:109)
+	at okhttp3.internal.cache.CacheInterceptor.intercept(CacheInterceptor.kt:95)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:109)
+	at okhttp3.internal.http.BridgeInterceptor.intercept(BridgeInterceptor.kt:83)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:109)
+	at okhttp3.internal.http.RetryAndFollowUpInterceptor.intercept(RetryAndFollowUpInterceptor.kt:76)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:109)
+	at okhttp3.internal.connection.RealCall.getResponseWithInterceptorChain$okhttp(RealCall.kt:201)
+	at okhttp3.internal.connection.RealCall.execute(RealCall.kt:154)
+	at org.showpage.rallydesktop.service.RallyServerClient.login-gIAlu-s(RallyServerClient.kt:52)
+	at org.showpage.rallydesktop.ui.RallyMasterAppKt$RallyMasterApp$1.invokeSuspend(RallyMasterApp.kt:43)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:104)
+	at androidx.compose.ui.platform.FlushCoroutineDispatcher$dispatch$2$1.invoke(FlushCoroutineDispatcher.skiko.kt:62)
+	at androidx.compose.ui.platform.FlushCoroutineDispatcher$dispatch$2$1.invoke(FlushCoroutineDispatcher.skiko.kt:57)
+	at androidx.compose.ui.platform.FlushCoroutineDispatcher.performRun(FlushCoroutineDispatcher.skiko.kt:91)
+	at androidx.compose.ui.platform.FlushCoroutineDispatcher.access$performRun(FlushCoroutineDispatcher.skiko.kt:37)
+	at androidx.compose.ui.platform.FlushCoroutineDispatcher$dispatch$2.invokeSuspend(FlushCoroutineDispatcher.skiko.kt:57)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:104)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:400)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+	Suppressed: java.net.ConnectException: Failed to connect to localhost/127.0.0.1:8080
+		... 40 common frames omitted
+	Caused by: java.net.ConnectException: Connection refused
+		at java.base/sun.nio.ch.Net.pollConnect(Native Method)
+		at java.base/sun.nio.ch.Net.pollConnectNow(Net.java:682)
+		at java.base/sun.nio.ch.NioSocketImpl.timedFinishConnect(NioSocketImpl.java:542)
+		at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:592)
+		at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327)
+		at java.base/java.net.Socket.connect(Socket.java:751)
+		at okhttp3.internal.platform.Platform.connectSocket(Platform.kt:128)
+		at okhttp3.internal.connection.RealConnection.connectSocket(RealConnection.kt:295)
+		... 39 common frames omitted
+Caused by: java.net.ConnectException: Connection refused
+	at java.base/sun.nio.ch.Net.pollConnect(Native Method)
+	at java.base/sun.nio.ch.Net.pollConnectNow(Net.java:682)
+	at java.base/sun.nio.ch.NioSocketImpl.timedFinishConnect(NioSocketImpl.java:549)
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:592)
+	at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327)
+	at java.base/java.net.Socket.connect(Socket.java:751)
+	at okhttp3.internal.platform.Platform.connectSocket(Platform.kt:128)
+	at okhttp3.internal.connection.RealConnection.connectSocket(RealConnection.kt:295)
+	... 39 common frames omitted
+2025-11-09 11:28:28 [AWT-EventQueue-0] WARN  RallyMasterApp - Auto-login failed: Failed to connect to localhost/[0:0:0:0:0:0:0:1]:8080
+2025-11-09 11:28:28 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=143ms, remaining=2857ms
+2025-11-09 11:28:28 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2857ms to meet minimum splash time
+2025-11-09 11:28:31 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
+2025-11-09 11:33:54 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
+2025-11-09 11:33:54 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - No password found in Keychain for account: jpl@showpage.org
+2025-11-09 11:33:54 [AWT-EventQueue-0] INFO  RallyMasterApp - No stored credentials found
+2025-11-09 11:33:54 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=38ms, remaining=2962ms
+2025-11-09 11:33:54 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2962ms to meet minimum splash time
+2025-11-09 11:33:57 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
+2025-11-09 11:34:12 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
+2025-11-09 11:34:13 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
+2025-11-09 11:34:13 [AWT-EventQueue-0] INFO  o.s.r.service.MacOSKeychainService - Successfully stored password in Keychain for account: jpl@showpage.org
+2025-11-09 11:43:41 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
+2025-11-09 11:43:41 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
+2025-11-09 11:43:41 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
+2025-11-09 11:43:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
+2025-11-09 11:43:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
+2025-11-09 11:43:41 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
+2025-11-09 11:43:41 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=193ms, remaining=2807ms
+2025-11-09 11:43:41 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2807ms to meet minimum splash time
+2025-11-09 11:43:44 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
+2025-11-09 11:43:47 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
+2025-11-09 11:43:47 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=528, y=62, width=1200, height=800
+2025-11-09 11:44:10 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
+2025-11-09 11:44:10 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
+2025-11-09 11:44:10 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
+2025-11-09 11:44:10 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
+2025-11-09 11:44:10 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
+2025-11-09 11:44:10 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
+2025-11-09 11:44:10 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=194ms, remaining=2806ms
+2025-11-09 11:44:10 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2806ms to meet minimum splash time
+2025-11-09 11:44:13 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
+2025-11-09 11:49:32 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
+2025-11-09 11:49:32 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=528, y=61, width=1200, height=800
+2025-11-09 11:50:04 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
+2025-11-09 11:50:04 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
+2025-11-09 11:50:04 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
+2025-11-09 11:50:04 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
+2025-11-09 11:50:04 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
+2025-11-09 11:50:04 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
+2025-11-09 11:50:04 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=233ms, remaining=2767ms
+2025-11-09 11:50:04 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2767ms to meet minimum splash time
+2025-11-09 11:50:07 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
+2025-11-09 11:53:39 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
+2025-11-09 11:53:39 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=528, y=61, width=1200, height=800
+2025-11-09 11:54:50 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
+2025-11-09 11:54:50 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
+2025-11-09 11:54:50 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
+2025-11-09 11:54:50 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
+2025-11-09 11:54:50 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
+2025-11-09 11:54:50 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
+2025-11-09 11:54:50 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=460ms, remaining=2540ms
+2025-11-09 11:54:50 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2540ms to meet minimum splash time
+2025-11-09 11:54:53 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen

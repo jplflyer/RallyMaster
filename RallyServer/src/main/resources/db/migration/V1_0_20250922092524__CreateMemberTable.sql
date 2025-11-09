@@ -137,6 +137,7 @@ CREATE TABLE IF NOT EXISTS route
     id                   SERIAL PRIMARY KEY,
     ride_id              INTEGER REFERENCES ride (id) ON DELETE CASCADE,
     name                 TEXT,
+    description          TEXT,
     is_primary           BOOLEAN
 );
 
@@ -144,7 +145,10 @@ CREATE TABLE IF NOT EXISTS ride_leg
 (
     id                   SERIAL PRIMARY KEY,
     route_id             INTEGER REFERENCES route (id) ON DELETE CASCADE,
+    name                 TEXT,
+    description          TEXT,
     is_optional          BOOLEAN,
+    sequence_order       INTEGER,
     seq                  INTEGER NOT NULL
 );
 
@@ -153,7 +157,9 @@ CREATE TABLE IF NOT EXISTS waypoint
     id                   SERIAL PRIMARY KEY,
     ride_leg_id          INTEGER REFERENCES ride_leg (id) ON DELETE CASCADE,
     bonus_point_id       INTEGER REFERENCES ride_leg (id) ON DELETE CASCADE,
-    seq                  INTEGER NOT NULL,
+    name                 TEXT,
+    description          TEXT,
+    sequence_order       INTEGER,
     latitude             DOUBLE PRECISION,
     longitude            DOUBLE PRECISION,
     address              TEXT,

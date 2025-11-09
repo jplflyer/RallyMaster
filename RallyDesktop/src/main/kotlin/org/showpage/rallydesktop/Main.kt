@@ -3,6 +3,7 @@ package org.showpage.rallydesktop
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -17,7 +18,12 @@ import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger("RallyMaster")
 
-fun main() = application {
+fun main() {
+    // Set the app name for macOS menu bar and Dock - must be before application()
+    System.setProperty("apple.awt.application.name", "RallyMaster")
+    System.setProperty("com.apple.mrj.application.apple.menu.about.name", "RallyMaster")
+
+    application {
     val preferencesService = remember { PreferencesService() }
 
     // Restore window position and size from preferences, or use defaults
@@ -48,7 +54,8 @@ fun main() = application {
             exitApplication()
         },
         state = windowState,
-        title = "RallyMaster Desktop"
+        title = "RallyMaster",
+        icon = painterResource("icon.png")
     ) {
         // Monitor window position and size changes and save them
         LaunchedEffect(windowState) {
@@ -68,5 +75,6 @@ fun main() = application {
         }
 
         RallyMasterApp()
+    }
     }
 }

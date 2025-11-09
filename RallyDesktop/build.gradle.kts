@@ -58,6 +58,13 @@ compose.desktop {
     application {
         mainClass = "org.showpage.rallydesktop.MainKt"
 
+        // JVM arguments for running from IDE
+        jvmArgs += listOf(
+            "-Dapple.awt.application.name=RallyMaster",
+            "-Xdock:name=RallyMaster",
+            "-Xdock:icon=${project.file("src/main/resources/icon.icns").absolutePath}"
+        )
+
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "RallyMaster"
