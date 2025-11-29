@@ -178,6 +178,38 @@ class RallyServerClient(private val serverUrl: String) {
     }
 
     /**
+     * Get all bonus points for a rally.
+     */
+    fun listBonusPoints(rallyId: Int): Result<List<UiBonusPoint>> {
+        logger.info("Listing bonus points for rally: {}", rallyId)
+        return authenticatedGet("/api/rally/$rallyId/bonuspoints")
+    }
+
+    /**
+     * Create a new bonus point in a rally.
+     */
+    fun createBonusPoint(rallyId: Int, request: CreateBonusPointRequest): Result<UiBonusPoint> {
+        logger.info("Creating bonus point in rally {}: {}", rallyId, request.code)
+        return authenticatedPost("/api/rally/$rallyId/bonuspoint", request)
+    }
+
+    /**
+     * Update an existing bonus point.
+     */
+    fun updateBonusPoint(bonusPointId: Int, request: UpdateBonusPointRequest): Result<UiBonusPoint> {
+        logger.info("Updating bonus point: {}", bonusPointId)
+        return authenticatedPut("/api/bonuspoint/$bonusPointId", request)
+    }
+
+    /**
+     * Delete a bonus point.
+     */
+    fun deleteBonusPoint(bonusPointId: Int): Result<Unit> {
+        logger.info("Deleting bonus point: {}", bonusPointId)
+        return authenticatedDelete("/api/bonuspoint/$bonusPointId")
+    }
+
+    /**
      * Search rallies with optional filters.
      * For "My Rallies", use all=true to include all rallies user is involved with.
      */
@@ -280,6 +312,85 @@ class RallyServerClient(private val serverUrl: String) {
             }
         } catch (e: Exception) {
             logger.error("Error during authenticated POST request to {}", fullUrl, e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Make an authenticated PUT request.
+     */
+    private inline fun <reified T> authenticatedPut(path: String, body: Any): Result<T> {
+        val token = accessToken ?: return Result.failure(Exception("Not authenticated"))
+
+        val json = objectMapper.writeValueAsString(body)
+        val fullUrl = "$serverUrl$path"
+        logger.debug("Making authenticated PUT request to: {}", fullUrl)
+
+        val request = Request.Builder()
+            .url(fullUrl)
+            .header("Authorization", "Bearer $token")
+            .put(json.toRequestBody(jsonMediaType))
+            .build()
+
+        return try {
+            client.newCall(request).execute().use { response ->
+                val responseBody = response.body?.string()
+                logger.debug("Response code: {}, body length: {}", response.code, responseBody?.length ?: 0)
+
+                if (response.isSuccessful && responseBody != null) {
+                    val restResponse: RestResponse<T> = objectMapper.readValue(responseBody)
+                    if (restResponse.isSuccess && restResponse.data != null) {
+                        Result.success(restResponse.data)
+                    } else {
+                        logger.error("API request failed: {}", restResponse.message)
+                        Result.failure(Exception(restResponse.message ?: "Request failed"))
+                    }
+                } else if (response.code == 401) {
+                    logger.error("Authentication failed (401) for URL: {}", fullUrl)
+                    Result.failure(Exception("Authentication failed: Token expired"))
+                } else {
+                    logger.error("Request failed with code {} for URL: {}, body: {}", response.code, fullUrl, responseBody)
+                    Result.failure(Exception("Request failed: ${response.code}"))
+                }
+            }
+        } catch (e: Exception) {
+            logger.error("Error during authenticated PUT request to {}", fullUrl, e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Make an authenticated DELETE request.
+     */
+    private fun authenticatedDelete(path: String): Result<Unit> {
+        val token = accessToken ?: return Result.failure(Exception("Not authenticated"))
+
+        val fullUrl = "$serverUrl$path"
+        logger.debug("Making authenticated DELETE request to: {}", fullUrl)
+
+        val request = Request.Builder()
+            .url(fullUrl)
+            .header("Authorization", "Bearer $token")
+            .delete()
+            .build()
+
+        return try {
+            client.newCall(request).execute().use { response ->
+                logger.debug("Response code: {}", response.code)
+
+                if (response.isSuccessful) {
+                    Result.success(Unit)
+                } else if (response.code == 401) {
+                    logger.error("Authentication failed (401) for URL: {}", fullUrl)
+                    Result.failure(Exception("Authentication failed: Token expired"))
+                } else {
+                    val responseBody = response.body?.string()
+                    logger.error("Request failed with code {} for URL: {}, body: {}", response.code, fullUrl, responseBody)
+                    Result.failure(Exception("Request failed: ${response.code}"))
+                }
+            }
+        } catch (e: Exception) {
+            logger.error("Error during authenticated DELETE request to {}", fullUrl, e)
             Result.failure(e)
         }
     }

@@ -1,6 +1,6 @@
 plugins {
     // Keep Spring plugins here for central versioning; applied only in :server
-    id("org.springframework.boot") version "3.5.6" apply false
+    id("org.springframework.boot") version "3.5.8" apply false
     id("io.spring.dependency-management") version "1.1.7" apply false
 
     // Kotlin can be added later like this (kept false at root):

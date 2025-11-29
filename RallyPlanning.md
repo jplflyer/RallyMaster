@@ -74,8 +74,8 @@ Create the main Rally Planning workspace with a 4-panel layout:
 - `RallyCommon/src/main/java/org/showpage/rallyserver/ui/UiRally.java` (added latitude, longitude, isPublic fields)
 - `RallyServer/src/main/java/org/showpage/rallyserver/service/DtoMapper.java` (map new rally fields)
 
-## Phase 3: Bonus Points CRUD
-**Status**: Not started
+## Phase 3: Bonus Points CRUD ✅ COMPLETED
+**Status**: Completed and tested
 
 Implement full CRUD operations for bonus points.
 
@@ -103,6 +103,11 @@ Implement full CRUD operations for bonus points.
 - Real-time list updates after add/edit/delete
 - Error handling and user feedback
 - Sort by code or name
+
+### Files Created/Modified
+- `RallyDesktop/src/main/kotlin/org/showpage/rallydesktop/ui/BonusPointComponents.kt` (new - dialog and list)
+- `RallyDesktop/src/main/kotlin/org/showpage/rallydesktop/service/RallyServerClient.kt` (added bonus point CRUD methods)
+- `RallyDesktop/src/main/kotlin/org/showpage/rallydesktop/ui/RallyPlanningScreen.kt` (wired BonusPointsList)
 
 ### Data Model
 Refer to existing `UiBonusPoint` in RallyCommon:

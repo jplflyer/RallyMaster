@@ -1,301 +1,493 @@
-2025-11-09 11:28:28 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-11-09 11:28:28 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
-2025-11-09 11:28:28 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
-2025-11-09 11:28:28 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-11-09 11:28:28 [AWT-EventQueue-0] ERROR o.s.r.service.RallyServerClient - Error during login
-java.net.ConnectException: Failed to connect to localhost/[0:0:0:0:0:0:0:1]:8080
-	at okhttp3.internal.connection.RealConnection.connectSocket(RealConnection.kt:297)
-	at okhttp3.internal.connection.RealConnection.connect(RealConnection.kt:207)
-	at okhttp3.internal.connection.ExchangeFinder.findConnection(ExchangeFinder.kt:226)
-	at okhttp3.internal.connection.ExchangeFinder.findHealthyConnection(ExchangeFinder.kt:106)
-	at okhttp3.internal.connection.ExchangeFinder.find(ExchangeFinder.kt:74)
-	at okhttp3.internal.connection.RealCall.initExchange$okhttp(RealCall.kt:255)
-	at okhttp3.internal.connection.ConnectInterceptor.intercept(ConnectInterceptor.kt:32)
-	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:109)
-	at okhttp3.internal.cache.CacheInterceptor.intercept(CacheInterceptor.kt:95)
-	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:109)
-	at okhttp3.internal.http.BridgeInterceptor.intercept(BridgeInterceptor.kt:83)
-	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:109)
-	at okhttp3.internal.http.RetryAndFollowUpInterceptor.intercept(RetryAndFollowUpInterceptor.kt:76)
-	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.kt:109)
-	at okhttp3.internal.connection.RealCall.getResponseWithInterceptorChain$okhttp(RealCall.kt:201)
-	at okhttp3.internal.connection.RealCall.execute(RealCall.kt:154)
-	at org.showpage.rallydesktop.service.RallyServerClient.login-gIAlu-s(RallyServerClient.kt:52)
-	at org.showpage.rallydesktop.ui.RallyMasterAppKt$RallyMasterApp$1.invokeSuspend(RallyMasterApp.kt:43)
-	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
-	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:104)
-	at androidx.compose.ui.platform.FlushCoroutineDispatcher$dispatch$2$1.invoke(FlushCoroutineDispatcher.skiko.kt:62)
-	at androidx.compose.ui.platform.FlushCoroutineDispatcher$dispatch$2$1.invoke(FlushCoroutineDispatcher.skiko.kt:57)
-	at androidx.compose.ui.platform.FlushCoroutineDispatcher.performRun(FlushCoroutineDispatcher.skiko.kt:91)
-	at androidx.compose.ui.platform.FlushCoroutineDispatcher.access$performRun(FlushCoroutineDispatcher.skiko.kt:37)
-	at androidx.compose.ui.platform.FlushCoroutineDispatcher$dispatch$2.invokeSuspend(FlushCoroutineDispatcher.skiko.kt:57)
-	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
-	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:104)
-	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
-	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
-	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)
-	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)
-	at java.base/java.security.AccessController.doPrivileged(AccessController.java:400)
-	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87)
-	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)
-	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
-	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
-	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
-	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
-	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
-	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
-	Suppressed: java.net.ConnectException: Failed to connect to localhost/127.0.0.1:8080
-		... 40 common frames omitted
-	Caused by: java.net.ConnectException: Connection refused
-		at java.base/sun.nio.ch.Net.pollConnect(Native Method)
-		at java.base/sun.nio.ch.Net.pollConnectNow(Net.java:682)
-		at java.base/sun.nio.ch.NioSocketImpl.timedFinishConnect(NioSocketImpl.java:542)
-		at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:592)
-		at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327)
-		at java.base/java.net.Socket.connect(Socket.java:751)
-		at okhttp3.internal.platform.Platform.connectSocket(Platform.kt:128)
-		at okhttp3.internal.connection.RealConnection.connectSocket(RealConnection.kt:295)
-		... 39 common frames omitted
-Caused by: java.net.ConnectException: Connection refused
-	at java.base/sun.nio.ch.Net.pollConnect(Native Method)
-	at java.base/sun.nio.ch.Net.pollConnectNow(Net.java:682)
-	at java.base/sun.nio.ch.NioSocketImpl.timedFinishConnect(NioSocketImpl.java:549)
-	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:592)
-	at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327)
-	at java.base/java.net.Socket.connect(Socket.java:751)
-	at okhttp3.internal.platform.Platform.connectSocket(Platform.kt:128)
-	at okhttp3.internal.connection.RealConnection.connectSocket(RealConnection.kt:295)
-	... 39 common frames omitted
-2025-11-09 11:28:28 [AWT-EventQueue-0] WARN  RallyMasterApp - Auto-login failed: Failed to connect to localhost/[0:0:0:0:0:0:0:1]:8080
-2025-11-09 11:28:28 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=143ms, remaining=2857ms
-2025-11-09 11:28:28 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2857ms to meet minimum splash time
-2025-11-09 11:28:31 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
-2025-11-09 11:33:54 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-11-09 11:33:54 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - No password found in Keychain for account: jpl@showpage.org
-2025-11-09 11:33:54 [AWT-EventQueue-0] INFO  RallyMasterApp - No stored credentials found
-2025-11-09 11:33:54 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=38ms, remaining=2962ms
-2025-11-09 11:33:54 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2962ms to meet minimum splash time
-2025-11-09 11:33:57 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
-2025-11-09 11:34:12 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-11-09 11:34:13 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-11-09 11:34:13 [AWT-EventQueue-0] INFO  o.s.r.service.MacOSKeychainService - Successfully stored password in Keychain for account: jpl@showpage.org
-2025-11-09 11:43:41 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-11-09 11:43:41 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
-2025-11-09 11:43:41 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
-2025-11-09 11:43:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-11-09 11:43:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-11-09 11:43:41 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
-2025-11-09 11:43:41 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=193ms, remaining=2807ms
-2025-11-09 11:43:41 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2807ms to meet minimum splash time
-2025-11-09 11:43:44 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
-2025-11-09 11:43:47 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
-2025-11-09 11:43:47 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=528, y=62, width=1200, height=800
-2025-11-09 11:44:10 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-11-09 11:44:10 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
-2025-11-09 11:44:10 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
-2025-11-09 11:44:10 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-11-09 11:44:10 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-11-09 11:44:10 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
-2025-11-09 11:44:10 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=194ms, remaining=2806ms
-2025-11-09 11:44:10 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2806ms to meet minimum splash time
-2025-11-09 11:44:13 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
-2025-11-09 11:49:32 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
-2025-11-09 11:49:32 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=528, y=61, width=1200, height=800
-2025-11-09 11:50:04 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-11-09 11:50:04 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
-2025-11-09 11:50:04 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
-2025-11-09 11:50:04 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-11-09 11:50:04 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-11-09 11:50:04 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
-2025-11-09 11:50:04 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=233ms, remaining=2767ms
-2025-11-09 11:50:04 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2767ms to meet minimum splash time
-2025-11-09 11:50:07 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
-2025-11-09 11:53:39 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
-2025-11-09 11:53:39 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=528, y=61, width=1200, height=800
-2025-11-09 11:54:50 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-11-09 11:54:50 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
-2025-11-09 11:54:50 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
-2025-11-09 11:54:50 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-11-09 11:54:50 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-11-09 11:54:50 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
-2025-11-09 11:54:50 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=460ms, remaining=2540ms
-2025-11-09 11:54:50 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2540ms to meet minimum splash time
-2025-11-09 11:54:53 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
-2025-11-09 12:03:38 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
-2025-11-09 12:03:38 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=528, y=61, width=1200, height=800
-2025-11-09 12:03:47 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-11-09 12:03:47 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
-2025-11-09 12:03:47 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
-2025-11-09 12:03:47 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-11-09 12:03:47 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-11-09 12:03:47 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
-2025-11-09 12:03:47 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=204ms, remaining=2796ms
-2025-11-09 12:03:47 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2796ms to meet minimum splash time
-2025-11-09 12:03:50 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
-2025-11-09 12:04:07 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
-2025-11-09 12:04:07 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=528, y=61, width=1200, height=800
-2025-11-09 12:16:33 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-11-09 12:16:33 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
-2025-11-09 12:16:33 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
-2025-11-09 12:16:33 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-11-09 12:16:33 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-11-09 12:16:33 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
-2025-11-09 12:16:33 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=194ms, remaining=2806ms
-2025-11-09 12:16:33 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2806ms to meet minimum splash time
-2025-11-09 12:16:36 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
-2025-11-09 12:29:59 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
-2025-11-09 12:29:59 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=528, y=61, width=1200, height=800
-2025-11-09 12:30:11 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-11-09 12:30:11 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
-2025-11-09 12:30:11 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
-2025-11-09 12:30:11 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-11-09 12:30:11 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-11-09 12:30:11 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
-2025-11-09 12:30:11 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=224ms, remaining=2776ms
-2025-11-09 12:30:11 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2776ms to meet minimum splash time
-2025-11-09 12:30:12 [AWT-EventQueue-0] INFO  HomeScreen - Loading rallies, showAllPastRallies=false
-2025-11-09 12:30:12 [AWT-EventQueue-0] ERROR HomeScreen - Failed to load rallies
-java.lang.Exception: Authentication failed: Token expired
-	at org.showpage.rallydesktop.service.RallyServerClient.searchRallies-hUnOzRk(RallyServerClient.kt:299)
-	at org.showpage.rallydesktop.service.RallyServerClient.searchRallies-hUnOzRk$default(RallyServerClient.kt:168)
-	at org.showpage.rallydesktop.ui.HomeScreenKt$HomeScreen$1.invokeSuspend(HomeScreen.kt:56)
-	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
-	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:104)
-	at androidx.compose.ui.platform.FlushCoroutineDispatcher$dispatch$2$1.invoke(FlushCoroutineDispatcher.skiko.kt:62)
-	at androidx.compose.ui.platform.FlushCoroutineDispatcher$dispatch$2$1.invoke(FlushCoroutineDispatcher.skiko.kt:57)
-	at androidx.compose.ui.platform.FlushCoroutineDispatcher.performRun(FlushCoroutineDispatcher.skiko.kt:91)
-	at androidx.compose.ui.platform.FlushCoroutineDispatcher.access$performRun(FlushCoroutineDispatcher.skiko.kt:37)
-	at androidx.compose.ui.platform.FlushCoroutineDispatcher$dispatch$2.invokeSuspend(FlushCoroutineDispatcher.skiko.kt:57)
-	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
-	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:104)
-	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
-	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
-	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)
-	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)
-	at java.base/java.security.AccessController.doPrivileged(AccessController.java:400)
-	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87)
-	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)
-	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
-	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
-	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
-	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
-	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
-	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
-2025-11-09 12:30:14 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
-2025-11-09 12:30:33 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
-2025-11-09 12:30:33 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=528, y=61, width=1200, height=800
-2025-11-09 12:30:38 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-11-09 12:30:38 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
-2025-11-09 12:30:38 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
-2025-11-09 12:30:38 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-11-09 12:30:38 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-11-09 12:30:38 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
-2025-11-09 12:30:38 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=200ms, remaining=2800ms
-2025-11-09 12:30:38 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2800ms to meet minimum splash time
-2025-11-09 12:30:38 [AWT-EventQueue-0] INFO  HomeScreen - Loading rallies, showAllPastRallies=false
-2025-11-09 12:30:38 [AWT-EventQueue-0] ERROR HomeScreen - Failed to load rallies
-java.lang.Exception: Authentication failed: Token expired
-	at org.showpage.rallydesktop.service.RallyServerClient.searchRallies-hUnOzRk(RallyServerClient.kt:299)
-	at org.showpage.rallydesktop.service.RallyServerClient.searchRallies-hUnOzRk$default(RallyServerClient.kt:168)
-	at org.showpage.rallydesktop.ui.HomeScreenKt$HomeScreen$1.invokeSuspend(HomeScreen.kt:56)
-	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
-	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:104)
-	at androidx.compose.ui.platform.FlushCoroutineDispatcher$dispatch$2$1.invoke(FlushCoroutineDispatcher.skiko.kt:62)
-	at androidx.compose.ui.platform.FlushCoroutineDispatcher$dispatch$2$1.invoke(FlushCoroutineDispatcher.skiko.kt:57)
-	at androidx.compose.ui.platform.FlushCoroutineDispatcher.performRun(FlushCoroutineDispatcher.skiko.kt:91)
-	at androidx.compose.ui.platform.FlushCoroutineDispatcher.access$performRun(FlushCoroutineDispatcher.skiko.kt:37)
-	at androidx.compose.ui.platform.FlushCoroutineDispatcher$dispatch$2.invokeSuspend(FlushCoroutineDispatcher.skiko.kt:57)
-	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:33)
-	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:104)
-	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
-	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
-	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)
-	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)
-	at java.base/java.security.AccessController.doPrivileged(AccessController.java:400)
-	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:87)
-	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)
-	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
-	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
-	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
-	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
-	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
-	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
-2025-11-09 12:30:41 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
-2025-11-09 12:36:42 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
-2025-11-09 12:36:42 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=528, y=61, width=1200, height=800
-2025-11-09 12:37:06 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-11-09 12:37:06 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
-2025-11-09 12:37:06 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
-2025-11-09 12:37:06 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-11-09 12:37:06 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-11-09 12:37:06 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
-2025-11-09 12:37:06 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/member/info
-2025-11-09 12:37:06 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 145
-2025-11-09 12:37:06 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=433ms, remaining=2567ms
-2025-11-09 12:37:06 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2567ms to meet minimum splash time
-2025-11-09 12:37:06 [AWT-EventQueue-0] INFO  HomeScreen - Loading rallies, showAllPastRallies=false, isAuthenticated=true
-2025-11-09 12:37:06 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rallies?page=0&size=100&from=2025-11-09
-2025-11-09 12:37:06 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 183
-2025-11-09 12:37:06 [AWT-EventQueue-0] INFO  HomeScreen - Loaded 0 rallies
-2025-11-09 12:37:09 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
-2025-11-09 12:37:52 [AWT-EventQueue-0] INFO  HomeScreen - Loading rallies, showAllPastRallies=false, isAuthenticated=true
-2025-11-09 12:37:52 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rallies?page=0&size=100&from=2025-11-09
-2025-11-09 12:37:52 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 183
-2025-11-09 12:37:52 [AWT-EventQueue-0] INFO  HomeScreen - Loaded 0 rallies
-2025-11-09 12:48:03 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
-2025-11-09 12:48:03 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=528, y=61, width=1200, height=800
-2025-11-09 12:48:11 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-11-09 12:48:11 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
-2025-11-09 12:48:11 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
-2025-11-09 12:48:11 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-11-09 12:48:11 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-11-09 12:48:11 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
-2025-11-09 12:48:11 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/member/info
-2025-11-09 12:48:11 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 145
-2025-11-09 12:48:11 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=192ms, remaining=2808ms
-2025-11-09 12:48:11 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2808ms to meet minimum splash time
-2025-11-09 12:48:11 [AWT-EventQueue-0] INFO  HomeScreen - Loading rallies, showAllPastRallies=false, isAuthenticated=true
-2025-11-09 12:48:11 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rallies?page=0&size=100&from=2025-11-09
-2025-11-09 12:48:11 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 183
-2025-11-09 12:48:11 [AWT-EventQueue-0] INFO  HomeScreen - Loaded 0 rallies
-2025-11-09 12:48:14 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
-2025-11-09 12:49:13 [AWT-EventQueue-0] INFO  RallyFormScreen - Creating rally: Dog Daze 2025
-2025-11-09 12:49:13 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating rally: Dog Daze 2025
-2025-11-09 12:49:13 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally
-2025-11-09 12:49:13 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 201, body length: 212
-2025-11-09 12:49:13 [AWT-EventQueue-0] INFO  RallyFormScreen - Rally created successfully: ID=2
-2025-11-09 12:49:13 [AWT-EventQueue-0] INFO  RallyMasterApp - Rally created with ID: 2
-2025-11-09 12:49:13 [AWT-EventQueue-0] INFO  HomeScreen - Loading rallies, showAllPastRallies=false, isAuthenticated=true
-2025-11-09 12:49:13 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rallies?page=0&size=100&from=2025-11-09
-2025-11-09 12:49:13 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 537
-2025-11-09 12:49:13 [AWT-EventQueue-0] INFO  HomeScreen - Loaded 1 rallies
-2025-11-09 12:49:32 [AWT-EventQueue-0] INFO  HomeScreen - Clicked rally: Dog Daze 2025
-2025-11-09 12:49:35 [AWT-EventQueue-0] INFO  HomeScreen - Clicked rally: Dog Daze 2025
-2025-11-09 13:18:27 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
-2025-11-09 13:18:27 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=528, y=61, width=1200, height=800
-2025-11-09 13:18:33 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
-2025-11-09 13:18:33 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
-2025-11-09 13:18:33 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
-2025-11-09 13:18:33 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
-2025-11-09 13:18:33 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
-2025-11-09 13:18:33 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
-2025-11-09 13:18:33 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/member/info
-2025-11-09 13:18:33 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 537
-2025-11-09 13:18:33 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=193ms, remaining=2807ms
-2025-11-09 13:18:33 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2807ms to meet minimum splash time
-2025-11-09 13:18:33 [AWT-EventQueue-0] INFO  HomeScreen - Loading rallies, showAllPastRallies=false, isAuthenticated=true
-2025-11-09 13:18:33 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rallies?page=0&size=100&from=2025-11-09
-2025-11-09 13:18:33 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 537
-2025-11-09 13:18:33 [AWT-EventQueue-0] INFO  HomeScreen - Loaded 1 rallies
-2025-11-09 13:18:36 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
-2025-11-09 13:19:06 [AWT-EventQueue-0] INFO  RallyFormScreen - Creating rally: 2
-2025-11-09 13:19:06 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating rally: 2
-2025-11-09 13:19:06 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally
-2025-11-09 13:19:06 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 201, body length: 205
-2025-11-09 13:19:06 [AWT-EventQueue-0] INFO  RallyFormScreen - Rally created successfully: ID=4
-2025-11-09 13:19:06 [AWT-EventQueue-0] INFO  RallyMasterApp - Rally created with ID: 4
-2025-11-09 13:19:06 [AWT-EventQueue-0] INFO  RallyPlanningScreen - Loading rally with ID: 4
-2025-11-09 13:19:06 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Getting rally with ID: 4
-2025-11-09 13:19:06 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rally/4
-2025-11-09 13:19:06 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 386
-2025-11-09 13:19:06 [AWT-EventQueue-0] INFO  RallyPlanningScreen - Rally loaded: 2
+2025-11-29 07:55:15 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
+2025-11-29 07:55:15 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
+2025-11-29 07:55:15 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
+2025-11-29 07:55:15 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
+2025-11-29 07:55:16 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
+2025-11-29 07:55:16 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
+2025-11-29 07:55:16 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/member/info
+2025-11-29 07:55:16 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 553
+2025-11-29 07:55:16 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=552ms, remaining=2448ms
+2025-11-29 07:55:16 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2448ms to meet minimum splash time
+2025-11-29 07:55:16 [AWT-EventQueue-0] INFO  HomeScreen - Loading rallies, showAllPastRallies=false, isAuthenticated=true
+2025-11-29 07:55:16 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rallies?page=0&size=100&from=2025-11-29
+2025-11-29 07:55:16 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 553
+2025-11-29 07:55:16 [AWT-EventQueue-0] INFO  HomeScreen - Loaded 1 rallies
+2025-11-29 07:55:18 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
+2025-11-29 07:55:21 [AWT-EventQueue-0] INFO  HomeScreen - Navigating to rally planning: Dog Daze 2025
+2025-11-29 07:55:21 [AWT-EventQueue-0] INFO  RallyPlanningScreen - Loading rally with ID: 2
+2025-11-29 07:55:21 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Getting rally with ID: 2
+2025-11-29 07:55:21 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rally/2
+2025-11-29 07:55:21 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 409
+2025-11-29 07:55:21 [AWT-EventQueue-0] INFO  RallyPlanningScreen - Rally loaded: Dog Daze 2025
+2025-11-29 07:55:21 [AWT-EventQueue-0] INFO  BonusPointComponents - Loading bonus points for rally: 2
+2025-11-29 07:55:21 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Listing bonus points for rally: 2
+2025-11-29 07:55:21 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rally/2/bonuspoints
+2025-11-29 07:55:21 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 41
+2025-11-29 07:55:21 [AWT-EventQueue-0] INFO  BonusPointComponents - Loaded 0 bonus points
+2025-11-29 07:56:17 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: PNM
+2025-11-29 07:56:17 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 07:56:17 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 172
+2025-11-29 07:56:17 [AWT-EventQueue-0] INFO  BonusPointComponents - Bonus point created: PNM
+2025-11-29 07:56:42 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
+2025-11-29 07:56:42 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=179, y=39, width=1389, height=902
+2025-11-29 07:56:47 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
+2025-11-29 07:56:47 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
+2025-11-29 07:56:47 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
+2025-11-29 07:56:47 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
+2025-11-29 07:56:47 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
+2025-11-29 07:56:47 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
+2025-11-29 07:56:47 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/member/info
+2025-11-29 07:56:47 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 686
+2025-11-29 07:56:47 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=203ms, remaining=2797ms
+2025-11-29 07:56:47 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2797ms to meet minimum splash time
+2025-11-29 07:56:47 [AWT-EventQueue-0] INFO  HomeScreen - Loading rallies, showAllPastRallies=false, isAuthenticated=true
+2025-11-29 07:56:47 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rallies?page=0&size=100&from=2025-11-29
+2025-11-29 07:56:47 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 686
+2025-11-29 07:56:47 [AWT-EventQueue-0] INFO  HomeScreen - Loaded 1 rallies
+2025-11-29 07:56:48 [AWT-EventQueue-0] INFO  HomeScreen - Navigating to rally planning: Dog Daze 2025
+2025-11-29 07:56:48 [AWT-EventQueue-0] INFO  RallyPlanningScreen - Loading rally with ID: 2
+2025-11-29 07:56:48 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Getting rally with ID: 2
+2025-11-29 07:56:48 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rally/2
+2025-11-29 07:56:48 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 542
+2025-11-29 07:56:48 [AWT-EventQueue-0] INFO  RallyPlanningScreen - Rally loaded: Dog Daze 2025
+2025-11-29 07:56:48 [AWT-EventQueue-0] INFO  BonusPointComponents - Loading bonus points for rally: 2
+2025-11-29 07:56:48 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Listing bonus points for rally: 2
+2025-11-29 07:56:48 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rally/2/bonuspoints
+2025-11-29 07:56:48 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 174
+2025-11-29 07:56:48 [AWT-EventQueue-0] INFO  BonusPointComponents - Loaded 1 bonus points
+2025-11-29 07:56:50 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
+2025-11-29 07:56:50 [AWT-EventQueue-0] INFO  HomeScreen - Loading rallies, showAllPastRallies=false, isAuthenticated=true
+2025-11-29 07:56:50 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rallies?page=0&size=100&from=2025-11-29
+2025-11-29 07:56:50 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 686
+2025-11-29 07:56:50 [AWT-EventQueue-0] INFO  HomeScreen - Loaded 1 rallies
+2025-11-29 07:56:52 [AWT-EventQueue-0] INFO  HomeScreen - Navigating to rally planning: Dog Daze 2025
+2025-11-29 07:56:52 [AWT-EventQueue-0] INFO  RallyPlanningScreen - Loading rally with ID: 2
+2025-11-29 07:56:52 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Getting rally with ID: 2
+2025-11-29 07:56:52 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rally/2
+2025-11-29 07:56:52 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 542
+2025-11-29 07:56:52 [AWT-EventQueue-0] INFO  RallyPlanningScreen - Rally loaded: Dog Daze 2025
+2025-11-29 07:56:52 [AWT-EventQueue-0] INFO  BonusPointComponents - Loading bonus points for rally: 2
+2025-11-29 07:56:52 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Listing bonus points for rally: 2
+2025-11-29 07:56:52 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rally/2/bonuspoints
+2025-11-29 07:56:52 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 174
+2025-11-29 07:56:52 [AWT-EventQueue-0] INFO  BonusPointComponents - Loaded 1 bonus points
+2025-11-29 07:56:55 [AWT-EventQueue-0] INFO  HomeScreen - Loading rallies, showAllPastRallies=false, isAuthenticated=true
+2025-11-29 07:56:55 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rallies?page=0&size=100&from=2025-11-29
+2025-11-29 07:56:55 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 686
+2025-11-29 07:56:55 [AWT-EventQueue-0] INFO  HomeScreen - Loaded 1 rallies
+2025-11-29 07:56:57 [AWT-EventQueue-0] INFO  HomeScreen - Navigating to rally planning: Dog Daze 2025
+2025-11-29 07:56:57 [AWT-EventQueue-0] INFO  RallyPlanningScreen - Loading rally with ID: 2
+2025-11-29 07:56:57 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Getting rally with ID: 2
+2025-11-29 07:56:57 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rally/2
+2025-11-29 07:56:57 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 542
+2025-11-29 07:56:57 [AWT-EventQueue-0] INFO  RallyPlanningScreen - Rally loaded: Dog Daze 2025
+2025-11-29 07:56:57 [AWT-EventQueue-0] INFO  BonusPointComponents - Loading bonus points for rally: 2
+2025-11-29 07:56:57 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Listing bonus points for rally: 2
+2025-11-29 07:56:57 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rally/2/bonuspoints
+2025-11-29 07:56:57 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 174
+2025-11-29 07:56:57 [AWT-EventQueue-0] INFO  BonusPointComponents - Loaded 1 bonus points
+2025-11-29 07:57:34 [AWT-EventQueue-0] INFO  HomeScreen - Loading rallies, showAllPastRallies=false, isAuthenticated=true
+2025-11-29 07:57:34 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rallies?page=0&size=100&from=2025-11-29
+2025-11-29 07:57:34 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 686
+2025-11-29 07:57:34 [AWT-EventQueue-0] INFO  HomeScreen - Loaded 1 rallies
+2025-11-29 07:57:46 [AWT-EventQueue-0] INFO  HomeScreen - Navigating to rally planning: Dog Daze 2025
+2025-11-29 07:57:46 [AWT-EventQueue-0] INFO  RallyPlanningScreen - Loading rally with ID: 2
+2025-11-29 07:57:46 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Getting rally with ID: 2
+2025-11-29 07:57:46 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rally/2
+2025-11-29 07:57:46 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 542
+2025-11-29 07:57:46 [AWT-EventQueue-0] INFO  RallyPlanningScreen - Rally loaded: Dog Daze 2025
+2025-11-29 07:57:46 [AWT-EventQueue-0] INFO  BonusPointComponents - Loading bonus points for rally: 2
+2025-11-29 07:57:46 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Listing bonus points for rally: 2
+2025-11-29 07:57:46 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rally/2/bonuspoints
+2025-11-29 07:57:46 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 174
+2025-11-29 07:57:46 [AWT-EventQueue-0] INFO  BonusPointComponents - Loaded 1 bonus points
+2025-11-29 07:57:49 [AWT-EventQueue-0] INFO  HomeScreen - Loading rallies, showAllPastRallies=false, isAuthenticated=true
+2025-11-29 07:57:49 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rallies?page=0&size=100&from=2025-11-29
+2025-11-29 07:57:49 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 686
+2025-11-29 07:57:49 [AWT-EventQueue-0] INFO  HomeScreen - Loaded 1 rallies
+2025-11-29 07:57:51 [AWT-EventQueue-0] INFO  HomeScreen - Navigating to rally planning: Dog Daze 2025
+2025-11-29 07:57:51 [AWT-EventQueue-0] INFO  RallyPlanningScreen - Loading rally with ID: 2
+2025-11-29 07:57:51 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Getting rally with ID: 2
+2025-11-29 07:57:51 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rally/2
+2025-11-29 07:57:51 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 542
+2025-11-29 07:57:51 [AWT-EventQueue-0] INFO  RallyPlanningScreen - Rally loaded: Dog Daze 2025
+2025-11-29 07:57:51 [AWT-EventQueue-0] INFO  BonusPointComponents - Loading bonus points for rally: 2
+2025-11-29 07:57:51 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Listing bonus points for rally: 2
+2025-11-29 07:57:51 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rally/2/bonuspoints
+2025-11-29 07:57:51 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 174
+2025-11-29 07:57:51 [AWT-EventQueue-0] INFO  BonusPointComponents - Loaded 1 bonus points
+2025-11-29 07:58:01 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
+2025-11-29 07:58:01 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=179, y=39, width=1389, height=902
+2025-11-29 12:24:14 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
+2025-11-29 12:24:14 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
+2025-11-29 12:24:14 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
+2025-11-29 12:24:14 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
+2025-11-29 12:24:14 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
+2025-11-29 12:24:14 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
+2025-11-29 12:24:14 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/member/info
+2025-11-29 12:24:14 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 686
+2025-11-29 12:24:14 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=261ms, remaining=2739ms
+2025-11-29 12:24:14 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2739ms to meet minimum splash time
+2025-11-29 12:24:14 [AWT-EventQueue-0] INFO  HomeScreen - Loading rallies, showAllPastRallies=false, isAuthenticated=true
+2025-11-29 12:24:14 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rallies?page=0&size=100&from=2025-11-29
+2025-11-29 12:24:14 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 686
+2025-11-29 12:24:14 [AWT-EventQueue-0] INFO  HomeScreen - Loaded 1 rallies
+2025-11-29 12:24:17 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
+2025-11-29 12:27:13 [AWT-EventQueue-0] INFO  HomeScreen - Navigating to rally planning: Dog Daze 2025
+2025-11-29 12:27:14 [AWT-EventQueue-0] INFO  RallyPlanningScreen - Loading rally with ID: 2
+2025-11-29 12:27:14 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Getting rally with ID: 2
+2025-11-29 12:27:14 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rally/2
+2025-11-29 12:27:14 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 542
+2025-11-29 12:27:14 [AWT-EventQueue-0] INFO  RallyPlanningScreen - Rally loaded: Dog Daze 2025
+2025-11-29 12:27:14 [AWT-EventQueue-0] INFO  BonusPointComponents - Loading bonus points for rally: 2
+2025-11-29 12:27:14 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Listing bonus points for rally: 2
+2025-11-29 12:27:14 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rally/2/bonuspoints
+2025-11-29 12:27:14 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 174
+2025-11-29 12:27:14 [AWT-EventQueue-0] INFO  BonusPointComponents - Loaded 1 bonus points
+2025-11-29 12:27:35 [AWT-EventQueue-0] INFO  BonusPointComponents - Parsed 86 bonus points from CSV
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: ADM
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 161
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: ADM
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: AIT
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 161
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: AIT
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: AKE
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 161
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: AKE
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: APN
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 165
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: APN
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: AUS
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 161
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: AUS
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: BAB
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 165
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: BAB
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: BAY
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: BAY
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: BDP
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: BDP
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: BER
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: BER
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: BLN
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: BLN
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: BLY
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: BLY
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: BOB
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: BOB
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: BPP
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: BPP
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: BRD
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: BRD
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: BRU
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 161
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: BRU
+2025-11-29 12:27:41 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: BRZ
+2025-11-29 12:27:41 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 165
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: BRZ
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: BWC
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: BWC
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: BWT
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 165
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: BWT
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: CEL
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: CEL
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: CFT
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: CFT
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: CLD
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: CLD
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: CMT
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 165
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: CMT
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: CQS
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: CQS
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: CUY
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 161
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: CUY
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: CZY
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: CZY
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: DEP
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: DEP
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: DER
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: DER
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: DOW
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: DOW
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: EEE
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 161
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: EEE
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: EGL
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: EGL
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: ERN
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: ERN
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: FRO
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: FRO
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: FSD
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: FSD
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: FTZ
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: FTZ
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: GRN
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: GRN
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: HAK
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 161
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: HAK
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: HSH
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: HSH
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: HUB
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: HUB
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: IDL
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: IDL
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: JGP
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: JGP
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: JPB
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: JPB
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: LFA
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: LFA
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: LOC
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 165
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: LOC
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: LPW
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: LPW
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: LSB
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 164
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: LSB
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: LTF
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: LTF
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: LTR
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: LTR
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: MAD
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: MAD
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: MIL
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: MIL
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: MIS
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: MIS
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: NEV
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: NEV
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: NOR
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: NOR
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: NPR
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 165
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: NPR
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: NTR
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: NTR
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: NYM
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: NYM
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: OGE
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: OGE
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: OTC
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: OTC
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: OTT
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: OTT
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: OUT
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: OUT
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: PAD
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: PAD
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: PHT
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: PHT
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: PIT
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: PIT
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: PMT
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: PMT
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: POR
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: POR
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: PRA
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: PRA
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: PRD
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 165
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: PRD
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: PRP
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: PRP
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: PRR
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: PRR
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: PTR
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: PTR
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: REC
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: REC
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: RHQ
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: RHQ
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: RIA
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: RIA
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: RRP
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: RRP
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: SEB
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: SEB
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: SER
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: SER
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: SLO
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: SLO
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: SMC
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: SMC
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: SMJ
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: SMJ
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: SMM
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 165
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: SMM
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: SMP
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: SMP
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: SMY
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: SMY
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: TRI
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: TRI
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: TRM
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 166
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: TRM
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: UNA
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: UNA
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: UND
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: UND
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Creating bonus point in rally 2: VIC
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated POST request to: http://localhost:8080/api/rally/2/bonuspoint
+2025-11-29 12:27:42 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 162
+2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: VIC
+2025-11-29 12:29:06 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
+2025-11-29 12:29:06 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=179, y=39, width=1389, height=902

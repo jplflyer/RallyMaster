@@ -140,6 +140,7 @@ fun RallyPlanningScreen(
 
                         BonusPointsPanel(
                             rallyId = rallyId,
+                            serverClient = serverClient,
                             modifier = Modifier.weight(1f).fillMaxHeight()
                         )
                     }
@@ -324,53 +325,23 @@ fun VisibilityRow(label: String, isPublic: Boolean?) {
 }
 
 /**
- * Top-right panel: Bonus Points list (placeholder for Phase 3)
+ * Top-right panel: Bonus Points list
  */
 @Composable
 fun BonusPointsPanel(
     rallyId: Int,
+    serverClient: RallyServerClient,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Bonus Points",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Button(
-                    onClick = { /* TODO: Phase 3 */ },
-                    modifier = Modifier.height(32.dp)
-                ) {
-                    Text("Add Point")
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Bonus Points CRUD\n(Phase 3)",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            BonusPointsList(
+                rallyId = rallyId,
+                serverClient = serverClient
+            )
         }
     }
 }
