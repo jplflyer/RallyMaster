@@ -208,7 +208,7 @@ fun RallyInfoPanel(
                 }
             }
 
-            Divider()
+            HorizontalDivider()
 
             // Rally name
             InfoRow(label = "Name", value = rally.name ?: "Unnamed Rally")
@@ -269,7 +269,7 @@ fun RallyInfoPanel(
                 }
             }
 
-            Divider()
+            HorizontalDivider()
 
             // Visibility settings
             Text(

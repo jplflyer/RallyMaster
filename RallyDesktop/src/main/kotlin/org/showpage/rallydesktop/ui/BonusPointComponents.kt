@@ -821,7 +821,7 @@ fun CsvImportDialog(
                         )
 
                         LinearProgressIndicator(
-                            progress = if (importTotal > 0) importProgress.toFloat() / importTotal else 0f,
+                            progress = { if (importTotal > 0) importProgress.toFloat() / importTotal else 0f },
                             modifier = Modifier.fillMaxWidth()
                         )
 

@@ -491,3 +491,31 @@
 2025-11-29 12:27:42 [AWT-EventQueue-0] INFO  BonusPointComponents - Imported bonus point: VIC
 2025-11-29 12:29:06 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
 2025-11-29 12:29:06 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=179, y=39, width=1389, height=902
+2025-11-29 15:09:09 [AWT-EventQueue-0] INFO  RallyMasterApp - Application starting...
+2025-11-29 15:09:09 [AWT-EventQueue-0] DEBUG o.s.r.service.MacOSKeychainService - Successfully retrieved password from Keychain for account: jpl@showpage.org
+2025-11-29 15:09:09 [AWT-EventQueue-0] INFO  RallyMasterApp - Found stored credentials, attempting auto-login for: jpl@showpage.org
+2025-11-29 15:09:09 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Attempting login for user: jpl@showpage.org
+2025-11-29 15:09:09 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Login successful for user: jpl@showpage.org
+2025-11-29 15:09:09 [AWT-EventQueue-0] INFO  RallyMasterApp - Auto-login successful
+2025-11-29 15:09:09 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/member/info
+2025-11-29 15:09:09 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 57783
+2025-11-29 15:09:09 [AWT-EventQueue-0] INFO  RallyMasterApp - Splash screen: elapsed=249ms, remaining=2751ms
+2025-11-29 15:09:09 [AWT-EventQueue-0] INFO  RallyMasterApp - Delaying for 2751ms to meet minimum splash time
+2025-11-29 15:09:09 [AWT-EventQueue-0] INFO  HomeScreen - Loading rallies, showAllPastRallies=false, isAuthenticated=true
+2025-11-29 15:09:09 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rallies?page=0&size=100&from=2025-11-29
+2025-11-29 15:09:09 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 55464
+2025-11-29 15:09:09 [AWT-EventQueue-0] INFO  HomeScreen - Loaded 59 rallies
+2025-11-29 15:09:12 [AWT-EventQueue-0] INFO  RallyMasterApp - Hiding splash screen
+2025-11-29 15:09:20 [AWT-EventQueue-0] INFO  HomeScreen - Navigating to rally planning: Dog Daze 2025
+2025-11-29 15:09:20 [AWT-EventQueue-0] INFO  RallyPlanningScreen - Loading rally with ID: 2
+2025-11-29 15:09:20 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Getting rally with ID: 2
+2025-11-29 15:09:20 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rally/2
+2025-11-29 15:09:20 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 11367
+2025-11-29 15:09:20 [AWT-EventQueue-0] INFO  RallyPlanningScreen - Rally loaded: Dog Daze 2025
+2025-11-29 15:09:20 [AWT-EventQueue-0] INFO  BonusPointComponents - Loading bonus points for rally: 2
+2025-11-29 15:09:20 [AWT-EventQueue-0] INFO  o.s.r.service.RallyServerClient - Listing bonus points for rally: 2
+2025-11-29 15:09:20 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Making authenticated GET request to: http://localhost:8080/api/rally/2/bonuspoints
+2025-11-29 15:09:20 [AWT-EventQueue-0] DEBUG o.s.r.service.RallyServerClient - Response code: 200, body length: 10999
+2025-11-29 15:09:20 [AWT-EventQueue-0] INFO  BonusPointComponents - Loaded 87 bonus points
+2025-11-29 15:09:29 [AWT-EventQueue-0] INFO  RallyMaster - Saving window bounds before exit
+2025-11-29 15:09:29 [AWT-EventQueue-0] DEBUG o.s.r.service.PreferencesService - Saved window bounds: x=179, y=39, width=1389, height=902

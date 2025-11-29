@@ -18,8 +18,55 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class RallyMasterOperationsIT extends IntegrationTest {
 
+    private static boolean didDelete = false;
+
+    /**
+     * Delete all rallies with names beginning with "AutoTest".
+     * Uses a static flag to ensure it only runs once.
+     */
+    @BeforeEach
+    public void deleteAutoTestRallies() throws Exception {
+        if (didDelete) {
+            return;
+        }
+
+        log.info("Deleting all AutoTest rallies...");
+
+        try {
+            RR_PageUiRally rallyResponse = get_ForRM("/api/rallies?name=AutoTest&all=true", tr_PageUiRally);
+
+            if (rallyResponse != null && rallyResponse.isSuccess() && rallyResponse.getData() != null) {
+                List<UiRally> rallies = rallyResponse.getData().getContent();
+                log.info("Found {} AutoTest rallies to delete", rallies.size());
+
+                for (UiRally rally : rallies) {
+                    try {
+                        log.info("Deleting AutoTest rally: {} (ID: {})", rally.getName(), rally.getId());
+                        delete_ForRM("/api/rally/" + rally.getId(), tr_Void);
+                    } catch (Exception e) {
+                        log.warn("Failed to delete rally {}: {}", rally.getId(), e.getMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Error during AutoTest rally cleanup: {}", e.getMessage());
+        }
+
+        didDelete = true;
+        log.info("AutoTest rally cleanup complete");
+    }
+
     @Test
-    @Order(1)
+    @Order(10)
+    @DisplayName("Trigger cleanup - no-op test")
+    public void testTriggerCleanup() throws Exception {
+        // This test exists only to trigger the @BeforeEach cleanup
+        log.info("Cleanup triggered successfully");
+        assertTrue(didDelete, "Cleanup should have been triggered");
+    }
+
+    @Test
+    @Order(20)
     @DisplayName("Rally Master can create a rally")
     public void testCreateRally() throws Exception {
         UiRally rally = createTestRally();
@@ -31,7 +78,7 @@ public class RallyMasterOperationsIT extends IntegrationTest {
     }
 
     @Test
-    @Order(2)
+    @Order(30)
     @DisplayName("Rally Master can update a rally")
     public void testUpdateRally() throws Exception {
         // Create a rally
@@ -55,7 +102,7 @@ public class RallyMasterOperationsIT extends IntegrationTest {
     }
 
     @Test
-    @Order(3)
+    @Order(40)
     @DisplayName("Rally Master can delete a rally")
     public void testDeleteRally() throws Exception {
         // Create a rally
@@ -71,7 +118,7 @@ public class RallyMasterOperationsIT extends IntegrationTest {
     }
 
     @Test
-    @Order(10)
+    @Order(100)
     @DisplayName("Rally Master can create bonus points")
     public void testCreateBonusPoint() throws Exception {
         UiRally rally = createTestRally();
@@ -85,7 +132,7 @@ public class RallyMasterOperationsIT extends IntegrationTest {
     }
 
     @Test
-    @Order(11)
+    @Order(110)
     @DisplayName("Rally Master can update bonus points")
     public void testUpdateBonusPoint() throws Exception {
         UiRally rally = createTestRally();
@@ -106,7 +153,7 @@ public class RallyMasterOperationsIT extends IntegrationTest {
     }
 
     @Test
-    @Order(12)
+    @Order(120)
     @DisplayName("Rally Master can delete bonus points")
     public void testDeleteBonusPoint() throws Exception {
         UiRally rally = createTestRally();
@@ -117,7 +164,7 @@ public class RallyMasterOperationsIT extends IntegrationTest {
     }
 
     @Test
-    @Order(13)
+    @Order(130)
     @DisplayName("Rally Master can list all bonus points for a rally")
     public void testListBonusPoints() throws Exception {
         UiRally rally = createTestRally();
@@ -133,7 +180,7 @@ public class RallyMasterOperationsIT extends IntegrationTest {
     }
 
     @Test
-    @Order(20)
+    @Order(200)
     @DisplayName("Rally Master can create combinations with bonus points")
     public void testCreateCombination() throws Exception {
         UiRally rally = createTestRally();
@@ -152,7 +199,7 @@ public class RallyMasterOperationsIT extends IntegrationTest {
     }
 
     @Test
-    @Order(21)
+    @Order(210)
     @DisplayName("Rally Master can update combinations")
     public void testUpdateCombination() throws Exception {
         UiRally rally = createTestRally();
@@ -174,7 +221,7 @@ public class RallyMasterOperationsIT extends IntegrationTest {
     }
 
     @Test
-    @Order(22)
+    @Order(220)
     @DisplayName("Rally Master can delete combinations")
     public void testDeleteCombination() throws Exception {
         UiRally rally = createTestRally();
@@ -188,7 +235,7 @@ public class RallyMasterOperationsIT extends IntegrationTest {
     }
 
     @Test
-    @Order(23)
+    @Order(230)
     @DisplayName("Rally Master can add bonus points to existing combinations")
     public void testAddCombinationPoint() throws Exception {
         UiRally rally = createTestRally();
@@ -214,7 +261,7 @@ public class RallyMasterOperationsIT extends IntegrationTest {
     }
 
     @Test
-    @Order(40)
+    @Order(400)
     @DisplayName("Rally Master can handle null data gracefully in rally creation")
     public void testCreateRallyWithNullFields() throws Exception {
         CreateRallyRequest request = new CreateRallyRequest();
@@ -239,7 +286,7 @@ public class RallyMasterOperationsIT extends IntegrationTest {
     }
 
     @Test
-    @Order(41)
+    @Order(410)
     @DisplayName("Rally Master cannot create bonus point with null required fields")
     public void testCreateBonusPointWithNulls() throws Exception {
         UiRally rally = createTestRally();

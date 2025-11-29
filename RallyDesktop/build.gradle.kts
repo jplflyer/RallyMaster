@@ -1,8 +1,9 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
-    kotlin("jvm") version "1.9.24"
-    id("org.jetbrains.compose") version "1.6.11"
+    kotlin("jvm") version "2.2.21"
+    kotlin("plugin.compose") version "2.2.21"
+    id("org.jetbrains.compose") version "1.9.3"
 }
 
 group = "org.showpage"
