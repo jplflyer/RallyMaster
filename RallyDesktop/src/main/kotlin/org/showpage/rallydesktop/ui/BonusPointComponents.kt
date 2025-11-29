@@ -548,9 +548,22 @@ fun BonusPointsList(
             serverClient = serverClient,
             onDismiss = { showImportDialog = false },
             onImportComplete = { importedPoints ->
-                // Refresh the list
-                bonusPoints = bonusPoints + importedPoints
-                showImportDialog = false
+                // Reload the full list from server to ensure consistency
+                scope.launch {
+                    isLoading = true
+                    serverClient.listBonusPoints(rallyId).fold(
+                        onSuccess = { points ->
+                            bonusPoints = points
+                            isLoading = false
+                            showImportDialog = false
+                        },
+                        onFailure = { error ->
+                            errorMessage = "Failed to reload bonus points: ${error.message}"
+                            isLoading = false
+                            showImportDialog = false
+                        }
+                    )
+                }
             }
         )
     }

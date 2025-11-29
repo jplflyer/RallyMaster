@@ -41,7 +41,11 @@ class AppState {
 
     fun hideSplash() {
         showSplash = false
-        currentScreen = if (isAuthenticated) Screen.HOME else Screen.LOGIN
+        // Only change screen if we're still on the splash screen
+        // (user might have already navigated elsewhere)
+        if (currentScreen == Screen.SPLASH) {
+            currentScreen = if (isAuthenticated) Screen.HOME else Screen.LOGIN
+        }
     }
 
     fun setAuthenticated(user: UiMember) {
