@@ -866,32 +866,71 @@ fun CsvImportDialog(
                                     importProgress = 0
                                     importError = null
 
+                                    // First, load existing bonus points to check for duplicates
+                                    val existingPointsResult = serverClient.listBonusPoints(rallyId)
+                                    val existingPoints = existingPointsResult.getOrNull() ?: emptyList()
+                                    val existingPointsByCode = existingPoints.associateBy { it.code }
+
+                                    logger.info("Found {} existing bonus points for upsert check", existingPoints.size)
+
                                     val importedPoints = mutableListOf<UiBonusPoint>()
+                                    var createdCount = 0
+                                    var updatedCount = 0
 
                                     for (csvPoint in parsedPoints) {
-                                        val request = CreateBonusPointRequest.builder()
-                                            .code(csvPoint.code)
-                                            .name(csvPoint.name)
-                                            .latitude(csvPoint.latitude)
-                                            .longitude(csvPoint.longitude)
-                                            .required(false)
-                                            .repeatable(false)
-                                            .build()
+                                        val existingPoint = existingPointsByCode[csvPoint.code]
 
-                                        serverClient.createBonusPoint(rallyId, request).fold(
-                                            onSuccess = { newPoint ->
-                                                importedPoints.add(newPoint)
-                                                importProgress++
-                                                logger.info("Imported bonus point: {}", csvPoint.code)
-                                            },
-                                            onFailure = { error ->
-                                                logger.error("Failed to import bonus point: {}", csvPoint.code, error)
-                                                importError = "Failed to import ${csvPoint.code}: ${error.message}"
-                                            }
-                                        )
+                                        if (existingPoint != null) {
+                                            // Update existing point
+                                            val updateRequest = UpdateBonusPointRequest.builder()
+                                                .code(csvPoint.code)
+                                                .name(csvPoint.name)
+                                                .latitude(csvPoint.latitude)
+                                                .longitude(csvPoint.longitude)
+                                                .required(existingPoint.required)
+                                                .repeatable(existingPoint.repeatable)
+                                                .build()
+
+                                            serverClient.updateBonusPoint(existingPoint.id!!, updateRequest).fold(
+                                                onSuccess = { updatedPoint ->
+                                                    importedPoints.add(updatedPoint)
+                                                    updatedCount++
+                                                    importProgress++
+                                                    logger.info("Updated bonus point: {}", csvPoint.code)
+                                                },
+                                                onFailure = { error ->
+                                                    logger.error("Failed to update bonus point: {}", csvPoint.code, error)
+                                                    importError = "Failed to update ${csvPoint.code}: ${error.message}"
+                                                }
+                                            )
+                                        } else {
+                                            // Create new point
+                                            val createRequest = CreateBonusPointRequest.builder()
+                                                .code(csvPoint.code)
+                                                .name(csvPoint.name)
+                                                .latitude(csvPoint.latitude)
+                                                .longitude(csvPoint.longitude)
+                                                .required(false)
+                                                .repeatable(false)
+                                                .build()
+
+                                            serverClient.createBonusPoint(rallyId, createRequest).fold(
+                                                onSuccess = { newPoint ->
+                                                    importedPoints.add(newPoint)
+                                                    createdCount++
+                                                    importProgress++
+                                                    logger.info("Created bonus point: {}", csvPoint.code)
+                                                },
+                                                onFailure = { error ->
+                                                    logger.error("Failed to create bonus point: {}", csvPoint.code, error)
+                                                    importError = "Failed to create ${csvPoint.code}: ${error.message}"
+                                                }
+                                            )
+                                        }
                                     }
 
                                     if (importError == null) {
+                                        logger.info("Import complete: {} created, {} updated", createdCount, updatedCount)
                                         onImportComplete(importedPoints)
                                     } else {
                                         isImporting = false
