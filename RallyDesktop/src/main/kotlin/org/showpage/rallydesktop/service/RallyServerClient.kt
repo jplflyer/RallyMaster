@@ -210,6 +210,38 @@ class RallyServerClient(private val serverUrl: String) {
     }
 
     /**
+     * Get all combinations for a rally.
+     */
+    fun listCombinations(rallyId: Int): Result<List<UiCombination>> {
+        logger.info("Listing combinations for rally: {}", rallyId)
+        return authenticatedGet("/api/rally/$rallyId/combinations")
+    }
+
+    /**
+     * Create a new combination in a rally.
+     */
+    fun createCombination(rallyId: Int, request: CreateCombinationRequest): Result<UiCombination> {
+        logger.info("Creating combination in rally {}: {}", rallyId, request.code)
+        return authenticatedPost("/api/rally/$rallyId/combination", request)
+    }
+
+    /**
+     * Update an existing combination.
+     */
+    fun updateCombination(combinationId: Int, request: UpdateCombinationRequest): Result<UiCombination> {
+        logger.info("Updating combination: {}", combinationId)
+        return authenticatedPut("/api/combination/$combinationId", request)
+    }
+
+    /**
+     * Delete a combination.
+     */
+    fun deleteCombination(combinationId: Int): Result<Unit> {
+        logger.info("Deleting combination: {}", combinationId)
+        return authenticatedDelete("/api/combination/$combinationId")
+    }
+
+    /**
      * Search rallies with optional filters.
      * For "My Rallies", use all=true to include all rallies user is involved with.
      */

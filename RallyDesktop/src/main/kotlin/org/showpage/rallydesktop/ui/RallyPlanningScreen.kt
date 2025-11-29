@@ -152,6 +152,7 @@ fun RallyPlanningScreen(
                     ) {
                         CombinationsPanel(
                             rallyId = rallyId,
+                            serverClient = serverClient,
                             modifier = Modifier.weight(1f).fillMaxHeight()
                         )
 
@@ -347,53 +348,23 @@ fun BonusPointsPanel(
 }
 
 /**
- * Bottom-left panel: Combinations list (placeholder for Phase 4)
+ * Bottom-left panel: Combinations list
  */
 @Composable
 fun CombinationsPanel(
     rallyId: Int,
+    serverClient: RallyServerClient,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Combinations",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Button(
-                    onClick = { /* TODO: Phase 4 */ },
-                    modifier = Modifier.height(32.dp)
-                ) {
-                    Text("Add Combo")
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Combinations CRUD\n(Phase 4)",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            CombinationsList(
+                rallyId = rallyId,
+                serverClient = serverClient
+            )
         }
     }
 }
