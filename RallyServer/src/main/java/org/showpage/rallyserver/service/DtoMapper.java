@@ -113,6 +113,10 @@ public class DtoMapper {
                 .points(bonusPoint.getPoints())
                 .required(bonusPoint.getRequired())
                 .repeatable(bonusPoint.getRepeatable())
+                .isStart(bonusPoint.getIsStart())
+                .isFinish(bonusPoint.getIsFinish())
+                .markerColor(bonusPoint.getMarkerColor())
+                .markerIcon(bonusPoint.getMarkerIcon())
                 .build();
     }
 
@@ -153,6 +157,8 @@ public class DtoMapper {
                 .requiresAll(combination.getRequiresAll())
                 .numRequired(combination.getNumRequired())
                 .combinationPoints(combinationPoints)
+                .markerColor(combination.getMarkerColor())
+                .markerIcon(combination.getMarkerIcon())
                 .build();
     }
 
@@ -327,6 +333,8 @@ public class DtoMapper {
                 .latitude(waypoint.getLatitude())
                 .longitude(waypoint.getLongitude())
                 .address(waypoint.getAddress())
+                .markerColor(waypoint.getMarkerColor())
+                .markerIcon(waypoint.getMarkerIcon())
                 .build();
     }
 }

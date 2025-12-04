@@ -42,4 +42,10 @@ public class UiCombination {
 
     @Schema(description = "List of bonus points that are part of this combination")
     private List<UiCombinationPoint> combinationPoints;
+
+    @Schema(description = "Marker color for map display", example = "blue")
+    private String markerColor;
+
+    @Schema(description = "Marker icon type for map display", example = "star")
+    private String markerIcon;
 }

@@ -36,4 +36,8 @@ public class BonusPoint {
     private Integer points;
     private Boolean required;
     private Boolean repeatable;
+    private Boolean isStart;
+    private Boolean isFinish;
+    private String markerColor;
+    private String markerIcon;
 }

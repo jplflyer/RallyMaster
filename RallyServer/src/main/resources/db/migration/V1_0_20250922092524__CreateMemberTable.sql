@@ -48,17 +48,21 @@ CREATE TABLE IF NOT EXISTS rally
 
 CREATE TABLE IF NOT EXISTS bonus_point
 (
-    id          SERIAL PRIMARY KEY,
-    rally_id    INTEGER REFERENCES rally (id) ON DELETE CASCADE,
-    code        TEXT,
-    name        TEXT,
-    description TEXT,
-    latitude    DOUBLE PRECISION,
-    longitude   DOUBLE PRECISION,
-    address     TEXT,
-    points      INTEGER,
-    required    BOOLEAN NOT NULL,
-    repeatable  BOOLEAN NOT NULL
+    id           SERIAL PRIMARY KEY,
+    rally_id     INTEGER REFERENCES rally (id) ON DELETE CASCADE,
+    code         TEXT,
+    name         TEXT,
+    description  TEXT,
+    latitude     DOUBLE PRECISION,
+    longitude    DOUBLE PRECISION,
+    address      TEXT,
+    points       INTEGER,
+    required     BOOLEAN NOT NULL,
+    repeatable   BOOLEAN NOT NULL,
+    is_start     BOOLEAN NOT NULL,
+    is_finish    BOOLEAN NOT NULL,
+    marker_color TEXT,
+    marker_icon  TEXT
 );
 
 CREATE TABLE IF NOT EXISTS combination
@@ -70,7 +74,9 @@ CREATE TABLE IF NOT EXISTS combination
     description  TEXT,
     points       INTEGER,
     requires_all BOOLEAN NOT NULL,
-    num_required INTEGER -- if requires_all is false
+    num_required INTEGER, -- if requires_all is false
+    marker_color TEXT,
+    marker_icon  TEXT
 );
 
 -- one of the points for a combo
@@ -81,8 +87,6 @@ CREATE TABLE IF NOT EXISTS combination_point
     bonus_point_id INTEGER REFERENCES bonus_point (id) ON DELETE CASCADE,
     required       BOOLEAN NOT NULL
 );
-
-
 
 CREATE TABLE IF NOT EXISTS rally_participant
 (
@@ -163,23 +167,24 @@ CREATE TABLE IF NOT EXISTS waypoint
     latitude             DOUBLE PRECISION,
     longitude            DOUBLE PRECISION,
     address              TEXT,
+    marker_color         TEXT,
+    marker_icon          TEXT,
     expected_arrival     timestamptz,
     expected_departure   timestamptz,
     stop_duration        INTEGER,
     actual_arrival       timestamptz,
     actual_departure     timestamptz
-
 );
 
 --
 -- Create admin and test users
 --
-INSERT INTO member (id, email, real_name, password, spotwalla_username, is_admin, refresh_token)
-VALUES (1, 'admin', 'Joe Larson', '$2a$10$716npnoapsrVPkgBQ1vOj.6WqIUd9pGSEc/5wJFQYeoXxCUXB9obK', null, true, null);
+INSERT INTO member ( email, real_name, password, spotwalla_username, is_admin, refresh_token)
+VALUES ('admin', 'Joe Larson', '$2a$10$716npnoapsrVPkgBQ1vOj.6WqIUd9pGSEc/5wJFQYeoXxCUXB9obK', null, true, null);
 
-INSERT INTO member (id, email, real_name, password, spotwalla_username, is_admin, refresh_token)
-VALUES (2, 'jpl@showpage.org', 'Joe', '$2a$10$fN6lMQuS1RYEK/zG0zRayOrbNPh2GQ7jIpbhfwIJkxItMqwhxluDq', null, false, null);
+INSERT INTO member (email, real_name, password, spotwalla_username, is_admin, refresh_token)
+VALUES ('jpl@showpage.org', 'Joe', '$2a$10$fN6lMQuS1RYEK/zG0zRayOrbNPh2GQ7jIpbhfwIJkxItMqwhxluDq', null, false, null);
 
-INSERT INTO member (id, email, real_name, password, spotwalla_username, is_admin, refresh_token)
-VALUES (3, 'joe@showpage.org', 'Joseph', '$2a$10$bq2pUib7Av88zYc1cZ2deOUfHYrACfhUHMIo87ibjgqjv9Oqr1MtC', null, false, null);
+INSERT INTO member ( email, real_name, password, spotwalla_username, is_admin, refresh_token)
+VALUES ('joe@showpage.org', 'Joseph', '$2a$10$bq2pUib7Av88zYc1cZ2deOUfHYrACfhUHMIo87ibjgqjv9Oqr1MtC', null, false, null);
 

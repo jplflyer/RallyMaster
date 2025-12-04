@@ -41,4 +41,10 @@ public class UiWaypoint implements HasId<UiWaypoint> {
 
     @Schema(description = "Waypoint address", example = "12345 Airport Rd, Aitkin, MN")
     private String address;
+
+    @Schema(description = "Marker color for map display", example = "blue")
+    private String markerColor;
+
+    @Schema(description = "Marker icon type for map display", example = "pin")
+    private String markerIcon;
 }

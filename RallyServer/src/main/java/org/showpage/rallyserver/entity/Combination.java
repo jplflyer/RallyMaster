@@ -33,6 +33,8 @@ public class Combination {
     private Integer points;
     private Boolean requiresAll;
     private Integer numRequired;
+    private String markerColor;
+    private String markerIcon;
 
     @OneToMany(
             mappedBy = "combination",                // owning side is RallyParticipant.rally

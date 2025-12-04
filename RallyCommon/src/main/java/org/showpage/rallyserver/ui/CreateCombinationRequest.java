@@ -34,4 +34,10 @@ public class CreateCombinationRequest {
 
     @Schema(description = "List of bonus points to include in this combination")
     private List<CreateCombinationPointRequest> combinationPoints;
+
+    @Schema(description = "Marker color for map display", example = "blue")
+    private String markerColor;
+
+    @Schema(description = "Marker icon type for map display", example = "star")
+    private String markerIcon;
 }

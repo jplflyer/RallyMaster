@@ -262,6 +262,10 @@ public class RallyService {
                 .points(request.getPoints())
                 .required(request.getRequired() != null ? request.getRequired() : false)
                 .repeatable(request.getRepeatable() != null ? request.getRepeatable() : false)
+                .isStart(request.getIsStart() != null ? request.getIsStart() : false)
+                .isFinish(request.getIsFinish() != null ? request.getIsFinish() : false)
+                .markerColor(request.getMarkerColor())
+                .markerIcon(request.getMarkerIcon())
                 .build();
 
         return bonusPointRepository.save(bonusPoint);
@@ -305,6 +309,18 @@ public class RallyService {
         }
         if (request.getRepeatable() != null) {
             bonusPoint.setRepeatable(request.getRepeatable());
+        }
+        if (request.getIsStart() != null) {
+            bonusPoint.setIsStart(request.getIsStart());
+        }
+        if (request.getIsFinish() != null) {
+            bonusPoint.setIsFinish(request.getIsFinish());
+        }
+        if (DataValidator.nonEmpty(request.getMarkerColor())) {
+            bonusPoint.setMarkerColor(request.getMarkerColor());
+        }
+        if (DataValidator.nonEmpty(request.getMarkerIcon())) {
+            bonusPoint.setMarkerIcon(request.getMarkerIcon());
         }
 
         return bonusPointRepository.save(bonusPoint);
@@ -373,6 +389,8 @@ public class RallyService {
                 .points(request.getPoints())
                 .requiresAll(request.getRequiresAll())
                 .numRequired(request.getNumRequired())
+                .markerColor(request.getMarkerColor())
+                .markerIcon(request.getMarkerIcon())
                 .build();
 
         Combination saved = combinationRepository.save(combination);
@@ -433,6 +451,12 @@ public class RallyService {
         }
         if (request.getNumRequired() != null) {
             combination.setNumRequired(request.getNumRequired());
+        }
+        if (DataValidator.nonEmpty(request.getMarkerColor())) {
+            combination.setMarkerColor(request.getMarkerColor());
+        }
+        if (DataValidator.nonEmpty(request.getMarkerIcon())) {
+            combination.setMarkerIcon(request.getMarkerIcon());
         }
 
         return combinationRepository.save(combination);

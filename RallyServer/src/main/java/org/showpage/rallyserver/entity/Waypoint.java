@@ -43,4 +43,6 @@ public class Waypoint implements HasId<Waypoint> {
     private Float latitude;
     private Float longitude;
     private String address;
+    private String markerColor;
+    private String markerIcon;
 }

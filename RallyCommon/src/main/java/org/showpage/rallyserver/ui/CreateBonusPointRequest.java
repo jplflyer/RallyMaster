@@ -38,4 +38,16 @@ public class CreateBonusPointRequest {
 
     @Schema(description = "Whether this bonus point can be claimed multiple times", example = "false")
     private Boolean repeatable;
+
+    @Schema(description = "Whether this is the rally start location", example = "false")
+    private Boolean isStart;
+
+    @Schema(description = "Whether this is a rally finish location", example = "false")
+    private Boolean isFinish;
+
+    @Schema(description = "Marker color for map display", example = "red")
+    private String markerColor;
+
+    @Schema(description = "Marker icon type for map display", example = "flag")
+    private String markerIcon;
 }

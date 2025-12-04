@@ -29,4 +29,10 @@ public class UpdateCombinationRequest {
 
     @Schema(description = "Number of points required if not all (when requiresAll is false)", example = "3")
     private Integer numRequired;
+
+    @Schema(description = "Marker color for map display", example = "blue")
+    private String markerColor;
+
+    @Schema(description = "Marker icon type for map display", example = "star")
+    private String markerIcon;
 }
