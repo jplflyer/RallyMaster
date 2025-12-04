@@ -174,7 +174,7 @@ private fun createMapViewer(): JXMapViewer {
             //val tileY = y / 2
             val tileX = x
             val tileY = y
-            val useZoom = zoom + 1;
+            val useZoom = maximumZoomLevel - zoom
             val factor = 1 shl (getTotalMapZoom() - zoom)  // For debugging
 
             val maxTileCoord = (1 shl zoom) - 1
@@ -182,6 +182,7 @@ private fun createMapViewer(): JXMapViewer {
                 zoom, x, y, factor, tileX, tileY, maxTileCoord)
 
             // Validate tile coordinates
+            /*
             if (tileX < 0 || tileY < 0 || tileX > maxTileCoord || tileY > maxTileCoord) {
                 logger.warn("Tile coordinates out of range: zoom={}, tile x={}, y={} (max={})",
                     zoom, tileX, tileY, maxTileCoord)
@@ -191,6 +192,8 @@ private fun createMapViewer(): JXMapViewer {
                 val url = "https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/$useZoom/$clampedX/$clampedY?access_token=$mapboxToken"
                 return url
             }
+
+             */
 
             // Mapbox Styles API - modern, well-supported
             // streets-v12 is the current standard street map style
