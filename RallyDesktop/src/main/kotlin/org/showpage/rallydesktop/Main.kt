@@ -26,6 +26,9 @@ fun main() {
     System.setProperty("apple.awt.application.name", "RallyMaster")
     System.setProperty("com.apple.mrj.application.apple.menu.about.name", "RallyMaster")
 
+    // Set User-Agent for HTTP requests (needed for OpenStreetMap tiles)
+    System.setProperty("http.agent", "RallyMaster/1.0")
+
     application {
     val preferencesService = remember { PreferencesService() }
     val credentialService = remember { CredentialService.create() }

@@ -48,3 +48,6 @@ CreateRally.md
 Rides.md
 Desktop.md
 RallyDesktop/logs
+
+### Configuration with API keys ###
+RallyDesktop/src/main/resources/rallymaster.properties

@@ -157,7 +157,9 @@ fun RallyPlanningScreen(
                         )
 
                         MapPanel(
+                            rallyId = rallyId,
                             rally = rally!!,
+                            serverClient = serverClient,
                             modifier = Modifier.weight(1f).fillMaxHeight()
                         )
                     }
@@ -370,38 +372,71 @@ fun CombinationsPanel(
 }
 
 /**
- * Bottom-right panel: Map (placeholder for Phase 5)
+ * Bottom-right panel: Map showing bonus points
  */
 @Composable
 fun MapPanel(
+    rallyId: Int,
     rally: UiRally,
+    serverClient: RallyServerClient,
     modifier: Modifier = Modifier
 ) {
+    var bonusPoints by remember { mutableStateOf(emptyList<org.showpage.rallyserver.ui.UiBonusPoint>()) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    // Load bonus points for the map
+    LaunchedEffect(rallyId) {
+        isLoading = true
+        serverClient.listBonusPoints(rallyId).fold(
+            onSuccess = { points ->
+                bonusPoints = points
+                isLoading = false
+                logger.info("Loaded {} bonus points for map", points.size)
+            },
+            onFailure = { error ->
+                logger.error("Failed to load bonus points for map", error)
+                isLoading = false
+            }
+        )
+    }
+
     Card(
         modifier = modifier,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
+            modifier = Modifier.fillMaxSize()
         ) {
-            Text(
-                text = "Map",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+            // Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Interactive Map\n(Phase 5)",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "Map",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp
+                    )
+                }
+            }
+
+            // Map viewer
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                MapViewer(
+                    bonusPoints = bonusPoints,
+                    centerLatitude = rally.latitude?.toDouble(),
+                    centerLongitude = rally.longitude?.toDouble()
                 )
             }
         }

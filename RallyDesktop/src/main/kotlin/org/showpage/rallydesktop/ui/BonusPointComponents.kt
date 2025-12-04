@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogWindow
+import java.awt.Dimension
 import kotlinx.coroutines.launch
 import org.showpage.rallydesktop.service.RallyServerClient
 import org.showpage.rallyserver.ui.CreateBonusPointRequest
@@ -683,26 +685,24 @@ fun CsvImportDialog(
     var importTotal by remember { mutableStateOf(0) }
     var importError by remember { mutableStateOf<String?>(null) }
 
-    Dialog(onDismissRequest = onDismiss) {
+    DialogWindow(
+        onCloseRequest = onDismiss,
+        title = "Import Bonus Points from CSV"
+    ) {
+        // Set window size
+        window.minimumSize = Dimension(800, 600)
+        window.size = Dimension(800, 700)
+
         Card(
             modifier = Modifier
-                .width(800.dp)
-                .heightIn(max = 700.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                .fillMaxSize(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(24.dp)
             ) {
-                // Header
-                Text(
-                    text = "Import Bonus Points from CSV",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
 
                 // File selection
                 if (selectedFile == null && !isImporting) {
