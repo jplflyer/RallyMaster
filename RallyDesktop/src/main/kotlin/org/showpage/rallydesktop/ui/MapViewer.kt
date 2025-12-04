@@ -1,9 +1,13 @@
 package org.showpage.rallydesktop.ui
 
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
+import androidx.compose.ui.unit.dp
 import org.jxmapviewer.JXMapViewer
 import org.jxmapviewer.OSMTileFactoryInfo
 import org.jxmapviewer.input.PanMouseInputListener
@@ -14,12 +18,17 @@ import org.jxmapviewer.viewer.*
 import org.showpage.rallydesktop.service.ConfigurationService
 import org.showpage.rallyserver.ui.UiBonusPoint
 import org.slf4j.LoggerFactory
+import java.awt.BorderLayout
+import java.awt.Dimension
+import java.awt.FlowLayout
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLConnection
 import javax.imageio.ImageIO
+import javax.swing.JButton
+import javax.swing.JPanel
 import javax.swing.event.MouseInputListener
 
 private val logger = LoggerFactory.getLogger("MapViewer")
@@ -118,8 +127,57 @@ fun MapViewer(
         }
     }
 
+    // Create a Swing panel with zoom controls overlaid on the map
     SwingPanel(
-        factory = { mapViewer },
+        factory = {
+            // Create container panel with BorderLayout
+            val containerPanel = JPanel(BorderLayout())
+
+            // Add map viewer to center
+            containerPanel.add(mapViewer, BorderLayout.CENTER)
+
+            // Create zoom control panel
+            val zoomPanel = JPanel(FlowLayout(FlowLayout.RIGHT, 10, 10))
+            zoomPanel.isOpaque = false
+
+            // Zoom out button
+            val zoomInButton = JButton("-").apply {
+                preferredSize = Dimension(40, 40)
+                addActionListener {
+                    val currentZoom = mapViewer.zoom
+                    // We only let you zoom out to 15 not 17 cause 16 and 17 are just ridiculous.
+                    if (currentZoom < 15) {
+                        mapViewer.zoom = currentZoom + 1
+                        logger.info("Zoomed in to level {}", currentZoom + 1)
+                    }
+                }
+            }
+
+            // Zoom in button
+            val zoomOutButton = JButton("+").apply {
+                preferredSize = Dimension(40, 40)
+                addActionListener {
+                    val currentZoom = mapViewer.zoom
+                    if (currentZoom > 0) {
+                        mapViewer.zoom = currentZoom - 1
+                        logger.info("Zoomed out to level {}", currentZoom - 1)
+                    }
+                }
+            }
+
+            zoomPanel.add(zoomInButton)
+            zoomPanel.add(zoomOutButton)
+
+            // Overlay zoom panel on top-right using OverlayLayout would be complex
+            // Instead, use a simple approach with a north panel
+            val topPanel = JPanel(BorderLayout())
+            topPanel.isOpaque = false
+            topPanel.add(zoomPanel, BorderLayout.EAST)
+
+            containerPanel.add(topPanel, BorderLayout.NORTH)
+
+            containerPanel
+        },
         modifier = modifier.fillMaxSize()
     )
 }
@@ -156,8 +214,9 @@ private fun createMapViewer(): JXMapViewer {
 
     // Create a TileFactoryInfo for Mapbox
     // totalMapZoom MUST be >= maxZoom to avoid array bounds errors
+    // minZoom=2 prevents zooming out too far (Mapbox zoom 15)
     val tileFactoryInfo = object : TileFactoryInfo(
-        0,      // min zoom
+        0,      // min zoom (JXMapViewer 2 = Mapbox 15)
         17,     // max zoom
         17,     // total map zoom - MUST equal max zoom
         256,    // tile size
@@ -217,7 +276,30 @@ private fun createMapViewer(): JXMapViewer {
     val mia: MouseInputListener = PanMouseInputListener(mapViewer)
     mapViewer.addMouseListener(mia)
     mapViewer.addMouseMotionListener(mia)
-    mapViewer.addMouseWheelListener(ZoomMouseWheelListenerCenter(mapViewer))
+
+    // Custom mouse wheel listener with reduced sensitivity
+    // Accumulate wheel rotation and only zoom when threshold is reached
+    var wheelRotationAccumulator = 0.0
+    mapViewer.addMouseWheelListener { e ->
+        wheelRotationAccumulator += e.preciseWheelRotation
+
+        // Require 3 notches to zoom one level (adjust this value to change sensitivity)
+        val threshold = 3.0
+
+        if (Math.abs(wheelRotationAccumulator) >= threshold) {
+            val zoomChange = if (wheelRotationAccumulator > 0) 1 else -1
+            val newZoom = mapViewer.zoom + zoomChange
+
+            // Respect zoom limits (0-15)
+            if (newZoom in 0..15) {
+                mapViewer.zoom = newZoom
+                logger.info("Mouse wheel zoom to level {}", newZoom)
+            }
+
+            // Reset accumulator after zooming
+            wheelRotationAccumulator = 0.0
+        }
+    }
 
     logger.info("Map viewer created with Mapbox tiles")
 
