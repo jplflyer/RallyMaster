@@ -1,32 +1,21 @@
 package org.showpage.rallydesktop.ui
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
-import androidx.compose.ui.unit.dp
 import org.jxmapviewer.JXMapViewer
-import org.jxmapviewer.OSMTileFactoryInfo
 import org.jxmapviewer.input.PanMouseInputListener
-import org.jxmapviewer.input.ZoomMouseWheelListenerCenter
 import org.jxmapviewer.painter.CompoundPainter
 import org.jxmapviewer.painter.Painter
 import org.jxmapviewer.viewer.*
 import org.showpage.rallydesktop.service.ConfigurationService
 import org.showpage.rallyserver.ui.UiBonusPoint
 import org.slf4j.LoggerFactory
-import java.awt.BorderLayout
-import java.awt.Dimension
-import java.awt.FlowLayout
-import java.awt.image.BufferedImage
-import java.io.ByteArrayInputStream
-import java.net.HttpURLConnection
-import java.net.URL
+import java.awt.*
 import java.net.URLConnection
-import javax.imageio.ImageIO
 import javax.swing.JButton
 import javax.swing.JPanel
 import javax.swing.event.MouseInputListener
@@ -64,6 +53,7 @@ private fun configureHttpUserAgent() {
 @Composable
 fun MapViewer(
     bonusPoints: List<UiBonusPoint>,
+    combinations: List<org.showpage.rallyserver.ui.UiCombination> = emptyList(),
     centerLatitude: Double?,
     centerLongitude: Double?,
     modifier: Modifier = Modifier
@@ -80,9 +70,27 @@ fun MapViewer(
     }
 
     // Update bonus point markers when they change
-    LaunchedEffect(bonusPoints) {
+    LaunchedEffect(bonusPoints, combinations) {
         if (bonusPoints.isNotEmpty()) {
-            logger.info("Processing {} bonus points for map display", bonusPoints.size)
+            logger.info("Processing {} bonus points and {} combinations for map display",
+                bonusPoints.size, combinations.size)
+
+            // Build a map of bonus point ID to combination color
+            val bonusPointColors = mutableMapOf<Int, String>()
+            combinations.forEach { combo ->
+                combo.combinationPoints?.forEach { cp ->
+                    // Only set color if not already set (first combination wins)
+                    if (!bonusPointColors.containsKey(cp.bonusPointId)) {
+                        combo.markerColor?.let { color ->
+                            bonusPointColors[cp.bonusPointId] = color
+                            logger.debug("Assigning color {} to bonus point {} from combination {}",
+                                color, cp.bonusPointId, combo.name)
+                        }
+                    }
+                }
+            }
+
+            logger.info("Assigned colors to {} bonus points from combinations", bonusPointColors.size)
 
             // Log first few bonus points to debug
             bonusPoints.take(5).forEach { bp ->
@@ -99,10 +107,20 @@ fun MapViewer(
                             bp.code, bp.name, bp.latitude, bp.longitude)
                         null
                     } else {
+                        // Use combination color if available, otherwise use bonus point's own color
+                        // If no color at all, default to red
+                        val effectiveColor = bp.id?.let { bonusPointColors[it] } ?: bp.markerColor ?: "#FF0000"
+
+                        logger.debug("Bonus point {} ({}): color={}", bp.code, bp.name, effectiveColor)
+
                         BonusPointWaypoint(
                             geoPosition = GeoPosition(bp.latitude, bp.longitude),
                             code = bp.code ?: "??",
-                            name = bp.name ?: "Unnamed"
+                            name = bp.name ?: "Unnamed",
+                            markerColor = effectiveColor,
+                            markerIcon = bp.markerIcon,
+                            isStart = bp.isStart ?: false,
+                            isFinish = bp.isFinish ?: false
                         )
                     }
                 } else {
@@ -111,14 +129,18 @@ fun MapViewer(
                 }
             }
 
+            logger.info("Created {} waypoints from bonus points", waypoints.size)
+
             val waypointPainter = WaypointPainter<BonusPointWaypoint>().apply {
                 setWaypoints(waypoints.toSet())
+                setRenderer(ColoredWaypointRenderer())
             }
 
-            val painters = mutableListOf<Painter<JXMapViewer>>(waypointPainter)
-            mapViewer.overlayPainter = CompoundPainter(painters)
+            // val painters = mutableListOf<Painter<JXMapViewer>>(waypointPainter)
+            // mapViewer.overlayPainter = CompoundPainter(painters)
+            mapViewer.overlayPainter = CompoundPainter(waypointPainter)
 
-            logger.info("Updated map with {} bonus point markers", waypoints.size)
+            logger.info("Updated map with {} bonus point markers using ColoredWaypointRenderer", waypoints.size)
 
             // Always zoom to fit all points for now to debug positioning
             if (waypoints.isNotEmpty()) {
@@ -312,7 +334,11 @@ private fun createMapViewer(): JXMapViewer {
 class BonusPointWaypoint(
     private val geoPosition: GeoPosition,
     val code: String,
-    val name: String
+    val name: String,
+    val markerColor: String? = null,
+    val markerIcon: String? = null,
+    val isStart: Boolean = false,
+    val isFinish: Boolean = false
 ) : Waypoint {
     override fun getPosition(): GeoPosition = geoPosition
 }
@@ -365,4 +391,126 @@ private fun zoomToFitWaypoints(mapViewer: JXMapViewer, waypoints: List<BonusPoin
 
     mapViewer.zoom = zoom
     logger.info("Zoomed to fit {} waypoints at zoom level {}", waypoints.size, zoom)
+}
+
+/**
+ * Custom renderer for colored waypoints
+ */
+class ColoredWaypointRenderer : WaypointRenderer<BonusPointWaypoint> {
+    /*
+    override fun paintWaypoint(g: Graphics2D, map: JXMapViewer, waypoint: BonusPointWaypoint) {
+        // val p = map.convertGeoPositionToPoint(waypoint.position)
+        val p = map.tileFactory.geoToPixel(waypoint.position, map.zoom)
+        g.color = Color.RED
+        g.fillRect(p.x.toInt() - 2, p.y.toInt() - 2, 4, 4)
+    }
+     */
+
+    override fun paintWaypoint(g: Graphics2D, map: JXMapViewer, waypoint: BonusPointWaypoint) {
+        // Use "world pixel" coordinates; WaypointPainter handles viewport translation.
+        val p = map.tileFactory.geoToPixel(waypoint.position, map.zoom)
+
+        // Parse the color from the hex string
+        val color = parseColor(waypoint.markerColor)
+
+        // Enable anti-aliasing for smoother circles
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+
+        val markerSize = 12
+        val halfSize = markerSize / 2
+        val x = p.x.toInt() - halfSize
+        val y = p.y.toInt() - halfSize
+
+        // Shadow
+        g.color = Color(0, 0, 0, 50)
+        g.fillOval(x + 1, y + 1, markerSize, markerSize)
+
+        // Main marker
+        g.color = color
+        g.fillOval(x, y, markerSize, markerSize)
+
+        // White border
+        g.color = Color.WHITE
+        g.stroke = BasicStroke(2f)
+        g.drawOval(x, y, markerSize, markerSize)
+
+        // Inner dark border
+        g.color = Color(0, 0, 0, 100)
+        g.stroke = BasicStroke(1f)
+        g.drawOval(x, y, markerSize, markerSize)
+    }
+
+
+    /*
+    override fun paintWaypoint(g: Graphics2D, map: JXMapViewer, waypoint: BonusPointWaypoint) {
+        // Draw the marker as a filled circle with a border
+        val markerSize = 12
+        val halfSize = markerSize / 2
+
+        //val point = map.tileFactory.geoToPixel(waypoint.position, map.zoom)
+        //val rect = map.viewportBounds
+        //val x = (point.x - rect.x).toInt()
+        //val y = (point.y - rect.y).toInt()
+
+        val point = map.convertGeoPositionToPoint(waypoint.position)
+        val x = point.x - markerSize / 2
+        val y = point.y - markerSize / 2
+
+        logger.info("Painting waypoint {} ({}) with color {}. Point: ({}, {}) mapped to ({}, {})",
+            waypoint.code, waypoint.name, waypoint.markerColor,
+            point.x, point.y, x, y )
+
+        // Parse the color from the hex string
+        val color = parseColor(waypoint.markerColor)
+
+        // Enable anti-aliasing for smoother circles
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+
+
+        // Draw shadow for depth
+        g.color = Color(0, 0, 0, 50)
+        g.fillOval((x - halfSize + 1).toInt(), (y - halfSize + 1).toInt(), markerSize, markerSize)
+
+        // Draw the main marker
+        g.color = color
+        g.fillOval((x - halfSize).toInt(), (y - halfSize).toInt(), markerSize, markerSize)
+
+        // Draw border
+        g.color = Color.WHITE
+        g.stroke = BasicStroke(2f)
+        g.drawOval((x - halfSize).toInt(), (y - halfSize).toInt(), markerSize, markerSize)
+
+        // Draw inner border for definition
+        g.color = Color(0, 0, 0, 100)
+        g.stroke = BasicStroke(1f)
+        g.drawOval((x - halfSize).toInt(), (y - halfSize).toInt(), markerSize, markerSize)
+    }
+
+     */
+
+    /**
+     * Parse a hex color string like "#FF0000" into a Color object.
+     * Returns a default red color if parsing fails.
+     */
+    private fun parseColor(colorStr: String?): Color {
+        // Default to red if no color provided
+        val effectiveColorStr = colorStr?.takeIf { it.isNotBlank() } ?: "#FF0000"
+
+        return try {
+            val hex = if (effectiveColorStr.startsWith("#")) {
+                effectiveColorStr.substring(1)
+            } else {
+                effectiveColorStr
+            }
+
+            Color(
+                Integer.parseInt(hex.substring(0, 2), 16),
+                Integer.parseInt(hex.substring(2, 4), 16),
+                Integer.parseInt(hex.substring(4, 6), 16)
+            )
+        } catch (e: Exception) {
+            logger.warn("Failed to parse color '{}', using default red", effectiveColorStr, e)
+            Color.RED
+        }
+    }
 }

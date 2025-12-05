@@ -379,6 +379,15 @@ public class RallyService {
                 .orElseThrow(() -> new NotFoundException("Rally not found"));
         checkAccess(member, rally, true);
 
+        // Auto-assign a color if not provided
+        String markerColor = request.getMarkerColor();
+        if (markerColor == null || markerColor.isBlank()) {
+            // Count existing combinations to determine next color index
+            int combinationCount = combinationRepository.findByRallyId(rallyId).size();
+            markerColor = org.showpage.rallyserver.util.ColorAssigner.getColorForIndex(combinationCount);
+            log.info("Auto-assigned color {} to combination (index {})", markerColor, combinationCount);
+        }
+
         Combination combination = Combination
                 .builder()
                 .rally(rally)
@@ -389,7 +398,7 @@ public class RallyService {
                 .points(request.getPoints())
                 .requiresAll(request.getRequiresAll())
                 .numRequired(request.getNumRequired())
-                .markerColor(request.getMarkerColor())
+                .markerColor(markerColor)
                 .markerIcon(request.getMarkerIcon())
                 .build();
 

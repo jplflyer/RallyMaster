@@ -382,22 +382,42 @@ fun MapPanel(
     modifier: Modifier = Modifier
 ) {
     var bonusPoints by remember { mutableStateOf(emptyList<org.showpage.rallyserver.ui.UiBonusPoint>()) }
+    var combinations by remember { mutableStateOf(emptyList<org.showpage.rallyserver.ui.UiCombination>()) }
     var isLoading by remember { mutableStateOf(false) }
 
-    // Load bonus points for the map
+    // Load bonus points and combinations for the map
     LaunchedEffect(rallyId) {
         isLoading = true
+
+        // Load bonus points
         serverClient.listBonusPoints(rallyId).fold(
             onSuccess = { points ->
                 bonusPoints = points
-                isLoading = false
                 logger.info("Loaded {} bonus points for map", points.size)
+                if (points.isNotEmpty()) {
+                    points.take(3).forEach { bp ->
+                        logger.info("  BP: id={}, code={}, name={}, lat={}, lon={}, color={}",
+                            bp.id, bp.code, bp.name, bp.latitude, bp.longitude, bp.markerColor)
+                    }
+                }
             },
             onFailure = { error ->
                 logger.error("Failed to load bonus points for map", error)
-                isLoading = false
             }
         )
+
+        // Load combinations
+        serverClient.listCombinations(rallyId).fold(
+            onSuccess = { combos ->
+                combinations = combos
+                logger.info("Loaded {} combinations for map", combos.size)
+            },
+            onFailure = { error ->
+                logger.error("Failed to load combinations for map", error)
+            }
+        )
+
+        isLoading = false
     }
 
     Card(
@@ -435,6 +455,7 @@ fun MapPanel(
             ) {
                 MapViewer(
                     bonusPoints = bonusPoints,
+                    combinations = combinations,
                     centerLatitude = rally.latitude?.toDouble(),
                     centerLongitude = rally.longitude?.toDouble()
                 )
