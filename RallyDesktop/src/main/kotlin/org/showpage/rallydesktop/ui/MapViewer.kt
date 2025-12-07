@@ -410,34 +410,311 @@ class ColoredWaypointRenderer : WaypointRenderer<BonusPointWaypoint> {
         // Use "world pixel" coordinates; WaypointPainter handles viewport translation.
         val p = map.tileFactory.geoToPixel(waypoint.position, map.zoom)
 
+        // The tip of the pin should be at the exact GPS coordinate
+        val tipX = p.x.toInt()
+        val tipY = p.y.toInt()
+
         // Parse the color from the hex string
         val color = parseColor(waypoint.markerColor)
 
-        // Enable anti-aliasing for smoother circles
+        // Enable anti-aliasing for smoother rendering
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
 
-        val markerSize = 12
-        val halfSize = markerSize / 2
-        val x = p.x.toInt() - halfSize
-        val y = p.y.toInt() - halfSize
+        // Determine which icon to draw
+        val icon = waypoint.markerIcon?.lowercase() ?: "circle"
 
-        // Shadow
+        when {
+            waypoint.isFinish -> drawCheckeredFlagPin(g, tipX, tipY, color)
+            waypoint.isStart -> drawStartFlagPin(g, tipX, tipY)
+            else -> when (icon) {
+                "circle" -> drawCirclePin(g, tipX, tipY, color)
+                "square" -> drawSquarePin(g, tipX, tipY, color)
+                "star" -> drawStarPin(g, tipX, tipY, color)
+                "triangle" -> drawTrianglePin(g, tipX, tipY, color)
+                "diamond" -> drawDiamondPin(g, tipX, tipY, color)
+                "flag" -> drawFlagPin(g, tipX, tipY, color)
+                else -> drawCirclePin(g, tipX, tipY, color) // Default to circle
+            }
+        }
+    }
+
+    /**
+     * Draw a pushpin with a circular head
+     */
+    private fun drawCirclePin(g: Graphics2D, tipX: Int, tipY: Int, color: Color) {
+        val headSize = 16
+        val headRadius = headSize / 2
+        val pinLength = 8
+
+        // Center of the circle head
+        val headX = tipX
+        val headY = tipY - pinLength - headRadius
+
+        // Draw pin stem (thin line from head to tip)
+        g.color = color.darker()
+        g.stroke = BasicStroke(2f)
+        g.drawLine(tipX, tipY, headX, headY + headRadius)
+
+        // Draw shadow for the head
         g.color = Color(0, 0, 0, 50)
-        g.fillOval(x + 1, y + 1, markerSize, markerSize)
+        g.fillOval(headX - headRadius + 1, headY - headRadius + 1, headSize, headSize)
 
-        // Main marker
+        // Draw the circular head
         g.color = color
-        g.fillOval(x, y, markerSize, markerSize)
+        g.fillOval(headX - headRadius, headY - headRadius, headSize, headSize)
 
-        // White border
+        // Draw white border
         g.color = Color.WHITE
         g.stroke = BasicStroke(2f)
-        g.drawOval(x, y, markerSize, markerSize)
+        g.drawOval(headX - headRadius, headY - headRadius, headSize, headSize)
 
-        // Inner dark border
+        // Draw inner dark border
         g.color = Color(0, 0, 0, 100)
         g.stroke = BasicStroke(1f)
-        g.drawOval(x, y, markerSize, markerSize)
+        g.drawOval(headX - headRadius, headY - headRadius, headSize, headSize)
+    }
+
+    /**
+     * Draw a pushpin with a square head
+     */
+    private fun drawSquarePin(g: Graphics2D, tipX: Int, tipY: Int, color: Color) {
+        val headSize = 14
+        val halfSize = headSize / 2
+        val pinLength = 8
+
+        val headX = tipX - halfSize
+        val headY = tipY - pinLength - headSize
+
+        // Draw pin stem
+        g.color = color.darker()
+        g.stroke = BasicStroke(2f)
+        g.drawLine(tipX, tipY, tipX, headY + headSize)
+
+        // Draw shadow
+        g.color = Color(0, 0, 0, 50)
+        g.fillRect(headX + 1, headY + 1, headSize, headSize)
+
+        // Draw square head
+        g.color = color
+        g.fillRect(headX, headY, headSize, headSize)
+
+        // Draw border
+        g.color = Color.WHITE
+        g.stroke = BasicStroke(2f)
+        g.drawRect(headX, headY, headSize, headSize)
+
+        g.color = Color(0, 0, 0, 100)
+        g.stroke = BasicStroke(1f)
+        g.drawRect(headX, headY, headSize, headSize)
+    }
+
+    /**
+     * Draw a pushpin with a star head
+     */
+    private fun drawStarPin(g: Graphics2D, tipX: Int, tipY: Int, color: Color) {
+        val outerRadius = 10
+        val innerRadius = 4
+        val pinLength = 8
+
+        val centerX = tipX
+        val centerY = tipY - pinLength - outerRadius
+
+        // Draw pin stem
+        g.color = color.darker()
+        g.stroke = BasicStroke(2f)
+        g.drawLine(tipX, tipY, centerX, centerY + outerRadius)
+
+        // Create star shape
+        val star = createStarShape(centerX, centerY, outerRadius, innerRadius, 5)
+
+        // Draw shadow
+        g.color = Color(0, 0, 0, 50)
+        g.translate(1, 1)
+        g.fill(star)
+        g.translate(-1, -1)
+
+        // Draw star
+        g.color = color
+        g.fill(star)
+
+        // Draw border
+        g.color = Color.WHITE
+        g.stroke = BasicStroke(2f)
+        g.draw(star)
+
+        g.color = Color(0, 0, 0, 100)
+        g.stroke = BasicStroke(1f)
+        g.draw(star)
+    }
+
+    /**
+     * Draw a pushpin with a triangle head
+     */
+    private fun drawTrianglePin(g: Graphics2D, tipX: Int, tipY: Int, color: Color) {
+        val size = 16
+        val pinLength = 8
+
+        val topY = tipY - pinLength - size
+        val bottomY = tipY - pinLength
+
+        // Triangle points
+        val xPoints = intArrayOf(tipX, tipX - size/2, tipX + size/2)
+        val yPoints = intArrayOf(topY, bottomY, bottomY)
+
+        // Draw pin stem
+        g.color = color.darker()
+        g.stroke = BasicStroke(2f)
+        g.drawLine(tipX, tipY, tipX, bottomY)
+
+        // Draw shadow
+        g.color = Color(0, 0, 0, 50)
+        g.fillPolygon(intArrayOf(xPoints[0] + 1, xPoints[1] + 1, xPoints[2] + 1),
+                      intArrayOf(yPoints[0] + 1, yPoints[1] + 1, yPoints[2] + 1), 3)
+
+        // Draw triangle
+        g.color = color
+        g.fillPolygon(xPoints, yPoints, 3)
+
+        // Draw border
+        g.color = Color.WHITE
+        g.stroke = BasicStroke(2f)
+        g.drawPolygon(xPoints, yPoints, 3)
+
+        g.color = Color(0, 0, 0, 100)
+        g.stroke = BasicStroke(1f)
+        g.drawPolygon(xPoints, yPoints, 3)
+    }
+
+    /**
+     * Draw a pushpin with a diamond head
+     */
+    private fun drawDiamondPin(g: Graphics2D, tipX: Int, tipY: Int, color: Color) {
+        val size = 12
+        val pinLength = 8
+
+        val centerY = tipY - pinLength - size
+
+        // Diamond points (rotated square)
+        val xPoints = intArrayOf(tipX, tipX - size, tipX, tipX + size)
+        val yPoints = intArrayOf(centerY - size, centerY, centerY + size, centerY)
+
+        // Draw pin stem
+        g.color = color.darker()
+        g.stroke = BasicStroke(2f)
+        g.drawLine(tipX, tipY, tipX, yPoints[2])
+
+        // Draw shadow
+        g.color = Color(0, 0, 0, 50)
+        g.fillPolygon(intArrayOf(xPoints[0] + 1, xPoints[1] + 1, xPoints[2] + 1, xPoints[3] + 1),
+                      intArrayOf(yPoints[0] + 1, yPoints[1] + 1, yPoints[2] + 1, yPoints[3] + 1), 4)
+
+        // Draw diamond
+        g.color = color
+        g.fillPolygon(xPoints, yPoints, 4)
+
+        // Draw border
+        g.color = Color.WHITE
+        g.stroke = BasicStroke(2f)
+        g.drawPolygon(xPoints, yPoints, 4)
+
+        g.color = Color(0, 0, 0, 100)
+        g.stroke = BasicStroke(1f)
+        g.drawPolygon(xPoints, yPoints, 4)
+    }
+
+    /**
+     * Draw a pushpin with a flag head
+     */
+    private fun drawFlagPin(g: Graphics2D, tipX: Int, tipY: Int, color: Color) {
+        val flagWidth = 14
+        val flagHeight = 10
+        val poleLength = 20
+
+        val poleTop = tipY - poleLength
+        val flagTop = poleTop
+
+        // Draw pole
+        g.color = Color(100, 100, 100)
+        g.stroke = BasicStroke(2f)
+        g.drawLine(tipX, tipY, tipX, poleTop)
+
+        // Flag shape (triangular)
+        val xPoints = intArrayOf(tipX, tipX + flagWidth, tipX)
+        val yPoints = intArrayOf(flagTop, flagTop + flagHeight/2, flagTop + flagHeight)
+
+        // Draw shadow
+        g.color = Color(0, 0, 0, 50)
+        g.fillPolygon(intArrayOf(xPoints[0] + 1, xPoints[1] + 1, xPoints[2] + 1),
+                      intArrayOf(yPoints[0] + 1, yPoints[1] + 1, yPoints[2] + 1), 3)
+
+        // Draw flag
+        g.color = color
+        g.fillPolygon(xPoints, yPoints, 3)
+
+        // Draw border
+        g.color = Color.WHITE
+        g.stroke = BasicStroke(1.5f)
+        g.drawPolygon(xPoints, yPoints, 3)
+    }
+
+    /**
+     * Draw a pushpin with a green flag for start locations
+     */
+    private fun drawStartFlagPin(g: Graphics2D, tipX: Int, tipY: Int) {
+        drawFlagPin(g, tipX, tipY, Color(0, 180, 0)) // Green flag
+    }
+
+    /**
+     * Draw a pushpin with a checkered flag for finish locations
+     */
+    private fun drawCheckeredFlagPin(g: Graphics2D, tipX: Int, tipY: Int, color: Color) {
+        val flagWidth = 14
+        val flagHeight = 10
+        val poleLength = 20
+        val checkSize = 3
+
+        val poleTop = tipY - poleLength
+        val flagTop = poleTop
+        val flagLeft = tipX
+
+        // Draw pole
+        g.color = Color(100, 100, 100)
+        g.stroke = BasicStroke(2f)
+        g.drawLine(tipX, tipY, tipX, poleTop)
+
+        // Draw checkered pattern
+        for (row in 0 until flagHeight / checkSize) {
+            for (col in 0 until flagWidth / checkSize) {
+                val isBlack = (row + col) % 2 == 0
+                g.color = if (isBlack) Color.BLACK else Color.WHITE
+                g.fillRect(flagLeft + col * checkSize, flagTop + row * checkSize, checkSize, checkSize)
+            }
+        }
+
+        // Draw flag border
+        g.color = Color.DARK_GRAY
+        g.stroke = BasicStroke(1.5f)
+        g.drawRect(flagLeft, flagTop, flagWidth, flagHeight)
+    }
+
+    /**
+     * Create a star shape with the given parameters
+     */
+    private fun createStarShape(cx: Int, cy: Int, outerRadius: Int, innerRadius: Int, points: Int): java.awt.Polygon {
+        val xPoints = IntArray(points * 2)
+        val yPoints = IntArray(points * 2)
+
+        val angleStep = Math.PI / points
+
+        for (i in 0 until points * 2) {
+            val angle = i * angleStep - Math.PI / 2 // Start at top
+            val radius = if (i % 2 == 0) outerRadius else innerRadius
+
+            xPoints[i] = (cx + radius * Math.cos(angle)).toInt()
+            yPoints[i] = (cy + radius * Math.sin(angle)).toInt()
+        }
+
+        return java.awt.Polygon(xPoints, yPoints, points * 2)
     }
 
 

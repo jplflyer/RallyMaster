@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogWindow
+import java.awt.Dimension
 import kotlinx.coroutines.launch
 import org.showpage.rallydesktop.service.RallyServerClient
 import org.showpage.rallyserver.ui.CreateCombinationPointRequest
@@ -659,12 +661,15 @@ fun CombinationCsvImportDialog(
     var importTotal by remember { mutableStateOf(0) }
     var importResults by remember { mutableStateOf<List<CombinationImportResult>>(emptyList()) }
 
-    Dialog(onDismissRequest = onDismiss) {
+    DialogWindow(
+        onCloseRequest = onDismiss,
+        title = "Import Combinations from CSV"
+    ) {
+        window.minimumSize = Dimension(800, 600)
+        window.size = Dimension(800, 700)
+
         Card(
-            modifier = Modifier
-                .width(800.dp)
-                .heightIn(max = 700.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            modifier = Modifier.fillMaxSize()
         ) {
             Column(
                 modifier = Modifier

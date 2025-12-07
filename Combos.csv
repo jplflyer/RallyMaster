@@ -1,3 +1,16 @@
 CODE, NAME, POINTS, DESCRIPTION, BPList
-APT, Airports, 550, Airports throughoug the region, AIT, BRD
-MINES, Mines, 625, Mining Region, CUY, EEE
+AIRPORT, Airport Tour, 1000, Visit airports in the region, BRD, AIT, EGL, LFA, PRR
+DOGSTAT, Dog Statues, 800, Visit the famous dog statues, BRU, FRO, DER
+GOLF, Golf Courses, 750, Visit golf courses in the area, MAD, PIT, APN
+MINING, Mining History, 900, Explore the mining heritage, CUY, POR, HSH
+SMORES, S'mores Benches, 1200, Find the unique s'mores-themed benches, SMC, SMM, SMY, CLD, SMP
+TOWERS, Towers Tour, 850, Visit water towers and observation towers, NPR, TRM, OUT, GRN
+FISHING, Fishing Spots, 700, Visit fishing piers and access points, TRI, LTF, BLY, MIS, NOR
+DAMS, Dams and Water Control, 650, Visit dams in the region, BRZ, LTR, CFT, BDP
+PARKS, Parks and Recreation, 600, Visit parks and recreational areas, BAB, BOB, PMT, HUB, NTR
+LAKES, Lake Landings, 800, Visit boat landings and lake access, AKE, BAY, BWC, CEL, DOW, FSD, IDL, LOC, SLO
+TOWNS, Small Towns, 700, Visit unique small town landmarks, BER, BLN, ERN, FTZ, HAK, NEV, OGE
+MUSEUM, Museums and History, 900, Visit museums and historical sites, ADM, AUS, CMT, OTC, OTT, PTR
+TRAILS, Trails and Paths, 550, Visit trailheads and scenic paths, BPP, CQS, CZY, JGP, NYM, SEB
+BRIDGE, Bridges, 600, Visit notable bridges, BWT, DEP, JPB, LPW, PAD, REC, RRP
+NATURE, Nature Spots, 750, Visit natural landmarks and viewpoints, LSB, MIL, PHT, PRA, PRD, PRP, SER, UNA, UND, VIC
