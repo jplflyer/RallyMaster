@@ -55,27 +55,22 @@ fun CombinationDialog(
 
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    Dialog(onDismissRequest = onDismiss) {
+    DialogWindow(
+        onCloseRequest = onDismiss,
+        title = if (isEdit) "Edit Combination" else "Add Combination"
+    ) {
+        window.minimumSize = Dimension(600, 600)
+        window.size = Dimension(600, 850)
+
         Card(
-            modifier = Modifier
-                .width(600.dp)
-                .heightIn(max = 700.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            modifier = Modifier.fillMaxSize(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(24.dp)
             ) {
-                // Header
-                Text(
-                    text = if (isEdit) "Edit Combination" else "Add Combination",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
                 // Error message
                 if (errorMessage != null) {
                     Card(

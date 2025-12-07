@@ -1,9 +1,7 @@
 package org.showpage.rallydesktop.ui
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import org.jxmapviewer.JXMapViewer
@@ -56,9 +54,11 @@ fun MapViewer(
     combinations: List<org.showpage.rallyserver.ui.UiCombination> = emptyList(),
     centerLatitude: Double?,
     centerLongitude: Double?,
+    onBonusPointClicked: ((Int?) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val mapViewer = remember { createMapViewer() }
+    var waypoints by remember { mutableStateOf(emptyList<BonusPointWaypoint>()) }
 
     // Update map center when rally location changes
     LaunchedEffect(centerLatitude, centerLongitude) {
@@ -98,7 +98,7 @@ fun MapViewer(
                     bp.code, bp.name, bp.latitude, bp.longitude)
             }
 
-            val waypoints = bonusPoints.mapNotNull { bp ->
+            val waypointsLocal = bonusPoints.mapNotNull { bp ->
                 if (bp.latitude != null && bp.longitude != null) {
                     // Filter out invalid coordinates (0 or very close to 0 is invalid for USA locations)
                     if (bp.latitude == 0.0 || bp.longitude == 0.0 ||
@@ -115,6 +115,7 @@ fun MapViewer(
 
                         BonusPointWaypoint(
                             geoPosition = GeoPosition(bp.latitude, bp.longitude),
+                            bonusPointId = bp.id,
                             code = bp.code ?: "??",
                             name = bp.name ?: "Unnamed",
                             markerColor = effectiveColor,
@@ -129,10 +130,13 @@ fun MapViewer(
                 }
             }
 
-            logger.info("Created {} waypoints from bonus points", waypoints.size)
+            logger.info("Created {} waypoints from bonus points", waypointsLocal.size)
+
+            // Store waypoints in state for click detection
+            waypoints = waypointsLocal
 
             val waypointPainter = WaypointPainter<BonusPointWaypoint>().apply {
-                setWaypoints(waypoints.toSet())
+                setWaypoints(waypointsLocal.toSet())
                 setRenderer(ColoredWaypointRenderer())
             }
 
@@ -140,11 +144,63 @@ fun MapViewer(
             // mapViewer.overlayPainter = CompoundPainter(painters)
             mapViewer.overlayPainter = CompoundPainter(waypointPainter)
 
-            logger.info("Updated map with {} bonus point markers using ColoredWaypointRenderer", waypoints.size)
+            logger.info("Updated map with {} bonus point markers using ColoredWaypointRenderer", waypointsLocal.size)
 
             // Always zoom to fit all points for now to debug positioning
-            if (waypoints.isNotEmpty()) {
-                zoomToFitWaypoints(mapViewer, waypoints)
+            if (waypointsLocal.isNotEmpty()) {
+                zoomToFitWaypoints(mapViewer, waypointsLocal)
+            }
+        }
+    }
+
+    // Add mouse click listener for waypoint selection
+    DisposableEffect(mapViewer, onBonusPointClicked) {
+        val clickListener = if (onBonusPointClicked != null) {
+            object : java.awt.event.MouseAdapter() {
+                override fun mouseClicked(e: java.awt.event.MouseEvent) {
+                    if (e.button != java.awt.event.MouseEvent.BUTTON1) return // Only left click
+                    if (waypoints.isEmpty()) return
+
+                    // Convert click position to geo coordinates
+                    val clickPoint = e.point
+                    val clickGeoPos = mapViewer.convertPointToGeoPosition(clickPoint)
+
+                    logger.info("Map clicked at screen ({}, {}), geo ({}, {})",
+                        clickPoint.x, clickPoint.y, clickGeoPos.latitude, clickGeoPos.longitude)
+
+                    // Find the closest waypoint within a reasonable threshold
+                    var closestWaypoint: BonusPointWaypoint? = null
+                    var minDistancePixels = Double.MAX_VALUE
+                    val maxClickDistancePixels = 30.0 // Maximum distance in pixels to consider a click
+
+                    for (waypoint in waypoints) {
+                        val waypointScreenPoint = mapViewer.convertGeoPositionToPoint(waypoint.position)
+                        val dx = waypointScreenPoint.x - clickPoint.x
+                        val dy = waypointScreenPoint.y - clickPoint.y
+                        val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+
+                        if (distance < minDistancePixels && distance < maxClickDistancePixels) {
+                            minDistancePixels = distance
+                            closestWaypoint = waypoint
+                        }
+                    }
+
+                    if (closestWaypoint != null) {
+                        logger.info("Clicked on waypoint: {} ({}) at distance {} pixels",
+                            closestWaypoint.code, closestWaypoint.name, minDistancePixels)
+                        onBonusPointClicked(closestWaypoint.bonusPointId)
+                    } else {
+                        logger.info("No waypoint within {} pixels of click", maxClickDistancePixels)
+                        onBonusPointClicked(null) // Clear selection
+                    }
+                }
+            }.also { mapViewer.addMouseListener(it) }
+        } else null
+
+        // Cleanup: remove listener when effect is disposed
+        onDispose {
+            if (clickListener != null) {
+                mapViewer.removeMouseListener(clickListener)
             }
         }
     }
@@ -299,6 +355,9 @@ private fun createMapViewer(): JXMapViewer {
     mapViewer.addMouseListener(mia)
     mapViewer.addMouseMotionListener(mia)
 
+    // Note: Click listener for waypoint selection will be added via LaunchedEffect
+    // in MapViewer composable to access callback and waypoints state
+
     // Custom mouse wheel listener with reduced sensitivity
     // Accumulate wheel rotation and only zoom when threshold is reached
     var wheelRotationAccumulator = 0.0
@@ -333,6 +392,7 @@ private fun createMapViewer(): JXMapViewer {
  */
 class BonusPointWaypoint(
     private val geoPosition: GeoPosition,
+    val bonusPointId: Int?,
     val code: String,
     val name: String,
     val markerColor: String? = null,

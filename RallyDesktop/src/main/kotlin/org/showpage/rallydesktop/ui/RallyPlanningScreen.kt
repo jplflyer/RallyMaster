@@ -122,6 +122,9 @@ fun RallyPlanningScreen(
                 }
             }
             rally != null -> {
+                // Shared state for selected bonus point (for map-to-list communication)
+                var selectedBonusPointId by remember { mutableStateOf<Int?>(null) }
+
                 // 4-panel layout
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -141,6 +144,7 @@ fun RallyPlanningScreen(
                         BonusPointsPanel(
                             rallyId = rallyId,
                             serverClient = serverClient,
+                            selectedBonusPointId = selectedBonusPointId,
                             modifier = Modifier.weight(1f).fillMaxHeight()
                         )
                     }
@@ -160,6 +164,9 @@ fun RallyPlanningScreen(
                             rallyId = rallyId,
                             rally = rally!!,
                             serverClient = serverClient,
+                            onBonusPointSelected = { bonusPointId ->
+                                selectedBonusPointId = bonusPointId
+                            },
                             modifier = Modifier.weight(1f).fillMaxHeight()
                         )
                     }
@@ -334,6 +341,7 @@ fun VisibilityRow(label: String, isPublic: Boolean?) {
 fun BonusPointsPanel(
     rallyId: Int,
     serverClient: RallyServerClient,
+    selectedBonusPointId: Int?,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -343,7 +351,8 @@ fun BonusPointsPanel(
         Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             BonusPointsList(
                 rallyId = rallyId,
-                serverClient = serverClient
+                serverClient = serverClient,
+                selectedBonusPointId = selectedBonusPointId
             )
         }
     }
@@ -379,6 +388,7 @@ fun MapPanel(
     rallyId: Int,
     rally: UiRally,
     serverClient: RallyServerClient,
+    onBonusPointSelected: (Int?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var bonusPoints by remember { mutableStateOf(emptyList<org.showpage.rallyserver.ui.UiBonusPoint>()) }
@@ -457,7 +467,8 @@ fun MapPanel(
                     bonusPoints = bonusPoints,
                     combinations = combinations,
                     centerLatitude = rally.latitude?.toDouble(),
-                    centerLongitude = rally.longitude?.toDouble()
+                    centerLongitude = rally.longitude?.toDouble(),
+                    onBonusPointClicked = onBonusPointSelected
                 )
             }
         }

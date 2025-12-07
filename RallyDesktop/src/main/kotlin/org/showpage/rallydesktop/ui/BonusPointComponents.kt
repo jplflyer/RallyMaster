@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -50,27 +51,22 @@ fun BonusPointDialog(
 
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    Dialog(onDismissRequest = onDismiss) {
+    DialogWindow(
+        onCloseRequest = onDismiss,
+        title = if (isEdit) "Edit Bonus Point" else "Add Bonus Point"
+    ) {
+        window.minimumSize = Dimension(600, 700)
+        window.size = Dimension(600, 1200)
+
         Card(
-            modifier = Modifier
-                .width(600.dp)
-                .heightIn(max = 700.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            modifier = Modifier.fillMaxSize(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(24.dp)
             ) {
-                // Header
-                Text(
-                    text = if (isEdit) "Edit Bonus Point" else "Add Bonus Point",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
                 // Error message
                 if (errorMessage != null) {
                     Card(
@@ -265,6 +261,7 @@ fun BonusPointDialog(
 fun BonusPointsList(
     rallyId: Int,
     serverClient: RallyServerClient,
+    selectedBonusPointId: Int?,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -394,13 +391,28 @@ fun BonusPointsList(
                 }
             }
             else -> {
+                val listState = rememberLazyListState()
+
+                // Scroll to selected item when selection changes
+                LaunchedEffect(selectedBonusPointId) {
+                    if (selectedBonusPointId != null) {
+                        val index = bonusPoints.indexOfFirst { it.id == selectedBonusPointId }
+                        if (index >= 0) {
+                            listState.animateScrollToItem(index)
+                            logger.info("Scrolled to selected bonus point at index {}", index)
+                        }
+                    }
+                }
+
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(bonusPoints) { point ->
                         BonusPointListItem(
                             bonusPoint = point,
+                            isSelected = point.id == selectedBonusPointId,
                             onClick = {
                                 editingPoint = point
                                 showDialog = true
@@ -574,6 +586,7 @@ fun BonusPointsList(
 @Composable
 fun BonusPointListItem(
     bonusPoint: UiBonusPoint,
+    isSelected: Boolean,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -581,7 +594,13 @@ fun BonusPointListItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surface
+        )
     ) {
         Row(
             modifier = Modifier
