@@ -1,0 +1,117 @@
+--
+-- New Migration Template. Use the various sections as necessary.
+--
+-- Note: Fix / Update the original template file if you find things aren't
+-- correct or complete.
+--
+--
+BEGIN;
+
+-- ======================================================================
+-- Create a new table
+-- ======================================================================
+--
+-- CREATE SEQUENCE foo_id_seq;
+--
+-- CREATE TABLE IF NOT EXISTS foo (
+--     id INTEGER PRIMARY KEY DEFAULT nextval('foo_id_seq'),
+--     name TEXT,
+--     bar integer REFERENCES m(n) DEFERRABLE ON DELETE CASADE
+--  );
+-- COMMENT ON TABLE foo IS 'An example table';
+-- COMMENT ON COLUMN foo.id IS 'The primary key';
+-- COMMENT ON COLUMN foo.name IS 'Whatever';
+--
+-- ----------------------------------------------------------------------
+-- If this table should be audit-logged, include these columns:
+-- ----------------------------------------------------------------------
+-- created_time TIMESTAMPTZ,
+-- created_by VARCHAR,
+-- created_by_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+-- updated_time TIMESTAMPTZ,
+-- updated_by VARCHAR,
+-- updated_by_id INTEGER REFERENCES users(id) ON DELETE SET NULL
+--
+-- And include this line:
+--
+-- ALTER TABLE foo REPLICA IDENTITY FULL;
+--
+-- ======================================================================
+-- Add a column. (FK examples are below)
+-- ======================================================================
+-- ALTER TABLE foo ADD COLUMN IF NOT EXISTS bar INTEGER;
+-- COMMENT ON COLUMN foo.bar IS 'something useful';
+--
+-- ======================================================================
+-- Add a foreign key. Use the first one if the records in this table
+-- should be deleted if the referred records are deleted.
+-- Use the second one if we should set NULL this column.
+-- ======================================================================
+-- ALTER TABLE foo ADD COLUMN IF NOT EXISTS bar integer REFERENCES m(n) ON DELETE CASADE DEFERRABLE ;
+-- ALTER TABLE foo ADD COLUMN IF NOT EXISTS bar integer REFERENCES m(n) ON DELETE SET NULL DEFERRABLE ;
+-- COMMENT ON COLUMN foo.bar IS 'something useful';
+
+-- ======================================================================
+-- Add some constraints to several columns.
+-- ======================================================================
+--
+-- ALTER TABLE <TABLENAME>
+--     ALTER COLUMN active SET DEFAULT true,
+--     ALTER COLUMN active SET NOT NULL,
+--     ALTER COLUMN for_no_reply SET DEFAULT false,
+--     ALTER COLUMN for_no_reply SET NOT NULL,
+--     ALTER COLUMN created_at SET DEFAULT now(),
+--     ALTER COLUMN updated_at SET DEFAULT now()
+
+-- ======================================================================
+-- Create an index. Indexes should be named as
+-- ${tablename}_${column_name}_idx
+-- ======================================================================
+-- CREATE INDEX foo_name_idx ON foo(name);
+-- COMMENT ON INDEX foo_name IS 'something useful';
+--
+-- ======================================================================
+-- Apply an on-update trigger to keep updated_at timestamp current.
+-- The function referenced already exists.
+-- ======================================================================
+--
+-- CREATE OR REPLACE TRIGGER <TABLENAME>_updated_at
+--     BEFORE UPDATE ON <TABLENAME>
+--     FOR EACH ROW
+--     EXECUTE FUNCTION update_updated_at();
+--
+-- ======================================================================
+-- Insert data into a new table safely. This works only if there is a
+-- UNIQUE constraint on name. You could specify the PK instead, as long
+-- as you increment the sequence that supports the serial. By default,
+-- our PK sequences have the format <tablename>_id_seq.
+-- ======================================================================
+-- INSERT INTO foo(name) VALUES('Hello') ON CONFLICT DO NOTHING;
+--
+-- The insert will increment the serial, even if we hit a conflict and
+-- make no inserts.
+--
+-- To reset the underlying serial, doing a lookup on the name rather
+-- than hard-coding the name:
+-- SELECT setval('foo_id_seq', (select COALESCE(max(id) + 1, 1) FROM foo), false);
+--
+-- ======================================================================
+-- This works in all cases, but then you have to write the SELECT carefully.
+-- ======================================================================
+--
+-- DO $$
+--     BEGIN
+--         IF NOT EXISTS (
+--             SELECT 1 FROM selected_s3_provider
+--             WHERE customer_id IS NULL
+--               AND project_id IS NULL
+--               AND usage = 'SECURITY_RECORDING'
+--         ) THEN
+--             INSERT INTO selected_s3_provider (usage, s3provider_id, created_by, updated_by, created_time, updated_time)
+--             VALUES ('SECURITY_RECORDING', 3, 'System', 'System', now(), now());
+--         END IF;
+--     END $$;
+
+
+
+COMMIT;

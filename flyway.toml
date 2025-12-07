@@ -1,0 +1,15 @@
+# --- Global Flyway settings ---
+[flyway]
+environment = "dev"  # default environment to use if -environment isn't provided
+locations = ["filesystem:RallyServer/src/main/resources/db/migration"]
+table = "flyway_schema_history"
+validateMigrationNaming = true
+baselineOnMigrate = true
+cleanDisabled = true
+
+
+[environments.dev]
+url = "jdbc:postgresql://localhost:5432/rallymaster"
+user = "rallymaster"
+password = "rallyhq"
+

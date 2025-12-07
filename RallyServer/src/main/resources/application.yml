@@ -1,0 +1,58 @@
+
+spring:
+  application.name: Server
+  datasource:
+    url: jdbc:postgresql://localhost:5432/rallymaster
+    username: rallymaster
+    password: rallyhq
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
+        format_sql: true
+        generate_statistics: false
+        default_batch_fetch_size: 50
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+jwt:
+  secret: mySecretKey123456789012345678901234567890123456789012345678901234567890
+  access-token:
+    expiration: 900000  # 15 minutes
+  refresh-token:
+    expiration: 2592000000  # 30 days
+
+logging:
+  level:
+    root: INFO
+
+# Swagger/OpenAPI Configuration
+# Swagger UI: http://localhost:8080/api-docs
+# OpenAPI JSON: http://localhost:8080/api-docs/json
+# Alternative Swagger UI: http://localhost:8080/swagger-ui.html
+springdoc:
+  swagger-ui:
+    path: /api-docs
+    operations-sorter: method
+    tags-sorter: alpha
+    disable-swagger-default-url: true
+  api-docs:
+    path: /api-docs/json
+  group-configs:
+    - group: rally-management
+      paths-to-match: /api/rally/**
+    - group: member-management
+      paths-to-match: /api/member/**, /api/admin/**
+    - group: authentication
+      paths-to-match: /api/auth/**
+
+rallymaster:
+  options:
+    can-delete-rallies: true

@@ -1,0 +1,8 @@
+CODE,NAME,POINTS,DESCRIPTION,BONUSPOINT1,BONUSPOINT2,BONUSPOINT3,BONUSPOINT4,BONUSPOINT5
+CHURCHES,Churches of Brainerd,800,Visit all the churches in the Brainerd area,SMC,SMJ,SMM,SMP,SMY
+LAKES,Lake Tour,1500,Tour around the major lakes,AKE,BLY,CLD,GRN,OUT
+PRAIRIE,Prairie Route,1200,Western prairie bonus points,CMT,CZY,HAK,NEV,NYM,OTC,OTT,PTR,SEB
+RESTAURANTS,Area Restaurants,600,Fun local dining spots,ADM,AIT,BLN,CUY,DER,MIL,RIA,SER,UNA,UND,VIC
+PARKS,Parks and Recreation,900,Visit area parks and trails,BDP,BWT,CEL,DEP,EEE,FSD,LOC,LPW,NPR,PAD,REC
+BRIDGES,Historic Bridges,1000,Cross historic bridges in the area,BRD,BRU,BRZ,FRO,LTR
+SMALL_TOWNS,Small Town Tour,500,Explore charming small towns,AUS,BAB,BAY,BER,BOB,DOW,ERN,FTZ,HUB,LSB,NTR,PIT

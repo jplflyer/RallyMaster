@@ -1,0 +1,6 @@
+# RallyMaster Configuration Template
+# Copy this file to rallymaster.properties and fill in your values
+
+# Mapbox API Token (public token)
+# Get your token from https://account.mapbox.com/access-tokens/
+mapbox.token=YOUR_MAPBOX_TOKEN_HERE
