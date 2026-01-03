@@ -457,6 +457,9 @@ fun MapViewer(
                 isDraggingBonusPoint = false
                 isPanningMap = false
                 panStartCenter = null
+
+                // Force repaint to clear any drag artifacts and restore original pin position
+                mapViewer.repaint()
             }
 
             override fun mouseClicked(e: java.awt.event.MouseEvent) {
