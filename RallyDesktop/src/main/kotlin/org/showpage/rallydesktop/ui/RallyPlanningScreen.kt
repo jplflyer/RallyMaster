@@ -435,6 +435,7 @@ fun MapPanel(
     onBonusPointSelected: (Int?) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val scope = rememberCoroutineScope()
     var bonusPoints by remember { mutableStateOf(emptyList<org.showpage.rallyserver.ui.UiBonusPoint>()) }
     var combinations by remember { mutableStateOf(emptyList<org.showpage.rallyserver.ui.UiCombination>()) }
     var isLoading by remember { mutableStateOf(false) }
@@ -514,7 +515,43 @@ fun MapPanel(
                     centerLongitude = rally.longitude?.toDouble(),
                     selectedBonusPointId = selectedBonusPointId,
                     selectedCombinationId = selectedCombinationId,
-                    onBonusPointClicked = onBonusPointSelected
+                    onBonusPointClicked = onBonusPointSelected,
+                    onBonusPointDragged = { bonusPointId, newLat, newLon ->
+                        // Update the bonus point's coordinates on the server
+                        scope.launch {
+                            logger.info("Updating bonus point {} to new coordinates: ({}, {})",
+                                bonusPointId, newLat, newLon)
+
+                            // Find the bonus point to update
+                            val bonusPoint = bonusPoints.find { it.id == bonusPointId }
+                            if (bonusPoint != null) {
+                                val updateRequest = org.showpage.rallyserver.ui.UpdateBonusPointRequest.builder()
+                                    .code(bonusPoint.code)
+                                    .name(bonusPoint.name)
+                                    .description(bonusPoint.description)
+                                    .latitude(newLat)
+                                    .longitude(newLon)
+                                    .address(bonusPoint.address)
+                                    .points(bonusPoint.points)
+                                    .required(bonusPoint.required)
+                                    .repeatable(bonusPoint.repeatable)
+                                    .build()
+
+                                serverClient.updateBonusPoint(bonusPointId, updateRequest).fold(
+                                    onSuccess = { updatedPoint ->
+                                        logger.info("Successfully updated bonus point {}", bonusPoint.code)
+                                        // Update local state to reflect the change
+                                        bonusPoints = bonusPoints.map {
+                                            if (it.id == bonusPointId) updatedPoint else it
+                                        }
+                                    },
+                                    onFailure = { error ->
+                                        logger.error("Failed to update bonus point {}", bonusPoint.code, error)
+                                    }
+                                )
+                            }
+                        }
+                    }
                 )
             }
         }

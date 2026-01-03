@@ -26,6 +26,14 @@ private val logger = LoggerFactory.getLogger("MapViewer")
 private var httpUserAgentConfigured = false
 
 /**
+ * State for tracking a waypoint being dragged
+ */
+private data class DragState(
+    val waypoint: BonusPointWaypoint,
+    val currentPosition: Point
+)
+
+/**
  * Configure HTTP connections to include a proper User-Agent header.
  * This is required by OpenStreetMap's tile usage policy.
  */
@@ -59,11 +67,16 @@ fun MapViewer(
     selectedBonusPointId: Int? = null,
     selectedCombinationId: Int? = null,
     onBonusPointClicked: ((Int?) -> Unit)? = null,
+    onBonusPointDragged: ((Int, Double, Double) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val mapViewer = remember { createMapViewer() }
     var waypoints by remember { mutableStateOf(emptyList<BonusPointWaypoint>()) }
     var searchMarker by remember { mutableStateOf<BonusPointWaypoint?>(null) }
+
+    // Drag state - using a mutable reference that can be updated from Swing thread
+    val dragStateRef = remember { mutableStateOf<DragState?>(null) }
+
     val scope = rememberCoroutineScope()
 
     // Create geocoding service
@@ -200,9 +213,249 @@ fun MapViewer(
         }
     }
 
-    // Add mouse click listener for waypoint selection and double-click to zoom
-    DisposableEffect(mapViewer, onBonusPointClicked) {
-        val clickListener = object : java.awt.event.MouseAdapter() {
+    // Create a drag overlay painter that's always present but only paints when dragState is not null
+    // This painter reads dragStateRef directly during paint, so it doesn't need to be recreated
+    val dragOverlayPainter = remember {
+        object : Painter<JXMapViewer> {
+            override fun paint(g: Graphics2D, map: JXMapViewer, width: Int, height: Int) {
+                val currentDragState = dragStateRef.value
+                if (currentDragState == null) {
+                    return
+                }
+
+                // Draw directly at screen coordinates
+                val x = currentDragState.currentPosition.x
+                val y = currentDragState.currentPosition.y
+
+                // Enable anti-aliasing
+                g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+
+                // Parse the waypoint's color
+                val colorStr = currentDragState.waypoint.markerColor ?: "#FF0000"
+                val color = try {
+                    val hex = if (colorStr.startsWith("#")) colorStr.substring(1) else colorStr
+                    Color(
+                        Integer.parseInt(hex.substring(0, 2), 16),
+                        Integer.parseInt(hex.substring(2, 4), 16),
+                        Integer.parseInt(hex.substring(4, 6), 16)
+                    )
+                } catch (e: Exception) {
+                    Color.RED
+                }
+
+                // Draw a pushpin-style marker at the cursor position
+                val headSize = 16
+                val headRadius = headSize / 2
+                val pinLength = 8
+
+                val tipX = x
+                val tipY = y
+                val headX = tipX
+                val headY = tipY - pinLength - headRadius
+
+                // Draw pin stem
+                g.color = color.darker()
+                g.stroke = BasicStroke(2f)
+                g.drawLine(tipX, tipY, headX, headY + headRadius)
+
+                // Draw shadow
+                g.color = Color(0, 0, 0, 50)
+                g.fillOval(headX - headRadius + 1, headY - headRadius + 1, headSize, headSize)
+
+                // Draw the circular head
+                g.color = color
+                g.fillOval(headX - headRadius, headY - headRadius, headSize, headSize)
+
+                // Draw white border
+                g.color = Color.WHITE
+                g.stroke = BasicStroke(2f)
+                g.drawOval(headX - headRadius, headY - headRadius, headSize, headSize)
+
+                // Draw inner dark border
+                g.color = Color(0, 0, 0, 100)
+                g.stroke = BasicStroke(1f)
+                g.drawOval(headX - headRadius, headY - headRadius, headSize, headSize)
+            }
+        }
+    }
+
+    // Update the overlay painter to include drag overlay whenever waypoints or searchMarker changes
+    // Note: We don't depend on dragStateRef.value here because the dragOverlayPainter reads it directly
+    LaunchedEffect(waypoints, searchMarker) {
+        val allWaypoints = if (searchMarker != null) {
+            waypoints + searchMarker!!
+        } else {
+            waypoints
+        }
+
+        // Create a custom painter that filters out dragged waypoint during paint
+        val waypointPainter = object : Painter<JXMapViewer> {
+            override fun paint(g: Graphics2D, map: JXMapViewer, width: Int, height: Int) {
+                logger.info("Waypoint painter paint() called, dragState = {}, total waypoints = {}",
+                    dragStateRef.value, allWaypoints.size)
+
+                // Filter out the waypoint being dragged (if any)
+                val visibleWaypoints = if (dragStateRef.value != null) {
+                    val filtered = allWaypoints.filter { it.bonusPointId != dragStateRef.value!!.waypoint.bonusPointId }
+                    logger.info("Filtered out dragged waypoint, showing {} of {} waypoints",
+                        filtered.size, allWaypoints.size)
+                    filtered
+                } else {
+                    allWaypoints
+                }
+
+                val painter = WaypointPainter<BonusPointWaypoint>().apply {
+                    setWaypoints(visibleWaypoints.toSet())
+                    setRenderer(ColoredWaypointRenderer())
+                }
+
+                painter.paint(g, map, width, height)
+            }
+        }
+
+        mapViewer.overlayPainter = CompoundPainter(waypointPainter, dragOverlayPainter)
+        logger.info("Updated compound painter with waypoint filter and drag overlay")
+    }
+
+    // Add unified mouse listener for panning, clicking, and dragging
+    DisposableEffect(mapViewer, waypoints, onBonusPointClicked, onBonusPointDragged) {
+        var draggedWaypoint: BonusPointWaypoint? = null
+        var dragStartPoint: Point? = null
+        var isDraggingBonusPoint = false
+        var isPanningMap = false
+        var panStartCenter: GeoPosition? = null
+
+        val unifiedListener = object : java.awt.event.MouseAdapter() {
+            override fun mousePressed(e: java.awt.event.MouseEvent) {
+                if (e.button != java.awt.event.MouseEvent.BUTTON1) return
+
+                val clickPoint = e.point
+                dragStartPoint = clickPoint
+
+                // Check if clicking near a waypoint (for potential BP drag)
+                if (waypoints.isNotEmpty() && onBonusPointDragged != null) {
+                    val maxClickDistancePixels = 30.0
+
+                    for (waypoint in waypoints) {
+                        val waypointScreenPoint = mapViewer.convertGeoPositionToPoint(waypoint.position)
+                        val dx = waypointScreenPoint.x - clickPoint.x
+                        val dy = waypointScreenPoint.y - clickPoint.y
+                        val distance = kotlin.math.sqrt((dx * dx + dy * dy).toDouble())
+
+                        if (distance < maxClickDistancePixels && waypoint.bonusPointId != null) {
+                            // Potentially starting a bonus point drag
+                            draggedWaypoint = waypoint
+                            logger.debug("Clicked near waypoint {} - ready for drag or click", waypoint.code)
+                            return  // Don't start panning
+                        }
+                    }
+                }
+
+                // Not near a waypoint, prepare for map panning
+                panStartCenter = mapViewer.addressLocation
+            }
+
+            override fun mouseDragged(e: java.awt.event.MouseEvent) {
+                if (dragStartPoint == null) return
+
+                val currentPoint = e.point
+                val dx = currentPoint.x - dragStartPoint!!.x
+                val dy = currentPoint.y - dragStartPoint!!.y
+                val distance = kotlin.math.sqrt((dx * dx + dy * dy).toDouble())
+
+                // Require 10 pixel movement to distinguish drag from click
+                if (distance < 10) return
+
+                if (draggedWaypoint != null && !isPanningMap) {
+                    // Dragging a bonus point
+                    if (!isDraggingBonusPoint) {
+                        isDraggingBonusPoint = true
+                        mapViewer.cursor = Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR)
+                        logger.info("Started dragging bonus point {}", draggedWaypoint!!.code)
+                    }
+
+                    // Update drag state for visual feedback
+                    logger.info("Updating drag state: waypoint={}, position=({}, {})",
+                        draggedWaypoint!!.code, currentPoint.x, currentPoint.y)
+
+                    // Update state directly - since we're already on the Swing event thread,
+                    // we need to update the state and force repaint
+                    dragStateRef.value = DragState(draggedWaypoint!!, currentPoint)
+
+                    logger.info("Drag state updated to: {}, calling repaint", dragStateRef.value)
+                    mapViewer.repaint()  // Force redraw to show pin at new position
+                } else if (panStartCenter != null && !isDraggingBonusPoint) {
+                    // Panning the map
+                    if (!isPanningMap) {
+                        isPanningMap = true
+                        mapViewer.cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+                    }
+
+                    // Calculate new center based on drag distance
+                    val rect = mapViewer.viewportBounds
+                    val zoom = mapViewer.zoom
+
+                    // Convert pixel offset to geo offset
+                    val startGeoPos = mapViewer.tileFactory.pixelToGeo(
+                        Point(rect.x, rect.y), zoom
+                    )
+                    val draggedGeoPos = mapViewer.tileFactory.pixelToGeo(
+                        Point(rect.x - dx.toInt(), rect.y - dy.toInt()), zoom
+                    )
+
+                    mapViewer.addressLocation = GeoPosition(
+                        panStartCenter!!.latitude + (draggedGeoPos.latitude - startGeoPos.latitude),
+                        panStartCenter!!.longitude + (draggedGeoPos.longitude - startGeoPos.longitude)
+                    )
+                }
+            }
+
+            override fun mouseReleased(e: java.awt.event.MouseEvent) {
+                mapViewer.cursor = Cursor.getDefaultCursor()
+
+                if (isDraggingBonusPoint && draggedWaypoint != null && onBonusPointDragged != null) {
+                    // Complete bonus point drag
+                    val newGeoPos = mapViewer.convertPointToGeoPosition(e.point)
+
+                    logger.info("Dragged waypoint {} to new location: ({}, {})",
+                        draggedWaypoint!!.code, newGeoPos.latitude, newGeoPos.longitude)
+
+                    // Show confirmation dialog
+                    val options = arrayOf("OK", "Cancel")
+                    val choice = JOptionPane.showOptionDialog(
+                        mapViewer,
+                        "Move ${draggedWaypoint!!.code} to\n" +
+                                "Lat: ${String.format("%.6f", newGeoPos.latitude)}\n" +
+                                "Lon: ${String.format("%.6f", newGeoPos.longitude)}?",
+                        "Confirm Move",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        options,
+                        options[0]
+                    )
+
+                    if (choice == 0) { // OK clicked
+                        logger.info("User confirmed move of waypoint {}", draggedWaypoint!!.code)
+                        onBonusPointDragged(
+                            draggedWaypoint!!.bonusPointId!!,
+                            newGeoPos.latitude,
+                            newGeoPos.longitude
+                        )
+                    } else {
+                        logger.info("User cancelled move of waypoint {}", draggedWaypoint!!.code)
+                    }
+                }
+
+                // Reset all drag state including visual feedback
+                dragStateRef.value = null
+                draggedWaypoint = null
+                dragStartPoint = null
+                isDraggingBonusPoint = false
+                isPanningMap = false
+                panStartCenter = null
+            }
+
             override fun mouseClicked(e: java.awt.event.MouseEvent) {
                 if (e.button != java.awt.event.MouseEvent.BUTTON1) return // Only left click
 
@@ -243,7 +496,7 @@ fun MapViewer(
                     val waypointScreenPoint = mapViewer.convertGeoPositionToPoint(waypoint.position)
                     val dx = waypointScreenPoint.x - clickPoint.x
                     val dy = waypointScreenPoint.y - clickPoint.y
-                    val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+                    val distance = kotlin.math.sqrt((dx * dx + dy * dy).toDouble())
 
                     if (distance < minDistancePixels && distance < maxClickDistancePixels) {
                         minDistancePixels = distance
@@ -260,11 +513,15 @@ fun MapViewer(
                     onBonusPointClicked(null) // Clear selection
                 }
             }
-        }.also { mapViewer.addMouseListener(it) }
+        }
 
-        // Cleanup: remove listener when effect is disposed
+        mapViewer.addMouseListener(unifiedListener)
+        mapViewer.addMouseMotionListener(unifiedListener)
+
+        // Cleanup: remove listeners when effect is disposed
         onDispose {
-            mapViewer.removeMouseListener(clickListener)
+            mapViewer.removeMouseListener(unifiedListener)
+            mapViewer.removeMouseMotionListener(unifiedListener)
         }
     }
 
@@ -499,13 +756,8 @@ private fun createMapViewer(): JXMapViewer {
     mapViewer.addressLocation = GeoPosition(39.8283, -98.5795)
     mapViewer.zoom = 5
 
-    // Add mouse controls
-    val mia: MouseInputListener = PanMouseInputListener(mapViewer)
-    mapViewer.addMouseListener(mia)
-    mapViewer.addMouseMotionListener(mia)
-
-    // Note: Click listener for waypoint selection will be added via LaunchedEffect
-    // in MapViewer composable to access callback and waypoints state
+    // Note: Mouse controls (pan, click, drag) are added in the MapViewer composable
+    // via DisposableEffect to have access to waypoints and callbacks
 
     // Custom mouse wheel listener with reduced sensitivity
     // Accumulate wheel rotation and only zoom when threshold is reached
