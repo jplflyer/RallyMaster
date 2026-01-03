@@ -4,18 +4,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
+import kotlinx.coroutines.launch
 import org.jxmapviewer.JXMapViewer
 import org.jxmapviewer.input.PanMouseInputListener
 import org.jxmapviewer.painter.CompoundPainter
 import org.jxmapviewer.painter.Painter
 import org.jxmapviewer.viewer.*
 import org.showpage.rallydesktop.service.ConfigurationService
+import org.showpage.rallydesktop.service.GeocodingService
 import org.showpage.rallyserver.ui.UiBonusPoint
 import org.slf4j.LoggerFactory
 import java.awt.*
+import java.awt.event.ActionEvent
 import java.net.URLConnection
-import javax.swing.JButton
-import javax.swing.JPanel
+import javax.swing.*
 import javax.swing.event.MouseInputListener
 
 private val logger = LoggerFactory.getLogger("MapViewer")
@@ -59,6 +61,14 @@ fun MapViewer(
 ) {
     val mapViewer = remember { createMapViewer() }
     var waypoints by remember { mutableStateOf(emptyList<BonusPointWaypoint>()) }
+    var searchMarker by remember { mutableStateOf<BonusPointWaypoint?>(null) }
+    val scope = rememberCoroutineScope()
+
+    // Create geocoding service
+    val geocodingService = remember {
+        val config = ConfigurationService.getInstance()
+        GeocodingService(config.getMapboxToken())
+    }
 
     // Update map center when rally location changes
     LaunchedEffect(centerLatitude, centerLongitude) {
@@ -135,8 +145,15 @@ fun MapViewer(
             // Store waypoints in state for click detection
             waypoints = waypointsLocal
 
+            // Combine bonus point waypoints with search marker (if present)
+            val allWaypoints = if (searchMarker != null) {
+                waypointsLocal + searchMarker!!
+            } else {
+                waypointsLocal
+            }
+
             val waypointPainter = WaypointPainter<BonusPointWaypoint>().apply {
-                setWaypoints(waypointsLocal.toSet())
+                setWaypoints(allWaypoints.toSet())
                 setRenderer(ColoredWaypointRenderer())
             }
 
@@ -150,6 +167,22 @@ fun MapViewer(
             if (waypointsLocal.isNotEmpty()) {
                 zoomToFitWaypoints(mapViewer, waypointsLocal)
             }
+        }
+    }
+
+    // Update map when search marker changes (separately from bonus points)
+    LaunchedEffect(searchMarker) {
+        if (searchMarker != null) {
+            // Combine existing waypoints with search marker
+            val allWaypoints = waypoints + searchMarker!!
+
+            val waypointPainter = WaypointPainter<BonusPointWaypoint>().apply {
+                setWaypoints(allWaypoints.toSet())
+                setRenderer(ColoredWaypointRenderer())
+            }
+
+            mapViewer.overlayPainter = CompoundPainter(waypointPainter)
+            logger.info("Added search marker at ({}, {})", searchMarker!!.position.latitude, searchMarker!!.position.longitude)
         }
     }
 
@@ -246,10 +279,94 @@ fun MapViewer(
             zoomPanel.add(zoomInButton)
             zoomPanel.add(zoomOutButton)
 
-            // Overlay zoom panel on top-right using OverlayLayout would be complex
+            // Create search panel on the left side
+            val searchPanel = JPanel(FlowLayout(FlowLayout.LEFT, 10, 10))
+            searchPanel.isOpaque = false
+
+            val searchField = JTextField(25).apply {
+                toolTipText = "Search for a place (e.g., \"Musky House Longville\")"
+            }
+
+            val searchButton = JButton("Search").apply {
+                addActionListener {
+                    val query = searchField.text
+                    if (query.isNotBlank()) {
+                        // Launch geocoding search in coroutine scope
+                        scope.launch {
+                            // Get current map center for proximity bias
+                            val mapCenter = mapViewer.addressLocation
+                            logger.info("Current map center: ({}, {})", mapCenter.latitude, mapCenter.longitude)
+                            logger.info("Searching for: {}", query)
+
+                            val results = geocodingService.searchPlace(
+                                query = query,
+                                limit = 5,
+                                proximityLatitude = mapCenter.latitude,
+                                proximityLongitude = mapCenter.longitude
+                            )
+
+                            logger.info("Geocoding returned {} results", results.size)
+
+                            // Log details about each result
+                            results.forEachIndexed { index, result ->
+                                logger.info("  Result {}: '{}' at ({}, {}) - relevance: {}",
+                                    index + 1,
+                                    result.placeName,
+                                    result.latitude,
+                                    result.longitude,
+                                    result.relevance
+                                )
+                            }
+
+                            if (results.isNotEmpty()) {
+                                val result = results.first()
+                                logger.info("Using first result: {} at ({}, {})",
+                                    result.placeName, result.latitude, result.longitude)
+
+                                // Center the map on the result
+                                val position = GeoPosition(result.latitude, result.longitude)
+                                mapViewer.addressLocation = position
+
+                                // Zoom to level 3
+                                mapViewer.zoom = 3
+
+                                // Create a search marker waypoint (blue star to distinguish from bonus points)
+                                searchMarker = BonusPointWaypoint(
+                                    geoPosition = position,
+                                    bonusPointId = null,
+                                    code = "SEARCH",
+                                    name = result.placeName,
+                                    markerColor = "#0066FF",  // Blue color
+                                    markerIcon = "star",  // Star icon to stand out
+                                    isStart = false,
+                                    isFinish = false
+                                )
+                            } else {
+                                logger.warn("No results found for: {}", query)
+                                JOptionPane.showMessageDialog(
+                                    mapViewer,
+                                    "No results found for \"$query\"",
+                                    "Search",
+                                    JOptionPane.INFORMATION_MESSAGE
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Allow Enter key in search field to trigger search
+            searchField.addActionListener { searchButton.doClick() }
+
+            searchPanel.add(JLabel("Search:"))
+            searchPanel.add(searchField)
+            searchPanel.add(searchButton)
+
+            // Overlay search and zoom panels on top
             // Instead, use a simple approach with a north panel
             val topPanel = JPanel(BorderLayout())
             topPanel.isOpaque = false
+            topPanel.add(searchPanel, BorderLayout.WEST)
             topPanel.add(zoomPanel, BorderLayout.EAST)
 
             containerPanel.add(topPanel, BorderLayout.NORTH)
@@ -315,8 +432,10 @@ private fun createMapViewer(): JXMapViewer {
             val factor = 1 shl (getTotalMapZoom() - zoom)  // For debugging
 
             val maxTileCoord = (1 shl zoom) - 1
+            /*
             logger.info("getTileUrl: zoom={}, x={}, y={}, factor={} -> tile x={}, y={} (max={})",
                 zoom, x, y, factor, tileX, tileY, maxTileCoord)
+             */
 
             // Validate tile coordinates
             /*
@@ -336,7 +455,7 @@ private fun createMapViewer(): JXMapViewer {
             // streets-v12 is the current standard street map style
             // Format: /styles/v1/{username}/{style_id}/tiles/{tileSize}/{z}/{x}/{y}
             val url = "https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/$useZoom/$tileX/$tileY?access_token=$mapboxToken"
-            logger.info("Requesting tile URL: {}", url)
+            // logger.info("Requesting tile URL: {}", url)
             return url
         }
     }

@@ -17,19 +17,24 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class RallyMasterOperationsIT extends IntegrationTest {
+    private static RallyMasterOperationsIT singleton = null;
 
-    private static boolean didDelete = false;
+    @AfterAll
+    public static void cleanup() {
+        if (singleton != null) {
+            singleton.deleteAutoTestRallies();
+        }
+    }
+
+    public RallyMasterOperationsIT() {
+        singleton = this;
+    }
 
     /**
      * Delete all rallies with names beginning with "AutoTest".
      * Uses a static flag to ensure it only runs once.
      */
-    @BeforeEach
-    public void deleteAutoTestRallies() throws Exception {
-        if (didDelete) {
-            return;
-        }
-
+    public void deleteAutoTestRallies() {
         log.info("Deleting all AutoTest rallies...");
 
         try {
@@ -52,7 +57,6 @@ public class RallyMasterOperationsIT extends IntegrationTest {
             log.warn("Error during AutoTest rally cleanup: {}", e.getMessage());
         }
 
-        didDelete = true;
         log.info("AutoTest rally cleanup complete");
     }
 
@@ -62,7 +66,6 @@ public class RallyMasterOperationsIT extends IntegrationTest {
     public void testTriggerCleanup() throws Exception {
         // This test exists only to trigger the @BeforeEach cleanup
         log.info("Cleanup triggered successfully");
-        assertTrue(didDelete, "Cleanup should have been triggered");
     }
 
     @Test
