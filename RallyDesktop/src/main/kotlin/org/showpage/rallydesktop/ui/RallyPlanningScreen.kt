@@ -124,6 +124,36 @@ fun RallyPlanningScreen(
             rally != null -> {
                 // Shared state for selected bonus point (for map-to-list communication)
                 var selectedBonusPointId by remember { mutableStateOf<Int?>(null) }
+                var selectedCombinationId by remember { mutableStateOf<Int?>(null) }
+
+                // Load combinations to determine which combo the selected BP belongs to
+                var combinations by remember { mutableStateOf(emptyList<org.showpage.rallyserver.ui.UiCombination>()) }
+
+                LaunchedEffect(rallyId) {
+                    serverClient.listCombinations(rallyId).fold(
+                        onSuccess = { combos ->
+                            combinations = combos
+                        },
+                        onFailure = { error ->
+                            logger.error("Failed to load combinations for combo selection", error)
+                        }
+                    )
+                }
+
+                // When a bonus point is selected, find the first combo it belongs to
+                LaunchedEffect(selectedBonusPointId) {
+                    if (selectedBonusPointId != null) {
+                        val combo = combinations.firstOrNull { combo ->
+                            combo.combinationPoints?.any { it.bonusPointId == selectedBonusPointId } == true
+                        }
+                        selectedCombinationId = combo?.id
+                        if (combo != null) {
+                            logger.info("Selected BP {} belongs to combo {}", selectedBonusPointId, combo.name)
+                        }
+                    } else {
+                        selectedCombinationId = null
+                    }
+                }
 
                 // 4-panel layout
                 Column(
@@ -157,6 +187,12 @@ fun RallyPlanningScreen(
                         CombinationsPanel(
                             rallyId = rallyId,
                             serverClient = serverClient,
+                            selectedCombinationId = selectedCombinationId,
+                            onCombinationSelected = { comboId ->
+                                // Clear bonus point selection when combo is selected
+                                selectedBonusPointId = null
+                                selectedCombinationId = comboId
+                            },
                             modifier = Modifier.weight(1f).fillMaxHeight()
                         )
 
@@ -164,6 +200,8 @@ fun RallyPlanningScreen(
                             rallyId = rallyId,
                             rally = rally!!,
                             serverClient = serverClient,
+                            selectedBonusPointId = selectedBonusPointId,
+                            selectedCombinationId = selectedCombinationId,
                             onBonusPointSelected = { bonusPointId ->
                                 selectedBonusPointId = bonusPointId
                             },
@@ -365,6 +403,8 @@ fun BonusPointsPanel(
 fun CombinationsPanel(
     rallyId: Int,
     serverClient: RallyServerClient,
+    selectedCombinationId: Int?,
+    onCombinationSelected: (Int?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -374,7 +414,9 @@ fun CombinationsPanel(
         Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             CombinationsList(
                 rallyId = rallyId,
-                serverClient = serverClient
+                serverClient = serverClient,
+                selectedCombinationId = selectedCombinationId,
+                onCombinationSelected = onCombinationSelected
             )
         }
     }
@@ -388,6 +430,8 @@ fun MapPanel(
     rallyId: Int,
     rally: UiRally,
     serverClient: RallyServerClient,
+    selectedBonusPointId: Int?,
+    selectedCombinationId: Int?,
     onBonusPointSelected: (Int?) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -468,6 +512,8 @@ fun MapPanel(
                     combinations = combinations,
                     centerLatitude = rally.latitude?.toDouble(),
                     centerLongitude = rally.longitude?.toDouble(),
+                    selectedBonusPointId = selectedBonusPointId,
+                    selectedCombinationId = selectedCombinationId,
                     onBonusPointClicked = onBonusPointSelected
                 )
             }

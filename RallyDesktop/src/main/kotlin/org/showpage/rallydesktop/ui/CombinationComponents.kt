@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -227,6 +228,8 @@ fun CombinationDialog(
 fun CombinationsList(
     rallyId: Int,
     serverClient: RallyServerClient,
+    selectedCombinationId: Int? = null,
+    onCombinationSelected: ((Int?) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -356,14 +359,33 @@ fun CombinationsList(
                 }
             }
             else -> {
+                val listState = rememberLazyListState()
+
+                // Scroll to selected item when selection changes
+                LaunchedEffect(selectedCombinationId) {
+                    if (selectedCombinationId != null) {
+                        val index = combinations.indexOfFirst { it.id == selectedCombinationId }
+                        if (index >= 0) {
+                            listState.animateScrollToItem(index)
+                            logger.info("Scrolled to selected combination at index {}", index)
+                        }
+                    }
+                }
+
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(combinations) { combo ->
                         CombinationListItem(
                             combination = combo,
+                            isSelected = combo.id == selectedCombinationId,
                             onClick = {
+                                // Select the combo to show its BPs on the map
+                                onCombinationSelected?.invoke(combo.id)
+                            },
+                            onEdit = {
                                 editingCombination = combo
                                 showDialog = true
                             },
@@ -531,14 +553,22 @@ fun CombinationsList(
 @Composable
 fun CombinationListItem(
     combination: UiCombination,
+    isSelected: Boolean = false,
     onClick: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 2.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surface
+        )
     ) {
         Row(
             modifier = Modifier
@@ -608,10 +638,20 @@ fun CombinationListItem(
                 }
             }
 
-            IconButton(
-                onClick = { onDelete() }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text("🗑️")  // Delete icon (using emoji for simplicity)
+                IconButton(
+                    onClick = { onEdit() }
+                ) {
+                    Text("✏️")  // Edit icon
+                }
+
+                IconButton(
+                    onClick = { onDelete() }
+                ) {
+                    Text("🗑️")  // Delete icon
+                }
             }
         }
     }

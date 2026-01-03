@@ -56,6 +56,8 @@ fun MapViewer(
     combinations: List<org.showpage.rallyserver.ui.UiCombination> = emptyList(),
     centerLatitude: Double?,
     centerLongitude: Double?,
+    selectedBonusPointId: Int? = null,
+    selectedCombinationId: Int? = null,
     onBonusPointClicked: ((Int?) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -79,8 +81,8 @@ fun MapViewer(
         }
     }
 
-    // Update bonus point markers when they change
-    LaunchedEffect(bonusPoints, combinations) {
+    // Update bonus point markers when they change or selection changes
+    LaunchedEffect(bonusPoints, combinations, selectedBonusPointId, selectedCombinationId) {
         if (bonusPoints.isNotEmpty()) {
             logger.info("Processing {} bonus points and {} combinations for map display",
                 bonusPoints.size, combinations.size)
@@ -101,6 +103,16 @@ fun MapViewer(
             }
 
             logger.info("Assigned colors to {} bonus points from combinations", bonusPointColors.size)
+
+            // Find which bonus points belong to the selected combination
+            val selectedComboBonusPointIds = if (selectedCombinationId != null) {
+                combinations.find { it.id == selectedCombinationId }
+                    ?.combinationPoints
+                    ?.mapNotNull { it.bonusPointId }
+                    ?.toSet() ?: emptySet()
+            } else {
+                emptySet()
+            }
 
             // Log first few bonus points to debug
             bonusPoints.take(5).forEach { bp ->
@@ -131,7 +143,9 @@ fun MapViewer(
                             markerColor = effectiveColor,
                             markerIcon = bp.markerIcon,
                             isStart = bp.isStart ?: false,
-                            isFinish = bp.isFinish ?: false
+                            isFinish = bp.isFinish ?: false,
+                            isSelected = bp.id == selectedBonusPointId,
+                            isInSelectedCombo = bp.id != null && selectedComboBonusPointIds.contains(bp.id)
                         )
                     }
                 } else {
@@ -186,55 +200,71 @@ fun MapViewer(
         }
     }
 
-    // Add mouse click listener for waypoint selection
+    // Add mouse click listener for waypoint selection and double-click to zoom
     DisposableEffect(mapViewer, onBonusPointClicked) {
-        val clickListener = if (onBonusPointClicked != null) {
-            object : java.awt.event.MouseAdapter() {
-                override fun mouseClicked(e: java.awt.event.MouseEvent) {
-                    if (e.button != java.awt.event.MouseEvent.BUTTON1) return // Only left click
-                    if (waypoints.isEmpty()) return
+        val clickListener = object : java.awt.event.MouseAdapter() {
+            override fun mouseClicked(e: java.awt.event.MouseEvent) {
+                if (e.button != java.awt.event.MouseEvent.BUTTON1) return // Only left click
 
-                    // Convert click position to geo coordinates
+                // Handle double-click: center and zoom in
+                if (e.clickCount == 2) {
                     val clickPoint = e.point
                     val clickGeoPos = mapViewer.convertPointToGeoPosition(clickPoint)
 
-                    logger.info("Map clicked at screen ({}, {}), geo ({}, {})",
-                        clickPoint.x, clickPoint.y, clickGeoPos.latitude, clickGeoPos.longitude)
+                    // Center the map on the clicked location
+                    mapViewer.addressLocation = clickGeoPos
 
-                    // Find the closest waypoint within a reasonable threshold
-                    var closestWaypoint: BonusPointWaypoint? = null
-                    var minDistancePixels = Double.MAX_VALUE
-                    val maxClickDistancePixels = 30.0 // Maximum distance in pixels to consider a click
-
-                    for (waypoint in waypoints) {
-                        val waypointScreenPoint = mapViewer.convertGeoPositionToPoint(waypoint.position)
-                        val dx = waypointScreenPoint.x - clickPoint.x
-                        val dy = waypointScreenPoint.y - clickPoint.y
-                        val distance = kotlin.math.sqrt(dx * dx + dy * dy)
-
-                        if (distance < minDistancePixels && distance < maxClickDistancePixels) {
-                            minDistancePixels = distance
-                            closestWaypoint = waypoint
-                        }
+                    // Zoom in one level (lower zoom number = closer)
+                    val currentZoom = mapViewer.zoom
+                    if (currentZoom > 0) {
+                        mapViewer.zoom = currentZoom - 1
+                        logger.info("Double-click: centered at ({}, {}) and zoomed to level {}",
+                            clickGeoPos.latitude, clickGeoPos.longitude, currentZoom - 1)
                     }
+                    return
+                }
 
-                    if (closestWaypoint != null) {
-                        logger.info("Clicked on waypoint: {} ({}) at distance {} pixels",
-                            closestWaypoint.code, closestWaypoint.name, minDistancePixels)
-                        onBonusPointClicked(closestWaypoint.bonusPointId)
-                    } else {
-                        logger.info("No waypoint within {} pixels of click", maxClickDistancePixels)
-                        onBonusPointClicked(null) // Clear selection
+                // Handle single click: select waypoint
+                if (onBonusPointClicked == null || waypoints.isEmpty()) return
+
+                // Convert click position to geo coordinates
+                val clickPoint = e.point
+                val clickGeoPos = mapViewer.convertPointToGeoPosition(clickPoint)
+
+                logger.info("Map clicked at screen ({}, {}), geo ({}, {})",
+                    clickPoint.x, clickPoint.y, clickGeoPos.latitude, clickGeoPos.longitude)
+
+                // Find the closest waypoint within a reasonable threshold
+                var closestWaypoint: BonusPointWaypoint? = null
+                var minDistancePixels = Double.MAX_VALUE
+                val maxClickDistancePixels = 30.0 // Maximum distance in pixels to consider a click
+
+                for (waypoint in waypoints) {
+                    val waypointScreenPoint = mapViewer.convertGeoPositionToPoint(waypoint.position)
+                    val dx = waypointScreenPoint.x - clickPoint.x
+                    val dy = waypointScreenPoint.y - clickPoint.y
+                    val distance = kotlin.math.sqrt(dx * dx + dy * dy)
+
+                    if (distance < minDistancePixels && distance < maxClickDistancePixels) {
+                        minDistancePixels = distance
+                        closestWaypoint = waypoint
                     }
                 }
-            }.also { mapViewer.addMouseListener(it) }
-        } else null
+
+                if (closestWaypoint != null) {
+                    logger.info("Clicked on waypoint: {} ({}) at distance {} pixels",
+                        closestWaypoint.code, closestWaypoint.name, minDistancePixels)
+                    onBonusPointClicked(closestWaypoint.bonusPointId)
+                } else {
+                    logger.info("No waypoint within {} pixels of click", maxClickDistancePixels)
+                    onBonusPointClicked(null) // Clear selection
+                }
+            }
+        }.also { mapViewer.addMouseListener(it) }
 
         // Cleanup: remove listener when effect is disposed
         onDispose {
-            if (clickListener != null) {
-                mapViewer.removeMouseListener(clickListener)
-            }
+            mapViewer.removeMouseListener(clickListener)
         }
     }
 
@@ -517,7 +547,9 @@ class BonusPointWaypoint(
     val markerColor: String? = null,
     val markerIcon: String? = null,
     val isStart: Boolean = false,
-    val isFinish: Boolean = false
+    val isFinish: Boolean = false,
+    val isSelected: Boolean = false,
+    val isInSelectedCombo: Boolean = false
 ) : Waypoint {
     override fun getPosition(): GeoPosition = geoPosition
 }
@@ -599,6 +631,16 @@ class ColoredWaypointRenderer : WaypointRenderer<BonusPointWaypoint> {
         // Enable anti-aliasing for smoother rendering
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
 
+        // Draw selection highlight if this waypoint is selected
+        if (waypoint.isSelected) {
+            drawSelectionHighlight(g, tipX, tipY)
+        }
+
+        // Draw combo highlight if this waypoint is part of selected combo
+        if (waypoint.isInSelectedCombo) {
+            drawComboHighlight(g, tipX, tipY)
+        }
+
         // Determine which icon to draw
         val icon = waypoint.markerIcon?.lowercase() ?: "circle"
 
@@ -615,6 +657,48 @@ class ColoredWaypointRenderer : WaypointRenderer<BonusPointWaypoint> {
                 else -> drawCirclePin(g, tipX, tipY, color) // Default to circle
             }
         }
+    }
+
+    /**
+     * Draw a selection highlight around a waypoint
+     */
+    private fun drawSelectionHighlight(g: Graphics2D, tipX: Int, tipY: Int) {
+        val headSize = 16
+        val headRadius = headSize / 2
+        val pinLength = 8
+        val headY = tipY - pinLength - headRadius
+
+        // Draw pulsing rings to indicate selection
+        val highlightRadius1 = 24
+        val highlightRadius2 = 28
+
+        // Outer ring (semi-transparent)
+        g.color = Color(255, 255, 0, 60) // Yellow with transparency
+        g.stroke = BasicStroke(3f)
+        g.drawOval(tipX - highlightRadius2, headY - highlightRadius2, highlightRadius2 * 2, highlightRadius2 * 2)
+
+        // Inner ring (more opaque)
+        g.color = Color(255, 255, 0, 120) // Yellow with less transparency
+        g.stroke = BasicStroke(2f)
+        g.drawOval(tipX - highlightRadius1, headY - highlightRadius1, highlightRadius1 * 2, highlightRadius1 * 2)
+    }
+
+    /**
+     * Draw a combo highlight around a waypoint (different from selection highlight)
+     */
+    private fun drawComboHighlight(g: Graphics2D, tipX: Int, tipY: Int) {
+        val headSize = 16
+        val headRadius = headSize / 2
+        val pinLength = 8
+        val headY = tipY - pinLength - headRadius
+
+        // Draw a cyan/blue ring to indicate combo membership
+        val highlightRadius = 20
+
+        // Single ring (cyan/aqua color)
+        g.color = Color(0, 255, 255, 150) // Cyan with transparency
+        g.stroke = BasicStroke(3f)
+        g.drawOval(tipX - highlightRadius, headY - highlightRadius, highlightRadius * 2, highlightRadius * 2)
     }
 
     /**
