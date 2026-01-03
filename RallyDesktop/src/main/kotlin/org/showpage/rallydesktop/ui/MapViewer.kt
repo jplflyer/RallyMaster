@@ -73,6 +73,7 @@ fun MapViewer(
     val mapViewer = remember { createMapViewer() }
     var waypoints by remember { mutableStateOf(emptyList<BonusPointWaypoint>()) }
     var searchMarker by remember { mutableStateOf<BonusPointWaypoint?>(null) }
+    var hasInitiallyZoomed by remember { mutableStateOf(false) }
 
     // Drag state - using a mutable reference that can be updated from Swing thread
     val dragStateRef = remember { mutableStateOf<DragState?>(null) }
@@ -190,9 +191,11 @@ fun MapViewer(
 
             logger.info("Updated map with {} bonus point markers using ColoredWaypointRenderer", waypointsLocal.size)
 
-            // Always zoom to fit all points for now to debug positioning
-            if (waypointsLocal.isNotEmpty()) {
+            // Zoom to fit all points only on initial load
+            if (!hasInitiallyZoomed && waypointsLocal.isNotEmpty()) {
                 zoomToFitWaypoints(mapViewer, waypointsLocal)
+                hasInitiallyZoomed = true
+                logger.info("Performed initial zoom to fit waypoints")
             }
         }
     }
