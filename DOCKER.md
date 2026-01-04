@@ -6,12 +6,31 @@ This project includes Docker configuration for running the RallyServer with Post
 
 - Docker Desktop installed
 - Docker Compose installed (included with Docker Desktop)
+- Make (optional but recommended - included on macOS/Linux, available on Windows)
 
 ## Quick Start
 
-### Start the entire stack (PostgreSQL + RallyServer)
+### Using Make (Recommended)
 
 ```bash
+# See all available commands
+make help
+
+# Build and start everything
+make build
+make start
+
+# Run tests
+make test
+
+# Stop everything
+make stop
+```
+
+### Using Docker Compose Directly
+
+```bash
+# Start the entire stack (PostgreSQL + RallyServer)
 docker-compose up -d
 ```
 
@@ -152,6 +171,14 @@ docker-compose up -d
 ### Option 1: Full Docker (recommended for testing)
 
 ```bash
+make build
+make start
+# Make code changes
+make rebuild
+```
+
+Or with docker-compose:
+```bash
 docker-compose up -d
 # Make code changes
 docker-compose up -d --build rallyserver
@@ -160,9 +187,15 @@ docker-compose up -d --build rallyserver
 ### Option 2: Database in Docker, Server in IDE (recommended for development)
 
 ```bash
-docker-compose up -d postgres
+make dev
 # Run server from IntelliJ IDEA
 # Hot reload works normally
+```
+
+Or with docker-compose:
+```bash
+docker-compose up -d postgres
+# Run server from IntelliJ IDEA
 ```
 
 ### Option 3: Everything local (existing workflow)
