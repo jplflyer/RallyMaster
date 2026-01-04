@@ -1,7 +1,9 @@
 package org.showpage.rallydesktop.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -1187,6 +1189,7 @@ fun CompactBonusPointsList(
 /**
  * Compact item for bonus point in the list
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CompactBonusPointItem(
     bonusPoint: org.showpage.rallyserver.ui.UiBonusPoint,
@@ -1198,7 +1201,11 @@ fun CompactBonusPointItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .combinedClickable(
+                onClick = onClick,
+                onDoubleClick = onDoubleClick,
+                onLongClick = onRightClick
+            )
             .background(
                 if (isSelected) MaterialTheme.colorScheme.primaryContainer
                 else MaterialTheme.colorScheme.surface
@@ -1663,6 +1670,7 @@ fun CompactCombinationsList(
 /**
  * Compact item for combination in the tree
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CompactCombinationItem(
     combination: org.showpage.rallyserver.ui.UiCombination,
@@ -1695,7 +1703,11 @@ fun CompactCombinationItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .combinedClickable(
+                onClick = onClick,
+                onDoubleClick = onDoubleClick,
+                onLongClick = onRightClick
+            )
             .background(
                 if (isSelected) MaterialTheme.colorScheme.primaryContainer
                 else MaterialTheme.colorScheme.surface
