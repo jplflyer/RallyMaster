@@ -1,12 +1,12 @@
-package org.showpage.rallyserver;
+package org.showpage.rallyserver.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.showpage.rallyserver.IntegrationTest;
 import org.showpage.rallyserver.ui.*;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,10 +17,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * Integration tests for Ride CRUD operations.
  * Tests all four entities: Ride, Route, RideLeg, and Waypoint.
  */
-@SpringBootTest
 @Slf4j
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class RideIntegrationTest extends IntegrationTest {
+public class RideIT extends IntegrationTest {
 
     private static UiRide organizerRide;
     private static UiRide riderRide;
@@ -619,6 +618,220 @@ public class RideIntegrationTest extends IntegrationTest {
         checkFailed(getResponse);
 
         log.info("Successfully deleted ride with all child entities");
+    }
+
+    //======================================================================
+    // Comprehensive End-to-End Test
+    //======================================================================
+
+    @Test
+    @Order(700)
+    public void test_700_EndToEnd_CompleteRidePlanningWorkflow() throws Exception {
+        log.info("=== COMPREHENSIVE END-TO-END TEST: Complete Ride Planning Workflow ===");
+
+        // Step 1: Create or reuse a rally for ride planning
+        log.info("Step 1: Setting up rally for ride planning");
+        UiRally planningRally = createTestRally();
+        assertNotNull(planningRally);
+        log.info("Using rally: {} (ID: {})", planningRally.getName(), planningRally.getId());
+
+        // Step 2: Create bonus points for the rally
+        log.info("Step 2: Creating bonus points for waypoints");
+        UiBonusPoint bp1 = createTestBonusPoint(planningRally.getId(), "E2E-BP1", 100);
+        UiBonusPoint bp2 = createTestBonusPoint(planningRally.getId(), "E2E-BP2", 150);
+        UiBonusPoint bp3 = createTestBonusPoint(planningRally.getId(), "E2E-BP3", 200);
+        log.info("Created 3 bonus points: {}, {}, {}", bp1.getCode(), bp2.getCode(), bp3.getCode());
+
+        // Step 3: Create a rally-associated ride
+        log.info("Step 3: Creating rally-associated ride");
+        CreateRideRequest rideRequest = CreateRideRequest.builder()
+                .name("End-to-End Rally Ride")
+                .description("Testing complete ride planning workflow")
+                .expectedStart(planningRally.getStartDate().atTime(8, 0))
+                .expectedEnd(planningRally.getEndDate().atTime(18, 0))
+                .rallyId(planningRally.getId())
+                .stopDuration(300) // 5 minutes per stop
+                .build();
+        RR_UiRide rideResponse = post_ForRM("/api/ride", rideRequest, tr_UiRide);
+        check(rideResponse);
+        UiRide e2eRide = rideResponse.getData();
+        assertNotNull(e2eRide);
+        assertEquals(planningRally.getId(), e2eRide.getRallyId());
+        log.info("Created ride: {} (ID: {})", e2eRide.getName(), e2eRide.getId());
+
+        // Step 4: Create a route for the ride
+        log.info("Step 4: Creating primary route");
+        CreateRouteRequest routeRequest = CreateRouteRequest.builder()
+                .name("E2E Primary Route")
+                .description("Main route for end-to-end test")
+                .isPrimary(true)
+                .build();
+        RR_UiRoute routeResponse = post_ForRM(
+            "/api/ride/" + e2eRide.getId() + "/route",
+            routeRequest,
+            tr_UiRoute
+        );
+        check(routeResponse);
+        UiRoute e2eRoute = routeResponse.getData();
+        assertNotNull(e2eRoute);
+        assertTrue(e2eRoute.getIsPrimary());
+        log.info("Created route: {} (ID: {})", e2eRoute.getName(), e2eRoute.getId());
+
+        // Step 5: Create a ride leg
+        log.info("Step 5: Creating ride leg");
+        CreateRideLegRequest legRequest = CreateRideLegRequest.builder()
+                .name("E2E Day 1")
+                .description("First day of ride")
+                .sequenceOrder(1)
+                .build();
+        RR_UiRideLeg legResponse = post_ForRM(
+            "/api/route/" + e2eRoute.getId() + "/leg",
+            legRequest,
+            tr_UiRideLeg
+        );
+        check(legResponse);
+        UiRideLeg e2eLeg = legResponse.getData();
+        assertNotNull(e2eLeg);
+        log.info("Created leg: {} (ID: {})", e2eLeg.getName(), e2eLeg.getId());
+
+        // Step 6: Add waypoints from bonus points
+        log.info("Step 6: Adding waypoints from bonus points");
+
+        // Waypoint 1: From bonus point 1
+        CreateWaypointRequest wp1Request = CreateWaypointRequest.builder()
+                .name("Stop 1: " + bp1.getCode())
+                .description("First bonus point stop")
+                .sequenceOrder(1)
+                .bonusPointId(bp1.getId())
+                .build();
+        RR_UiWaypoint wp1Response = post_ForRM(
+            "/api/leg/" + e2eLeg.getId() + "/waypoint",
+            wp1Request,
+            tr_UiWaypoint
+        );
+        check(wp1Response);
+        UiWaypoint wp1 = wp1Response.getData();
+        log.info("Created waypoint 1: {} (ID: {})", wp1.getName(), wp1.getId());
+
+        // Waypoint 2: From bonus point 2
+        CreateWaypointRequest wp2Request = CreateWaypointRequest.builder()
+                .name("Stop 2: " + bp2.getCode())
+                .description("Second bonus point stop")
+                .sequenceOrder(2)
+                .bonusPointId(bp2.getId())
+                .build();
+        RR_UiWaypoint wp2Response = post_ForRM(
+            "/api/leg/" + e2eLeg.getId() + "/waypoint",
+            wp2Request,
+            tr_UiWaypoint
+        );
+        check(wp2Response);
+        UiWaypoint wp2 = wp2Response.getData();
+        log.info("Created waypoint 2: {} (ID: {})", wp2.getName(), wp2.getId());
+
+        // Waypoint 3: From bonus point 3
+        CreateWaypointRequest wp3Request = CreateWaypointRequest.builder()
+                .name("Stop 3: " + bp3.getCode())
+                .description("Third bonus point stop")
+                .sequenceOrder(3)
+                .bonusPointId(bp3.getId())
+                .build();
+        RR_UiWaypoint wp3Response = post_ForRM(
+            "/api/leg/" + e2eLeg.getId() + "/waypoint",
+            wp3Request,
+            tr_UiWaypoint
+        );
+        check(wp3Response);
+        UiWaypoint wp3 = wp3Response.getData();
+        log.info("Created waypoint 3: {} (ID: {})", wp3.getName(), wp3.getId());
+
+        // Waypoint 4: Custom location (not from bonus point)
+        CreateWaypointRequest wp4Request = CreateWaypointRequest.builder()
+                .name("Custom Stop")
+                .description("Custom waypoint with coordinates")
+                .sequenceOrder(4)
+                .latitude(45.0f)
+                .longitude(-93.0f)
+                .address("Custom Address, MN")
+                .build();
+        RR_UiWaypoint wp4Response = post_ForRM(
+            "/api/leg/" + e2eLeg.getId() + "/waypoint",
+            wp4Request,
+            tr_UiWaypoint
+        );
+        check(wp4Response);
+        UiWaypoint wp4 = wp4Response.getData();
+        log.info("Created waypoint 4: {} (ID: {})", wp4.getName(), wp4.getId());
+
+        // Step 7: Verify all waypoints are listed
+        log.info("Step 7: Verifying waypoint list");
+        RR_ListUiWaypoint listResponse = get_ForRM(
+            "/api/leg/" + e2eLeg.getId() + "/waypoints",
+            tr_ListUiWaypoint
+        );
+        check(listResponse);
+        List<UiWaypoint> waypoints = listResponse.getData();
+        assertEquals(4, waypoints.size(), "Should have 4 waypoints");
+        log.info("Verified {} waypoints in leg", waypoints.size());
+
+        // Step 8: Reorder a waypoint (update sequence)
+        log.info("Step 8: Reordering waypoints");
+        UpdateWaypointRequest reorderRequest = UpdateWaypointRequest.builder()
+                .sequenceOrder(10) // Move to end
+                .build();
+        RR_UiWaypoint reorderResponse = put_ForRM(
+            "/api/waypoint/" + wp2.getId(),
+            reorderRequest,
+            tr_UiWaypoint
+        );
+        check(reorderResponse);
+        UiWaypoint reordered = reorderResponse.getData();
+        assertEquals(10, reordered.getSequenceOrder());
+        log.info("Reordered waypoint {} to sequence {}", wp2.getName(), reordered.getSequenceOrder());
+
+        // Step 9: Delete a waypoint
+        log.info("Step 9: Deleting a waypoint");
+        RR_Void deleteWpResponse = delete_ForRM("/api/waypoint/" + wp4.getId(), tr_Void);
+        check(deleteWpResponse);
+
+        // Verify deletion
+        RR_ListUiWaypoint verifyListResponse = get_ForRM(
+            "/api/leg/" + e2eLeg.getId() + "/waypoints",
+            tr_ListUiWaypoint
+        );
+        check(verifyListResponse);
+        List<UiWaypoint> remainingWaypoints = verifyListResponse.getData();
+        assertEquals(3, remainingWaypoints.size(), "Should have 3 waypoints after deletion");
+        log.info("Verified waypoint deleted, {} waypoints remain", remainingWaypoints.size());
+
+        // Step 10: Retrieve complete ride with all nested data
+        log.info("Step 10: Retrieving complete ride data");
+        RR_UiRide fullRideResponse = get_ForRM("/api/ride/" + e2eRide.getId(), tr_UiRide);
+        check(fullRideResponse);
+        UiRide fullRide = fullRideResponse.getData();
+        assertNotNull(fullRide);
+        assertEquals(e2eRide.getId(), fullRide.getId());
+        log.info("Retrieved complete ride: {}", fullRide.getName());
+
+        // Step 11: Cleanup - Delete everything in reverse order
+        log.info("Step 11: Cleaning up test data");
+
+        // Ride deletion should cascade to routes, legs, and waypoints
+        RR_Void deleteRideResponse = delete_ForRM("/api/ride/" + e2eRide.getId(), tr_Void);
+        check(deleteRideResponse);
+        log.info("Deleted ride (cascades to routes, legs, waypoints)");
+
+        // Delete bonus points
+        delete_ForRM("/api/bonuspoint/" + bp1.getId(), tr_Void);
+        delete_ForRM("/api/bonuspoint/" + bp2.getId(), tr_Void);
+        delete_ForRM("/api/bonuspoint/" + bp3.getId(), tr_Void);
+        log.info("Deleted bonus points");
+
+        // Delete rally
+        delete_ForRM("/api/rally/" + planningRally.getId(), tr_Void);
+        log.info("Deleted rally");
+
+        log.info("=== END-TO-END TEST COMPLETED SUCCESSFULLY ===");
     }
 
     //======================================================================

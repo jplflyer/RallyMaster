@@ -241,6 +241,182 @@ class RallyServerClient(private val serverUrl: String) {
         return authenticatedDelete("/api/combination/$combinationId")
     }
 
+    //======================================================================
+    // Ride Management
+    //======================================================================
+
+    /**
+     * Create a new ride.
+     */
+    fun createRide(request: CreateRideRequest): Result<UiRide> {
+        logger.info("Creating ride: {}", request.name)
+        return authenticatedPost("/api/ride", request)
+    }
+
+    /**
+     * Update an existing ride.
+     */
+    fun updateRide(rideId: Int, request: UpdateRideRequest): Result<UiRide> {
+        logger.info("Updating ride: {}", rideId)
+        return authenticatedPut("/api/ride/$rideId", request)
+    }
+
+    /**
+     * Get a ride by ID.
+     */
+    fun getRide(rideId: Int): Result<UiRide> {
+        logger.info("Getting ride with ID: {}", rideId)
+        return authenticatedGet("/api/ride/$rideId")
+    }
+
+    /**
+     * List all rides for the current user.
+     */
+    fun listRides(): Result<List<UiRide>> {
+        logger.info("Listing rides")
+        return authenticatedGet("/api/rides")
+    }
+
+    /**
+     * Delete a ride.
+     */
+    fun deleteRide(rideId: Int): Result<Unit> {
+        logger.info("Deleting ride: {}", rideId)
+        return authenticatedDelete("/api/ride/$rideId")
+    }
+
+    //======================================================================
+    // Route Management
+    //======================================================================
+
+    /**
+     * Create a new route for a ride.
+     */
+    fun createRoute(rideId: Int, request: CreateRouteRequest): Result<UiRoute> {
+        logger.info("Creating route for ride {}: {}", rideId, request.name)
+        return authenticatedPost("/api/ride/$rideId/route", request)
+    }
+
+    /**
+     * Update an existing route.
+     */
+    fun updateRoute(routeId: Int, request: UpdateRouteRequest): Result<UiRoute> {
+        logger.info("Updating route: {}", routeId)
+        return authenticatedPut("/api/route/$routeId", request)
+    }
+
+    /**
+     * Get a route by ID.
+     */
+    fun getRoute(routeId: Int): Result<UiRoute> {
+        logger.info("Getting route with ID: {}", routeId)
+        return authenticatedGet("/api/route/$routeId")
+    }
+
+    /**
+     * List all routes for a ride.
+     */
+    fun listRoutes(rideId: Int): Result<List<UiRoute>> {
+        logger.info("Listing routes for ride: {}", rideId)
+        return authenticatedGet("/api/ride/$rideId/routes")
+    }
+
+    /**
+     * Delete a route.
+     */
+    fun deleteRoute(routeId: Int): Result<Unit> {
+        logger.info("Deleting route: {}", routeId)
+        return authenticatedDelete("/api/route/$routeId")
+    }
+
+    //======================================================================
+    // Ride Leg Management
+    //======================================================================
+
+    /**
+     * Create a new ride leg for a route.
+     */
+    fun createRideLeg(routeId: Int, request: CreateRideLegRequest): Result<UiRideLeg> {
+        logger.info("Creating ride leg for route {}: {}", routeId, request.name)
+        return authenticatedPost("/api/route/$routeId/leg", request)
+    }
+
+    /**
+     * Update an existing ride leg.
+     */
+    fun updateRideLeg(legId: Int, request: UpdateRideLegRequest): Result<UiRideLeg> {
+        logger.info("Updating ride leg: {}", legId)
+        return authenticatedPut("/api/leg/$legId", request)
+    }
+
+    /**
+     * Get a ride leg by ID.
+     */
+    fun getRideLeg(legId: Int): Result<UiRideLeg> {
+        logger.info("Getting ride leg with ID: {}", legId)
+        return authenticatedGet("/api/leg/$legId")
+    }
+
+    /**
+     * List all ride legs for a route.
+     */
+    fun listRideLegs(routeId: Int): Result<List<UiRideLeg>> {
+        logger.info("Listing ride legs for route: {}", routeId)
+        return authenticatedGet("/api/route/$routeId/legs")
+    }
+
+    /**
+     * Delete a ride leg.
+     */
+    fun deleteRideLeg(legId: Int): Result<Unit> {
+        logger.info("Deleting ride leg: {}", legId)
+        return authenticatedDelete("/api/leg/$legId")
+    }
+
+    //======================================================================
+    // Waypoint Management
+    //======================================================================
+
+    /**
+     * Create a new waypoint for a ride leg.
+     */
+    fun createWaypoint(legId: Int, request: CreateWaypointRequest): Result<UiWaypoint> {
+        logger.info("Creating waypoint for leg {}: {}", legId, request.name)
+        return authenticatedPost("/api/leg/$legId/waypoint", request)
+    }
+
+    /**
+     * Update an existing waypoint.
+     */
+    fun updateWaypoint(waypointId: Int, request: UpdateWaypointRequest): Result<UiWaypoint> {
+        logger.info("Updating waypoint: {}", waypointId)
+        return authenticatedPut("/api/waypoint/$waypointId", request)
+    }
+
+    /**
+     * Get a waypoint by ID.
+     */
+    fun getWaypoint(waypointId: Int): Result<UiWaypoint> {
+        logger.info("Getting waypoint with ID: {}", waypointId)
+        return authenticatedGet("/api/waypoint/$waypointId")
+    }
+
+    /**
+     * List all waypoints for a ride leg.
+     */
+    fun listWaypoints(legId: Int): Result<List<UiWaypoint>> {
+        logger.info("Listing waypoints for leg: {}", legId)
+        return authenticatedGet("/api/leg/$legId/waypoints")
+    }
+
+    /**
+     * Delete a waypoint.
+     */
+    fun deleteWaypoint(waypointId: Int): Result<Unit> {
+        logger.info("Deleting waypoint: {}", waypointId)
+        return authenticatedDelete("/api/waypoint/$waypointId")
+    }
+
     /**
      * Search rallies with optional filters.
      * For "My Rallies", use all=true to include all rallies user is involved with.
