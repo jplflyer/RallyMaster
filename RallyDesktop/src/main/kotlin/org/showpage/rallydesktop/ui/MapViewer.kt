@@ -930,14 +930,14 @@ class ColoredWaypointRenderer : WaypointRenderer<BonusPointWaypoint> {
         val highlightRadius1 = 24
         val highlightRadius2 = 28
 
-        // Outer ring (semi-transparent)
-        g.color = Color(255, 255, 0, 60) // Yellow with transparency
-        g.stroke = BasicStroke(3f)
+        // Outer ring (semi-transparent dark grey)
+        g.color = Color(60, 60, 60, 150) // Dark grey with transparency
+        g.stroke = BasicStroke(4f)
         g.drawOval(tipX - highlightRadius2, headY - highlightRadius2, highlightRadius2 * 2, highlightRadius2 * 2)
 
-        // Inner ring (more opaque)
-        g.color = Color(255, 255, 0, 120) // Yellow with less transparency
-        g.stroke = BasicStroke(2f)
+        // Inner ring (more opaque medium grey)
+        g.color = Color(90, 90, 90, 200) // Medium grey with less transparency
+        g.stroke = BasicStroke(3f)
         g.drawOval(tipX - highlightRadius1, headY - highlightRadius1, highlightRadius1 * 2, highlightRadius1 * 2)
     }
 
@@ -950,11 +950,11 @@ class ColoredWaypointRenderer : WaypointRenderer<BonusPointWaypoint> {
         val pinLength = 8
         val headY = tipY - pinLength - headRadius
 
-        // Draw a cyan/blue ring to indicate combo membership
+        // Draw a grey ring to indicate combo membership
         val highlightRadius = 20
 
-        // Single ring (cyan/aqua color)
-        g.color = Color(0, 255, 255, 150) // Cyan with transparency
+        // Single ring (medium grey color)
+        g.color = Color(80, 80, 80, 180) // Medium grey with transparency
         g.stroke = BasicStroke(3f)
         g.drawOval(tipX - highlightRadius, headY - highlightRadius, highlightRadius * 2, highlightRadius * 2)
     }

@@ -938,12 +938,18 @@ fun CompactBonusPointsList(
             else -> {
                 val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
-                // Scroll to selected item when selection changes
+                // Scroll to selected item only if not visible
                 LaunchedEffect(selectedBonusPointId) {
                     if (selectedBonusPointId != null) {
                         val index = bonusPoints.indexOfFirst { it.id == selectedBonusPointId }
                         if (index >= 0) {
-                            listState.animateScrollToItem(index)
+                            val layoutInfo = listState.layoutInfo
+                            val visibleItems = layoutInfo.visibleItemsInfo
+                            val isVisible = visibleItems.any { it.index == index }
+
+                            if (!isVisible) {
+                                listState.animateScrollToItem(index)
+                            }
                         }
                     }
                 }
@@ -1379,12 +1385,18 @@ fun CompactCombinationsList(
             else -> {
                 val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
-                // Scroll to selected item when selection changes
+                // Scroll to selected item only if not visible
                 LaunchedEffect(selectedCombinationId) {
                     if (selectedCombinationId != null) {
                         val index = combinations.indexOfFirst { it.id == selectedCombinationId }
                         if (index >= 0) {
-                            listState.animateScrollToItem(index)
+                            val layoutInfo = listState.layoutInfo
+                            val visibleItems = layoutInfo.visibleItemsInfo
+                            val isVisible = visibleItems.any { it.index == index }
+
+                            if (!isVisible) {
+                                listState.animateScrollToItem(index)
+                            }
                         }
                     }
                 }
