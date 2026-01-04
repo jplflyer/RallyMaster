@@ -1,5 +1,7 @@
 package org.showpage.rallydesktop.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -7,7 +9,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.showpage.rallydesktop.service.RallyServerClient
@@ -155,59 +159,56 @@ fun RallyPlanningScreen(
                     }
                 }
 
-                // 4-panel layout
-                Column(
+                // New layout: Collapsible sidebar + Map
+                var sidebarCollapsed by remember { mutableStateOf(false) }
+                var sidebarWidth by remember { mutableStateOf(300.dp) }
+
+                Row(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
-                    // Top row: Rally Info + Bonus Points
-                    Row(
-                        modifier = Modifier.fillMaxWidth().weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        RallyInfoPanel(
+                    // Left sidebar
+                    if (!sidebarCollapsed) {
+                        CollapsibleSidebar(
                             rally = rally!!,
-                            onEditRally = { onEditRally(rallyId) },
-                            modifier = Modifier.weight(1f).fillMaxHeight()
-                        )
-
-                        BonusPointsPanel(
                             rallyId = rallyId,
-                            serverClient = serverClient,
-                            selectedBonusPointId = selectedBonusPointId,
-                            modifier = Modifier.weight(1f).fillMaxHeight()
-                        )
-                    }
-
-                    // Bottom row: Combinations + Map
-                    Row(
-                        modifier = Modifier.fillMaxWidth().weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        CombinationsPanel(
-                            rallyId = rallyId,
-                            serverClient = serverClient,
-                            selectedCombinationId = selectedCombinationId,
-                            onCombinationSelected = { comboId ->
-                                // Clear bonus point selection when combo is selected
-                                selectedBonusPointId = null
-                                selectedCombinationId = comboId
-                            },
-                            modifier = Modifier.weight(1f).fillMaxHeight()
-                        )
-
-                        MapPanel(
-                            rallyId = rallyId,
-                            rally = rally!!,
                             serverClient = serverClient,
                             selectedBonusPointId = selectedBonusPointId,
                             selectedCombinationId = selectedCombinationId,
                             onBonusPointSelected = { bonusPointId ->
                                 selectedBonusPointId = bonusPointId
                             },
-                            modifier = Modifier.weight(1f).fillMaxHeight()
+                            onCombinationSelected = { comboId ->
+                                // Clear bonus point selection when combo is selected
+                                selectedBonusPointId = null
+                                selectedCombinationId = comboId
+                            },
+                            onEditRally = { onEditRally(rallyId) },
+                            onCollapse = { sidebarCollapsed = true },
+                            width = sidebarWidth,
+                            onWidthChange = { sidebarWidth = it },
+                            modifier = Modifier.fillMaxHeight()
+                        )
+                    } else {
+                        // Collapsed sidebar - just show expand button
+                        CollapsedSidebar(
+                            onExpand = { sidebarCollapsed = false },
+                            modifier = Modifier.fillMaxHeight()
                         )
                     }
+
+                    // Map takes remaining space
+                    MapPanel(
+                        rallyId = rallyId,
+                        rally = rally!!,
+                        serverClient = serverClient,
+                        selectedBonusPointId = selectedBonusPointId,
+                        selectedCombinationId = selectedCombinationId,
+                        onBonusPointSelected = { bonusPointId ->
+                            selectedBonusPointId = bonusPointId
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             }
         }
@@ -554,6 +555,1176 @@ fun MapPanel(
                     }
                 )
             }
+        }
+    }
+}
+
+/**
+ * Collapsible sidebar containing rally info, bonus points, and combinations
+ */
+@Composable
+fun CollapsibleSidebar(
+    rally: UiRally,
+    rallyId: Int,
+    serverClient: RallyServerClient,
+    selectedBonusPointId: Int?,
+    selectedCombinationId: Int?,
+    onBonusPointSelected: (Int?) -> Unit,
+    onCombinationSelected: (Int?) -> Unit,
+    onEditRally: () -> Unit,
+    onCollapse: () -> Unit,
+    width: Dp,
+    onWidthChange: (Dp) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(modifier = modifier) {
+        // Main sidebar content
+        Card(
+            modifier = Modifier.width(width).fillMaxHeight(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // Header with collapse button
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Rally Planning",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    IconButton(onClick = onCollapse) {
+                        Text("◀")  // Left arrow to collapse
+                    }
+                }
+
+                HorizontalDivider()
+
+                // Three sections: Rally Info, Bonus Points, Combinations
+                var rallyInfoCollapsed by remember { mutableStateOf(false) }
+                var bonusPointsCollapsed by remember { mutableStateOf(false) }
+                var combinationsCollapsed by remember { mutableStateOf(false) }
+
+                // Rally Info section
+                CollapsibleSection(
+                    title = "Rally Info",
+                    isCollapsed = rallyInfoCollapsed,
+                    onToggleCollapse = { rallyInfoCollapsed = !rallyInfoCollapsed },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    CompactRallyInfo(
+                        rally = rally,
+                        onEditRally = onEditRally,
+                        modifier = Modifier.fillMaxWidth().padding(8.dp)
+                    )
+                }
+
+                HorizontalDivider()
+
+                // Bonus Points section
+                CollapsibleSection(
+                    title = "Bonus Points",
+                    isCollapsed = bonusPointsCollapsed,
+                    onToggleCollapse = { bonusPointsCollapsed = !bonusPointsCollapsed },
+                    modifier = Modifier.fillMaxWidth().weight(1f)
+                ) {
+                    CompactBonusPointsList(
+                        rallyId = rallyId,
+                        serverClient = serverClient,
+                        selectedBonusPointId = selectedBonusPointId,
+                        onBonusPointSelected = onBonusPointSelected,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                HorizontalDivider()
+
+                // Combinations section
+                CollapsibleSection(
+                    title = "Combinations",
+                    isCollapsed = combinationsCollapsed,
+                    onToggleCollapse = { combinationsCollapsed = !combinationsCollapsed },
+                    modifier = Modifier.fillMaxWidth().weight(1f)
+                ) {
+                    CompactCombinationsList(
+                        rallyId = rallyId,
+                        serverClient = serverClient,
+                        selectedCombinationId = selectedCombinationId,
+                        onCombinationSelected = onCombinationSelected,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
+
+        // Resizable divider (simplified for now - just visual)
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .fillMaxHeight()
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        )
+    }
+}
+
+/**
+ * Collapsed sidebar showing just an expand button
+ */
+@Composable
+fun CollapsedSidebar(
+    onExpand: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.width(40.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+            IconButton(onClick = onExpand) {
+                Text("▶", style = MaterialTheme.typography.titleLarge)  // Right arrow to expand
+            }
+        }
+    }
+}
+
+/**
+ * Generic collapsible section with title and collapse button
+ */
+@Composable
+fun CollapsibleSection(
+    title: String,
+    isCollapsed: Boolean,
+    onToggleCollapse: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Column(modifier = modifier) {
+        // Section header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onToggleCollapse)
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = if (isCollapsed) "▼" else "▲",
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+
+        // Section content
+        if (!isCollapsed) {
+            content()
+        }
+    }
+}
+
+/**
+ * Compact Rally Info display
+ */
+@Composable
+fun CompactRallyInfo(
+    rally: UiRally,
+    onEditRally: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = rally.name ?: "Unnamed Rally",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            IconButton(
+                onClick = onEditRally,
+                modifier = Modifier.size(24.dp)
+            ) {
+                Text("✏️", style = MaterialTheme.typography.labelSmall)
+            }
+        }
+
+        // Dates
+        if (rally.startDate != null) {
+            Text(
+                text = "${rally.startDate.format(dateFormatter)}" +
+                      if (rally.endDate != null && rally.endDate != rally.startDate)
+                          " - ${rally.endDate.format(dateFormatter)}"
+                      else "",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // Location
+        val location = buildString {
+            if (!rally.locationCity.isNullOrBlank()) append(rally.locationCity)
+            if (!rally.locationState.isNullOrBlank()) {
+                if (isNotEmpty()) append(", ")
+                append(rally.locationState)
+            }
+        }
+        if (location.isNotEmpty()) {
+            Text(
+                text = location,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+/**
+ * Compact Bonus Points list with +/- buttons
+ */
+@Composable
+fun CompactBonusPointsList(
+    rallyId: Int,
+    serverClient: RallyServerClient,
+    selectedBonusPointId: Int?,
+    onBonusPointSelected: (Int?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val scope = rememberCoroutineScope()
+
+    var bonusPoints by remember { mutableStateOf<List<org.showpage.rallyserver.ui.UiBonusPoint>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showDialog by remember { mutableStateOf(false) }
+    var editingPoint by remember { mutableStateOf<org.showpage.rallyserver.ui.UiBonusPoint?>(null) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var deletingPoint by remember { mutableStateOf<org.showpage.rallyserver.ui.UiBonusPoint?>(null) }
+    var showImportDialog by remember { mutableStateOf(false) }
+    var showContextMenu by remember { mutableStateOf(false) }
+    var contextMenuPoint by remember { mutableStateOf<org.showpage.rallyserver.ui.UiBonusPoint?>(null) }
+
+    // Load bonus points on first composition
+    LaunchedEffect(rallyId) {
+        isLoading = true
+        errorMessage = null
+
+        serverClient.listBonusPoints(rallyId).fold(
+            onSuccess = { points ->
+                logger.info("Loaded {} bonus points", points.size)
+                bonusPoints = points
+                isLoading = false
+            },
+            onFailure = { error ->
+                logger.error("Failed to load bonus points", error)
+                errorMessage = "Failed to load bonus points: ${error.message}"
+                isLoading = false
+            }
+        )
+    }
+
+    Column(
+        modifier = modifier
+    ) {
+        // Header with +/- buttons
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Add button
+                IconButton(
+                    onClick = {
+                        editingPoint = null
+                        showDialog = true
+                    },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Text("+", style = MaterialTheme.typography.labelLarge)
+                }
+
+                // Delete button (disabled if nothing selected)
+                IconButton(
+                    onClick = {
+                        val selected = bonusPoints.find { it.id == selectedBonusPointId }
+                        if (selected != null) {
+                            deletingPoint = selected
+                            showDeleteConfirm = true
+                        }
+                    },
+                    modifier = Modifier.size(24.dp),
+                    enabled = selectedBonusPointId != null
+                ) {
+                    Text("-", style = MaterialTheme.typography.labelLarge)
+                }
+
+                // Menu button for import
+                IconButton(
+                    onClick = { showContextMenu = true },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Text("⋮", style = MaterialTheme.typography.labelLarge)
+                }
+            }
+
+            Text(
+                text = "${bonusPoints.size} points",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // Content
+        when {
+            isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                }
+            }
+            errorMessage != null -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = errorMessage ?: "Error",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+            bonusPoints.isEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No bonus points",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            else -> {
+                val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+                // Scroll to selected item when selection changes
+                LaunchedEffect(selectedBonusPointId) {
+                    if (selectedBonusPointId != null) {
+                        val index = bonusPoints.indexOfFirst { it.id == selectedBonusPointId }
+                        if (index >= 0) {
+                            listState.animateScrollToItem(index)
+                        }
+                    }
+                }
+
+                androidx.compose.foundation.lazy.LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    items(
+                        count = bonusPoints.size,
+                        key = { index -> bonusPoints[index].id ?: index }
+                    ) { index ->
+                        val point = bonusPoints[index]
+                        CompactBonusPointItem(
+                            bonusPoint = point,
+                            isSelected = point.id == selectedBonusPointId,
+                            onClick = {
+                                onBonusPointSelected(point.id)
+                            },
+                            onDoubleClick = {
+                                editingPoint = point
+                                showDialog = true
+                            },
+                            onRightClick = {
+                                contextMenuPoint = point
+                                showContextMenu = true
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // Context menu dropdown
+    if (showContextMenu) {
+        androidx.compose.material3.DropdownMenu(
+            expanded = showContextMenu,
+            onDismissRequest = { showContextMenu = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Add Bonus Point") },
+                onClick = {
+                    editingPoint = null
+                    showDialog = true
+                    showContextMenu = false
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Import CSV") },
+                onClick = {
+                    showImportDialog = true
+                    showContextMenu = false
+                }
+            )
+            if (contextMenuPoint != null) {
+                HorizontalDivider()
+                DropdownMenuItem(
+                    text = { Text("Edit ${contextMenuPoint!!.code}") },
+                    onClick = {
+                        editingPoint = contextMenuPoint
+                        showDialog = true
+                        showContextMenu = false
+                        contextMenuPoint = null
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Delete ${contextMenuPoint!!.code}") },
+                    onClick = {
+                        deletingPoint = contextMenuPoint
+                        showDeleteConfirm = true
+                        showContextMenu = false
+                        contextMenuPoint = null
+                    }
+                )
+            }
+        }
+    }
+
+    // Show dialog for add/edit
+    if (showDialog) {
+        BonusPointDialog(
+            bonusPoint = editingPoint,
+            onDismiss = {
+                showDialog = false
+                editingPoint = null
+            },
+            onSave = { code, name, description, latitude, longitude, address, points, required, repeatable ->
+                scope.launch {
+                    isLoading = true
+                    errorMessage = null
+                    showDialog = false
+
+                    if (editingPoint == null) {
+                        // Create new bonus point
+                        val request = org.showpage.rallyserver.ui.CreateBonusPointRequest.builder()
+                            .code(code)
+                            .name(name)
+                            .description(description)
+                            .latitude(latitude)
+                            .longitude(longitude)
+                            .address(address)
+                            .points(points)
+                            .required(required)
+                            .repeatable(repeatable)
+                            .build()
+
+                        serverClient.createBonusPoint(rallyId, request).fold(
+                            onSuccess = { newPoint ->
+                                logger.info("Bonus point created: {}", newPoint.code)
+                                bonusPoints = bonusPoints + newPoint
+                                isLoading = false
+                            },
+                            onFailure = { error ->
+                                logger.error("Failed to create bonus point", error)
+                                errorMessage = "Failed to create bonus point: ${error.message}"
+                                isLoading = false
+                            }
+                        )
+                    } else {
+                        // Update existing bonus point
+                        val request = org.showpage.rallyserver.ui.UpdateBonusPointRequest.builder()
+                            .code(code)
+                            .name(name)
+                            .description(description)
+                            .latitude(latitude)
+                            .longitude(longitude)
+                            .address(address)
+                            .points(points)
+                            .required(required)
+                            .repeatable(repeatable)
+                            .build()
+
+                        serverClient.updateBonusPoint(editingPoint!!.id!!, request).fold(
+                            onSuccess = { updatedPoint ->
+                                logger.info("Bonus point updated: {}", updatedPoint.code)
+                                bonusPoints = bonusPoints.map { if (it.id == updatedPoint.id) updatedPoint else it }
+                                isLoading = false
+                                editingPoint = null
+                            },
+                            onFailure = { error ->
+                                logger.error("Failed to update bonus point", error)
+                                errorMessage = "Failed to update bonus point: ${error.message}"
+                                isLoading = false
+                            }
+                        )
+                    }
+                }
+            }
+        )
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteConfirm && deletingPoint != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showDeleteConfirm = false
+                deletingPoint = null
+            },
+            title = { Text("Delete Bonus Point") },
+            text = { Text("Delete '${deletingPoint!!.code}'?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            val pointToDelete = deletingPoint!!
+                            showDeleteConfirm = false
+                            isLoading = true
+
+                            serverClient.deleteBonusPoint(pointToDelete.id!!).fold(
+                                onSuccess = {
+                                    logger.info("Bonus point deleted: {}", pointToDelete.code)
+                                    bonusPoints = bonusPoints.filter { it.id != pointToDelete.id }
+                                    deletingPoint = null
+                                    isLoading = false
+                                },
+                                onFailure = { error ->
+                                    logger.error("Failed to delete bonus point", error)
+                                    errorMessage = "Failed to delete: ${error.message}"
+                                    deletingPoint = null
+                                    isLoading = false
+                                }
+                            )
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = {
+                        showDeleteConfirm = false
+                        deletingPoint = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // CSV Import dialog
+    if (showImportDialog) {
+        CsvImportDialog(
+            rallyId = rallyId,
+            serverClient = serverClient,
+            onDismiss = { showImportDialog = false },
+            onImportComplete = { importedPoints ->
+                scope.launch {
+                    isLoading = true
+                    serverClient.listBonusPoints(rallyId).fold(
+                        onSuccess = { points ->
+                            bonusPoints = points
+                            isLoading = false
+                            showImportDialog = false
+                        },
+                        onFailure = { error ->
+                            errorMessage = "Failed to reload: ${error.message}"
+                            isLoading = false
+                            showImportDialog = false
+                        }
+                    )
+                }
+            }
+        )
+    }
+}
+
+/**
+ * Compact item for bonus point in the list
+ */
+@Composable
+fun CompactBonusPointItem(
+    bonusPoint: org.showpage.rallyserver.ui.UiBonusPoint,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    onDoubleClick: () -> Unit,
+    onRightClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surface
+            )
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = bonusPoint.code ?: "?",
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.width(60.dp)
+        )
+
+        Text(
+            text = bonusPoint.name ?: "",
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            maxLines = 1,
+            modifier = Modifier.weight(1f)
+        )
+
+        if (bonusPoint.points != null) {
+            Text(
+                text = "${bonusPoint.points}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+            )
+        }
+    }
+}
+
+/**
+ * Compact Combinations tree view with +/- buttons
+ */
+@Composable
+fun CompactCombinationsList(
+    rallyId: Int,
+    serverClient: RallyServerClient,
+    selectedCombinationId: Int?,
+    onCombinationSelected: (Int?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val scope = rememberCoroutineScope()
+
+    var combinations by remember { mutableStateOf<List<org.showpage.rallyserver.ui.UiCombination>>(emptyList()) }
+    var bonusPoints by remember { mutableStateOf<List<org.showpage.rallyserver.ui.UiBonusPoint>>(emptyList()) }
+    var expandedCombos by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showDialog by remember { mutableStateOf(false) }
+    var editingCombo by remember { mutableStateOf<org.showpage.rallyserver.ui.UiCombination?>(null) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var deletingCombo by remember { mutableStateOf<org.showpage.rallyserver.ui.UiCombination?>(null) }
+    var showImportDialog by remember { mutableStateOf(false) }
+    var showContextMenu by remember { mutableStateOf(false) }
+    var contextMenuCombo by remember { mutableStateOf<org.showpage.rallyserver.ui.UiCombination?>(null) }
+
+    // Load combinations and bonus points on first composition
+    LaunchedEffect(rallyId) {
+        isLoading = true
+        errorMessage = null
+
+        // Load combinations
+        serverClient.listCombinations(rallyId).fold(
+            onSuccess = { combos ->
+                logger.info("Loaded {} combinations", combos.size)
+                combinations = combos
+            },
+            onFailure = { error ->
+                logger.error("Failed to load combinations", error)
+                errorMessage = "Failed to load combinations: ${error.message}"
+            }
+        )
+
+        // Load bonus points to get codes
+        serverClient.listBonusPoints(rallyId).fold(
+            onSuccess = { points ->
+                logger.info("Loaded {} bonus points for combo display", points.size)
+                bonusPoints = points
+            },
+            onFailure = { error ->
+                logger.error("Failed to load bonus points for combo display", error)
+            }
+        )
+
+        isLoading = false
+    }
+
+    Column(
+        modifier = modifier
+    ) {
+        // Header with +/- buttons
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Add button
+                IconButton(
+                    onClick = {
+                        editingCombo = null
+                        showDialog = true
+                    },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Text("+", style = MaterialTheme.typography.labelLarge)
+                }
+
+                // Delete button (disabled if nothing selected)
+                IconButton(
+                    onClick = {
+                        val selected = combinations.find { it.id == selectedCombinationId }
+                        if (selected != null) {
+                            deletingCombo = selected
+                            showDeleteConfirm = true
+                        }
+                    },
+                    modifier = Modifier.size(24.dp),
+                    enabled = selectedCombinationId != null
+                ) {
+                    Text("-", style = MaterialTheme.typography.labelLarge)
+                }
+
+                // Menu button for import
+                IconButton(
+                    onClick = { showContextMenu = true },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Text("⋮", style = MaterialTheme.typography.labelLarge)
+                }
+            }
+
+            Text(
+                text = "${combinations.size} combos",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // Content
+        when {
+            isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                }
+            }
+            errorMessage != null -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = errorMessage ?: "Error",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+            combinations.isEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No combinations",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            else -> {
+                val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+                // Scroll to selected item when selection changes
+                LaunchedEffect(selectedCombinationId) {
+                    if (selectedCombinationId != null) {
+                        val index = combinations.indexOfFirst { it.id == selectedCombinationId }
+                        if (index >= 0) {
+                            listState.animateScrollToItem(index)
+                        }
+                    }
+                }
+
+                androidx.compose.foundation.lazy.LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    items(
+                        count = combinations.size,
+                        key = { index -> combinations[index].id ?: index }
+                    ) { index ->
+                        val combo = combinations[index]
+                        val isExpanded = expandedCombos.contains(combo.id)
+
+                        // Create a map of bonus point IDs to codes for quick lookup
+                        val bonusPointMap = bonusPoints.associateBy { it.id }
+
+                        Column {
+                            CompactCombinationItem(
+                                combination = combo,
+                                isSelected = combo.id == selectedCombinationId,
+                                isExpanded = isExpanded,
+                                markerColor = combo.markerColor,
+                                onClick = {
+                                    onCombinationSelected(combo.id)
+                                },
+                                onToggleExpand = {
+                                    expandedCombos = if (isExpanded) {
+                                        expandedCombos - combo.id!!
+                                    } else {
+                                        expandedCombos + combo.id!!
+                                    }
+                                },
+                                onDoubleClick = {
+                                    editingCombo = combo
+                                    showDialog = true
+                                },
+                                onRightClick = {
+                                    contextMenuCombo = combo
+                                    showContextMenu = true
+                                }
+                            )
+
+                            // Show bonus points if expanded
+                            if (isExpanded && combo.combinationPoints?.isNotEmpty() == true) {
+                                Column(
+                                    modifier = Modifier.padding(start = 16.dp)
+                                ) {
+                                    combo.combinationPoints.forEach { cp ->
+                                        val bonusPoint = bonusPointMap[cp.bonusPointId]
+                                        val code = bonusPoint?.code ?: "BP${cp.bonusPointId}"
+                                        Text(
+                                            text = "• $code",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(start = 8.dp, top = 2.dp, bottom = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Context menu dropdown
+    if (showContextMenu) {
+        androidx.compose.material3.DropdownMenu(
+            expanded = showContextMenu,
+            onDismissRequest = { showContextMenu = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Add Combination") },
+                onClick = {
+                    editingCombo = null
+                    showDialog = true
+                    showContextMenu = false
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Import CSV") },
+                onClick = {
+                    showImportDialog = true
+                    showContextMenu = false
+                }
+            )
+            if (contextMenuCombo != null) {
+                HorizontalDivider()
+                DropdownMenuItem(
+                    text = { Text("Edit ${contextMenuCombo!!.code}") },
+                    onClick = {
+                        editingCombo = contextMenuCombo
+                        showDialog = true
+                        showContextMenu = false
+                        contextMenuCombo = null
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Delete ${contextMenuCombo!!.code}") },
+                    onClick = {
+                        deletingCombo = contextMenuCombo
+                        showDeleteConfirm = true
+                        showContextMenu = false
+                        contextMenuCombo = null
+                    }
+                )
+            }
+        }
+    }
+
+    // Show dialog for add/edit
+    if (showDialog) {
+        CombinationDialog(
+            combination = editingCombo,
+            onDismiss = {
+                showDialog = false
+                editingCombo = null
+            },
+            onSave = { code, name, description, points, requiresAll, numRequired ->
+                scope.launch {
+                    isLoading = true
+                    errorMessage = null
+                    showDialog = false
+
+                    if (editingCombo == null) {
+                        // Create new combination
+                        val request = org.showpage.rallyserver.ui.CreateCombinationRequest.builder()
+                            .code(code)
+                            .name(name)
+                            .description(description)
+                            .points(points)
+                            .requiresAll(requiresAll)
+                            .numRequired(numRequired)
+                            .combinationPoints(emptyList())
+                            .build()
+
+                        serverClient.createCombination(rallyId, request).fold(
+                            onSuccess = { newCombo ->
+                                logger.info("Combination created: {}", newCombo.code)
+                                combinations = combinations + newCombo
+                                isLoading = false
+                            },
+                            onFailure = { error ->
+                                logger.error("Failed to create combination", error)
+                                errorMessage = "Failed to create combination: ${error.message}"
+                                isLoading = false
+                            }
+                        )
+                    } else {
+                        // Update existing combination
+                        val request = org.showpage.rallyserver.ui.UpdateCombinationRequest.builder()
+                            .code(code)
+                            .name(name)
+                            .description(description)
+                            .points(points)
+                            .requiresAll(requiresAll)
+                            .numRequired(numRequired)
+                            .build()
+
+                        serverClient.updateCombination(editingCombo!!.id!!, request).fold(
+                            onSuccess = { updatedCombo ->
+                                logger.info("Combination updated: {}", updatedCombo.code)
+                                combinations = combinations.map { if (it.id == updatedCombo.id) updatedCombo else it }
+                                isLoading = false
+                                editingCombo = null
+                            },
+                            onFailure = { error ->
+                                logger.error("Failed to update combination", error)
+                                errorMessage = "Failed to update combination: ${error.message}"
+                                isLoading = false
+                            }
+                        )
+                    }
+                }
+            }
+        )
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteConfirm && deletingCombo != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showDeleteConfirm = false
+                deletingCombo = null
+            },
+            title = { Text("Delete Combination") },
+            text = { Text("Delete '${deletingCombo!!.code}'?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            val comboToDelete = deletingCombo!!
+                            showDeleteConfirm = false
+                            isLoading = true
+
+                            serverClient.deleteCombination(comboToDelete.id!!).fold(
+                                onSuccess = {
+                                    logger.info("Combination deleted: {}", comboToDelete.code)
+                                    combinations = combinations.filter { it.id != comboToDelete.id }
+                                    deletingCombo = null
+                                    isLoading = false
+                                },
+                                onFailure = { error ->
+                                    logger.error("Failed to delete combination", error)
+                                    errorMessage = "Failed to delete: ${error.message}"
+                                    deletingCombo = null
+                                    isLoading = false
+                                }
+                            )
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = {
+                        showDeleteConfirm = false
+                        deletingCombo = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // CSV Import dialog
+    if (showImportDialog) {
+        CombinationCsvImportDialog(
+            rallyId = rallyId,
+            serverClient = serverClient,
+            onDismiss = { showImportDialog = false },
+            onImportComplete = {
+                scope.launch {
+                    isLoading = true
+                    serverClient.listCombinations(rallyId).fold(
+                        onSuccess = { combos ->
+                            combinations = combos
+                            isLoading = false
+                            showImportDialog = false
+                        },
+                        onFailure = { error ->
+                            errorMessage = "Failed to reload: ${error.message}"
+                            isLoading = false
+                            showImportDialog = false
+                        }
+                    )
+                }
+            }
+        )
+    }
+}
+
+/**
+ * Compact item for combination in the tree
+ */
+@Composable
+fun CompactCombinationItem(
+    combination: org.showpage.rallyserver.ui.UiCombination,
+    isSelected: Boolean,
+    isExpanded: Boolean,
+    markerColor: String?,
+    onClick: () -> Unit,
+    onToggleExpand: () -> Unit,
+    onDoubleClick: () -> Unit,
+    onRightClick: () -> Unit
+) {
+    // Parse the marker color from hex string
+    val parsedColor = remember(markerColor) {
+        try {
+            if (markerColor != null) {
+                val hex = if (markerColor.startsWith("#")) markerColor.substring(1) else markerColor
+                Color(
+                    red = Integer.parseInt(hex.substring(0, 2), 16) / 255f,
+                    green = Integer.parseInt(hex.substring(2, 4), 16) / 255f,
+                    blue = Integer.parseInt(hex.substring(4, 6), 16) / 255f
+                )
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surface
+            )
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Expand/collapse indicator
+        Text(
+            text = if (isExpanded) "▼" else "▶",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier
+                .clickable(onClick = onToggleExpand)
+                .padding(4.dp)
+        )
+
+        Text(
+            text = combination.code ?: "?",
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            color = parsedColor ?: MaterialTheme.colorScheme.primary,
+            modifier = Modifier.width(60.dp)
+        )
+
+        Text(
+            text = combination.name ?: "",
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            color = parsedColor ?: Color.Unspecified,
+            maxLines = 1,
+            modifier = Modifier.weight(1f)
+        )
+
+        if (combination.points != null) {
+            Text(
+                text = "${combination.points}",
+                style = MaterialTheme.typography.bodySmall,
+                color = parsedColor ?: MaterialTheme.colorScheme.secondary,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+            )
         }
     }
 }
