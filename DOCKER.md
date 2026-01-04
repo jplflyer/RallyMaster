@@ -102,7 +102,7 @@ docker-compose up -d --build rallyserver
 Connect to PostgreSQL from your host machine:
 
 - Host: localhost
-- Port: 5432
+- Port: 5433 (mapped to avoid conflict with local PostgreSQL on 5432)
 - Database: rallymaster
 - Username: rallymaster
 - Password: rallyhq
