@@ -1,16 +1,20 @@
-CODE, NAME, POINTS, DESCRIPTION, BPList
-AIRPORT, Airport Tour, 1000, Visit airports in the region, BRD, AIT, EGL, LFA, PRR
-DOGSTAT, Dog Statues, 800, Visit the famous dog statues, BRU, FRO, DER
-GOLF, Golf Courses, 750, Visit golf courses in the area, MAD, PIT, APN
-MINING, Mining History, 900, Explore the mining heritage, CUY, POR, HSH
-SMORES, S'mores Benches, 1200, Find the unique s'mores-themed benches, SMC, SMM, SMY, CLD, SMP
-TOWERS, Towers Tour, 850, Visit water towers and observation towers, NPR, TRM, OUT, GRN
-FISHING, Fishing Spots, 700, Visit fishing piers and access points, TRI, LTF, BLY, MIS, NOR
-DAMS, Dams and Water Control, 650, Visit dams in the region, BRZ, LTR, CFT, BDP
-PARKS, Parks and Recreation, 600, Visit parks and recreational areas, BAB, BOB, PMT, HUB, NTR
-LAKES, Lake Landings, 800, Visit boat landings and lake access, AKE, BAY, BWC, CEL, DOW, FSD, IDL, LOC, SLO
-TOWNS, Small Towns, 700, Visit unique small town landmarks, BER, BLN, ERN, FTZ, HAK, NEV, OGE
-MUSEUM, Museums and History, 900, Visit museums and historical sites, ADM, AUS, CMT, OTC, OTT, PTR
-TRAILS, Trails and Paths, 550, Visit trailheads and scenic paths, BPP, CQS, CZY, JGP, NYM, SEB
-BRIDGE, Bridges, 600, Visit notable bridges, BWT, DEP, JPB, LPW, PAD, REC, RRP
-NATURE, Nature Spots, 750, Visit natural landmarks and viewpoints, LSB, MIL, PHT, PRA, PRD, PRP, SER, UNA, UND, VIC
+﻿Code,Name,Points,Description,Bonus Points,,,,,,
+PSC,Point. Shoot. Click!,1000,,PHT,,,,,,
+UL,Unconditional Love,684,,BRU,BAB,UND,BDP,BLY,,
+LJ,He's a Lumberjack and that's Okay,661,,AKE,EEE,IDL,BWC,APN,,
+MM,Minnesota Mining,534,,UNA,MIL,CUY,,,,
+ISYS,I scream You Scream,621,,VIC,FRO,SLO,TRI,,,
+TOW,Tower of Power,290,,CEL,BOB,BWT,PMT,,,
+FORE,Fore!,408,,GRN,MAD,PIT,,,,
+HD,Hot Dam!,537,,PRD,JGP,CLD,,,,
+CCT,Classic Campfire Treats,338,,SMC,SMM,SMP,SMY,SMJ,,
+FH,Flying High,711,,AIT,EGL,PRA,LFA,BRD,,
+LTL,Larger Than Life,955,,NEV,HAK,SER,OTT,DER,,
+WANT,What Are They Now,706,,CQS,NYM,OTC,SEB,,,
+TURTLE,Was fast as a speeding turtle,776,,LTR,NTR,PTR,,,,
+NICK,Nickeldreams,879,,RIA,CZY,CMT,LTF,,,
+ML,Memory Lane,318,,BER,OGE,FSD,LSB,,,
+YUM,Yummy,580,,NOR,ERN,AUS,BAY,BLN,JPB,HSH
+BRD,Brainerd - We hardly knew ya,116,,REC,LPW,PAD,DEP,LOC,,
+FISH,Gone Fishin',671,,DOW,OUT,FTZ,BRZ,PRP,,
+CC,Choo! Choo!,478,,HUB,PRR,NPR,ADM,,,
