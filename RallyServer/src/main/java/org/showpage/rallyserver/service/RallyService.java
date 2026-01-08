@@ -602,7 +602,9 @@ public class RallyService {
                 .and(dateOverlaps(from, to))
                 .and(countryMatches(country))
                 .and(regionMatches(region))
-                .and(withinRadius(nearLat, nearLng, radiusMiles));
+                .and(withinRadius(nearLat, nearLng, radiusMiles))
+                ;
+
 
         if (all) {
             List<Rally> list = rallyRepository.findAll(spec); // unpaged
@@ -766,6 +768,10 @@ public class RallyService {
             Predicate circle = cb.le(miles, radiusMiles);
             return cb.and(box, circle);
         };
+    }
+
+    private static Specification<Rally> isVisible() {
+        return (root, q, cb) -> cb.equal(root.get("isVisible"), true);
     }
 
     // --- helpers ---

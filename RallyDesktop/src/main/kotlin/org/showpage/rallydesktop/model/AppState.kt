@@ -39,6 +39,9 @@ class AppState {
     var currentRallyId by mutableStateOf<Int?>(null)
         private set
 
+    var currentRideId by mutableStateOf<Int?>(null)
+        private set
+
     fun hideSplash() {
         showSplash = false
         // Only change screen if we're still on the splash screen
@@ -79,6 +82,10 @@ class AppState {
         if (screen != Screen.RALLY_PLANNING && screen != Screen.RALLY_FORM) {
             currentRallyId = null
         }
+        // Clear rideId when navigating away from ride-specific screens
+        if (screen != Screen.RIDE_PLANNING) {
+            currentRideId = null
+        }
     }
 
     fun navigateToRallyPlanning(rallyId: Int) {
@@ -89,6 +96,11 @@ class AppState {
     fun navigateToRallyForm(rallyId: Int? = null) {
         currentRallyId = rallyId
         currentScreen = Screen.RALLY_FORM
+    }
+
+    fun navigateToRidePlanning(rideId: Int) {
+        currentRideId = rideId
+        currentScreen = Screen.RIDE_PLANNING
     }
 }
 

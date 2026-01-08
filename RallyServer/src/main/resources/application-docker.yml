@@ -1,0 +1,18 @@
+# Docker-specific configuration
+# This profile is activated when SPRING_PROFILES_ACTIVE=docker
+
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/rallymaster
+    username: rallymaster
+    password: rallyhq
+  jpa:
+    show-sql: false  # Disable SQL logging in Docker for cleaner logs
+    properties:
+      hibernate:
+        format_sql: false
+
+logging:
+  level:
+    root: INFO
+    org.showpage.rallyserver: DEBUG

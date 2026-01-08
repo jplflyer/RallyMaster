@@ -56,3 +56,13 @@ springdoc:
 rallymaster:
   options:
     can-delete-rallies: true
+
+# Actuator configuration for health checks
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: when-authorized

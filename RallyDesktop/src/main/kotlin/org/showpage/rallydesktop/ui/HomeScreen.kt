@@ -31,17 +31,19 @@ fun HomeScreen(
     preferencesService: PreferencesService,
     onNavigateToCreateRally: () -> Unit,
     onNavigateToRallyPlanning: (Int) -> Unit,
-    onNavigateToRidePlanning: () -> Unit,
+    onNavigateToRidePlanning: (Int) -> Unit,
     onNavigateToScoring: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
 
     var rallies by remember { mutableStateOf<List<UiRally>>(emptyList()) }
+    var rides by remember { mutableStateOf<List<org.showpage.rallyserver.ui.UiRide>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showAllPastRallies by remember { mutableStateOf(preferencesService.getShowAllPastRallies()) }
+    var showCreateRideDialog by remember { mutableStateOf(false) }
 
-    // Load rallies on first composition
+    // Load rallies and rides on first composition
     LaunchedEffect(showAllPastRallies) {
         // Check if authenticated before making API call
         if (!serverClient.isAuthenticated()) {
@@ -65,14 +67,29 @@ fun HomeScreen(
             onSuccess = { page ->
                 logger.info("Loaded {} rallies", page.content().size)
                 rallies = page.content()
-                isLoading = false
             },
             onFailure = { error ->
                 logger.error("Failed to load rallies", error)
                 errorMessage = "Failed to load rallies: ${error.message}"
-                isLoading = false
             }
         )
+
+        // Load rides
+        serverClient.listRides().fold(
+            onSuccess = { loadedRides ->
+                logger.info("Loaded {} rides", loadedRides.size)
+                rides = loadedRides
+            },
+            onFailure = { error ->
+                logger.error("Failed to load rides", error)
+                // Don't overwrite rally error message if it exists
+                if (errorMessage == null) {
+                    errorMessage = "Failed to load rides: ${error.message}"
+                }
+            }
+        )
+
+        isLoading = false
     }
 
     Column(
@@ -103,40 +120,14 @@ fun HomeScreen(
             Button(onClick = onNavigateToCreateRally) {
                 Text("Create Rally")
             }
-            Button(onClick = onNavigateToRidePlanning) {
+            Button(onClick = { showCreateRideDialog = true }) {
                 Text("Create Ride")
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // "My Rallies" section header with checkbox
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = "My Rallies",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(
-                    checked = showAllPastRallies,
-                    onCheckedChange = { checked ->
-                        showAllPastRallies = checked
-                        preferencesService.setShowAllPastRallies(checked)
-                    }
-                )
-                Text("All Past Rallies", style = MaterialTheme.typography.bodyMedium)
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Rally list or loading/error states
+        // Loading/error states
         when {
             isLoading -> {
                 Box(
@@ -178,34 +169,125 @@ fun HomeScreen(
                     }
                 }
             }
-            rallies.isEmpty() -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No rallies found",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
             else -> {
+                // Show both rallies and rides in a scrollable column
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(rallies) { rally ->
-                        RallyListItem(
-                            rally = rally,
-                            onClick = {
-                                logger.info("Navigating to rally planning: {}", rally.name)
-                                rally.id?.let { onNavigateToRallyPlanning(it) }
-                            }
+                    // My Rides section
+                    item {
+                        Text(
+                            text = "My Rides",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
                         )
+                    }
+
+                    if (rides.isEmpty()) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "No rides yet",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        items(rides) { ride ->
+                            RideListItem(
+                                ride = ride,
+                                onClick = {
+                                    logger.info("Navigating to ride planning: {}", ride.name)
+                                    ride.id?.let { onNavigateToRidePlanning(it) }
+                                }
+                            )
+                        }
+                    }
+
+                    // Spacer between sections
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
+                    // My Rallies section header with checkbox
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "My Rallies",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = showAllPastRallies,
+                                    onCheckedChange = { checked ->
+                                        showAllPastRallies = checked
+                                        preferencesService.setShowAllPastRallies(checked)
+                                    }
+                                )
+                                Text("All Past Rallies", style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                    }
+
+                    if (rallies.isEmpty()) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "No rallies found",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        items(rallies) { rally ->
+                            RallyListItem(
+                                rally = rally,
+                                onClick = {
+                                    logger.info("Navigating to rally planning: {}", rally.name)
+                                    rally.id?.let { onNavigateToRallyPlanning(it) }
+                                }
+                            )
+                        }
                     }
                 }
             }
+        }
+
+        // Create Ride Dialog
+        if (showCreateRideDialog) {
+            CreateRideDialog(
+                serverClient = serverClient,
+                onDismiss = { showCreateRideDialog = false },
+                onRideCreated = { rideId ->
+                    showCreateRideDialog = false
+                    onNavigateToRidePlanning(rideId)
+                }
+            )
         }
     }
 }
@@ -282,6 +364,81 @@ fun RallyListItem(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = rally.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun RideListItem(
+    ride: org.showpage.rallyserver.ui.UiRide,
+    onClick: () -> Unit
+) {
+    val dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
+        ) {
+            // Ride name
+            Text(
+                text = ride.name ?: "Unnamed Ride",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Rally association (if any)
+            if (ride.rallyId != null) {
+                Text(
+                    text = "Rally-associated ride",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            } else {
+                Text(
+                    text = "Standalone ride",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Expected dates
+            if (ride.expectedStart != null || ride.expectedEnd != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                val dateText = buildString {
+                    if (ride.expectedStart != null) {
+                        append(ride.expectedStart.format(dateFormatter))
+                        if (ride.expectedEnd != null) {
+                            append(" - ")
+                            append(ride.expectedEnd.format(dateFormatter))
+                        }
+                    } else if (ride.expectedEnd != null) {
+                        append("Ends: ")
+                        append(ride.expectedEnd.format(dateFormatter))
+                    }
+                }
+                Text(
+                    text = dateText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Description (if present)
+            if (!ride.description.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = ride.description,
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 2
                 )
