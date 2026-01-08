@@ -213,6 +213,9 @@ fun RallyMasterApp(
                         onEditRally = { editRallyId ->
                             appState.navigateToRallyForm(editRallyId)
                         },
+                        onNavigateToRidePlanning = { rideId ->
+                            appState.navigateToRidePlanning(rideId)
+                        },
                         onBack = {
                             appState.navigateTo(Screen.HOME)
                         }

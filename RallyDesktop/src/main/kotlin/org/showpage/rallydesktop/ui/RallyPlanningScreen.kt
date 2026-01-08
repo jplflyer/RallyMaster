@@ -17,7 +17,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.showpage.rallydesktop.service.RallyServerClient
+import org.showpage.rallyserver.ui.CreateRideRequest
 import org.showpage.rallyserver.ui.UiRally
+import org.showpage.rallyserver.ui.UiRide
 import org.slf4j.LoggerFactory
 import java.time.format.DateTimeFormatter
 
@@ -35,11 +37,13 @@ fun RallyPlanningScreen(
     rallyId: Int,
     serverClient: RallyServerClient,
     onEditRally: (Int) -> Unit,
+    onNavigateToRidePlanning: (Int) -> Unit,
     onBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
 
     var rally by remember { mutableStateOf<UiRally?>(null) }
+    var rideForRally by remember { mutableStateOf<UiRide?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -54,14 +58,27 @@ fun RallyPlanningScreen(
             onSuccess = { loadedRally ->
                 logger.info("Rally loaded: {}", loadedRally.name)
                 rally = loadedRally
-                isLoading = false
             },
             onFailure = { error ->
                 logger.error("Failed to load rally", error)
                 errorMessage = "Failed to load rally: ${error.message}"
-                isLoading = false
             }
         )
+
+        // Check if user has an existing ride for this rally
+        serverClient.getRideForRally(rallyId).fold(
+            onSuccess = { existingRide ->
+                rideForRally = existingRide
+                if (existingRide != null) {
+                    logger.info("Found existing ride for rally: {}", existingRide.name)
+                }
+            },
+            onFailure = { error ->
+                logger.error("Failed to check for existing ride", error)
+            }
+        )
+
+        isLoading = false
     }
 
     Column(
@@ -177,6 +194,7 @@ fun RallyPlanningScreen(
                             serverClient = serverClient,
                             selectedBonusPointId = selectedBonusPointId,
                             selectedCombinationId = selectedCombinationId,
+                            rideForRally = rideForRally,
                             onBonusPointSelected = { bonusPointId ->
                                 selectedBonusPointId = bonusPointId
                             },
@@ -186,6 +204,27 @@ fun RallyPlanningScreen(
                                 selectedCombinationId = comboId
                             },
                             onEditRally = { onEditRally(rallyId) },
+                            onPlanRide = {
+                                scope.launch {
+                                    val request = CreateRideRequest.builder()
+                                        .name("${rally!!.name} Ride")
+                                        .rallyId(rallyId)
+                                        .build()
+                                    serverClient.createRide(request).fold(
+                                        onSuccess = { newRide ->
+                                            logger.info("Created ride for rally: {}", newRide.name)
+                                            rideForRally = newRide
+                                            onNavigateToRidePlanning(newRide.id!!)
+                                        },
+                                        onFailure = { error ->
+                                            logger.error("Failed to create ride for rally", error)
+                                        }
+                                    )
+                                }
+                            },
+                            onGoToRide = { rideId ->
+                                onNavigateToRidePlanning(rideId)
+                            },
                             onCollapse = { sidebarCollapsed = true },
                             width = sidebarWidth,
                             onWidthChange = { sidebarWidth = it },
@@ -571,9 +610,12 @@ fun CollapsibleSidebar(
     serverClient: RallyServerClient,
     selectedBonusPointId: Int?,
     selectedCombinationId: Int?,
+    rideForRally: UiRide?,
     onBonusPointSelected: (Int?) -> Unit,
     onCombinationSelected: (Int?) -> Unit,
     onEditRally: () -> Unit,
+    onPlanRide: () -> Unit,
+    onGoToRide: (Int) -> Unit,
     onCollapse: () -> Unit,
     width: Dp,
     onWidthChange: (Dp) -> Unit,
@@ -622,7 +664,10 @@ fun CollapsibleSidebar(
                 ) {
                     CompactRallyInfo(
                         rally = rally,
+                        rideForRally = rideForRally,
                         onEditRally = onEditRally,
+                        onPlanRide = onPlanRide,
+                        onGoToRide = onGoToRide,
                         modifier = Modifier.fillMaxWidth().padding(8.dp)
                     )
                 }
@@ -745,7 +790,10 @@ fun CollapsibleSection(
 @Composable
 fun CompactRallyInfo(
     rally: UiRally,
+    rideForRally: UiRide?,
     onEditRally: () -> Unit,
+    onPlanRide: () -> Unit,
+    onGoToRide: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
@@ -799,6 +847,27 @@ fun CompactRallyInfo(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Ride button - either "Plan My Ride" or "Go to My Ride"
+        if (rideForRally != null) {
+            Button(
+                onClick = { onGoToRide(rideForRally.id!!) },
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+            ) {
+                Text("Go to My Ride", style = MaterialTheme.typography.labelMedium)
+            }
+        } else {
+            OutlinedButton(
+                onClick = onPlanRide,
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+            ) {
+                Text("Plan My Ride", style = MaterialTheme.typography.labelMedium)
+            }
         }
     }
 }

@@ -278,6 +278,17 @@ class RallyServerClient(private val serverUrl: String) {
     }
 
     /**
+     * Get the user's ride for a specific rally, if one exists.
+     * Returns null if no ride exists for this rally.
+     */
+    fun getRideForRally(rallyId: Int): Result<UiRide?> {
+        logger.info("Getting ride for rally: {}", rallyId)
+        return listRides().map { rides ->
+            rides.find { it.rallyId == rallyId }
+        }
+    }
+
+    /**
      * Delete a ride.
      */
     fun deleteRide(rideId: Int): Result<Unit> {
