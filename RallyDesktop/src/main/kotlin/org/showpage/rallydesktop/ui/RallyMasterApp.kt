@@ -167,9 +167,8 @@ fun RallyMasterApp(
                         onNavigateToRallyPlanning = { rallyId ->
                             appState.navigateToRallyPlanning(rallyId)
                         },
-                        onNavigateToRidePlanning = {
-                            // TODO: Implement Ride Planning screen
-                            appState.navigateTo(Screen.RIDE_PLANNING)
+                        onNavigateToRidePlanning = { rideId ->
+                            appState.navigateToRidePlanning(rideId)
                         },
                         onNavigateToScoring = {
                             // TODO: Implement Scoring screen
@@ -222,10 +221,15 @@ fun RallyMasterApp(
             }
 
             Screen.RIDE_PLANNING -> {
-                // TODO: Implement Ride Planning screen
-                PlaceholderScreen("Ride Planning (Coming Soon)", onBack = {
-                    appState.navigateTo(Screen.HOME)
-                })
+                appState.currentRideId?.let { rideId ->
+                    RidePlanningScreen(
+                        rideId = rideId,
+                        serverClient = serverClient,
+                        onBack = {
+                            appState.navigateTo(Screen.HOME)
+                        }
+                    )
+                }
             }
 
             Screen.SCORING -> {
