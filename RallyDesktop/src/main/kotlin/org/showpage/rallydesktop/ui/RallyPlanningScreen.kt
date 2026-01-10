@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.showpage.rallydesktop.service.RallyServerClient
 import org.showpage.rallyserver.ui.CreateRideRequest
+import org.showpage.rallyserver.ui.CreateRouteRequest
 import org.showpage.rallyserver.ui.UiRally
 import org.showpage.rallyserver.ui.UiRide
 import org.slf4j.LoggerFactory
@@ -214,7 +215,22 @@ fun RallyPlanningScreen(
                                         onSuccess = { newRide ->
                                             logger.info("Created ride for rally: {}", newRide.name)
                                             rideForRally = newRide
-                                            onNavigateToRidePlanning(newRide.id!!)
+                                            
+                                            val routeRequest = CreateRouteRequest.builder()
+                                                .name("Primary Route")
+                                                .isPrimary(true)
+                                                .build()
+                                            
+                                            serverClient.createRoute(newRide.id!!, routeRequest).fold(
+                                                onSuccess = { route ->
+                                                    logger.info("Initial route created: {}", route.name)
+                                                },
+                                                onFailure = { error ->
+                                                    logger.error("Failed to create initial route", error)
+                                                }
+                                            )
+                                            
+                                            onNavigateToRidePlanning(newRide.id)
                                         },
                                         onFailure = { error ->
                                             logger.error("Failed to create ride for rally", error)

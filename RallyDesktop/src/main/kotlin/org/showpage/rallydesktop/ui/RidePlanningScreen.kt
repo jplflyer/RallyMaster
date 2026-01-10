@@ -1,6 +1,8 @@
 package org.showpage.rallydesktop.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.TooltipArea
+import androidx.compose.foundation.TooltipPlacement
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -394,6 +396,7 @@ fun CompactRideInfo(
 /**
  * Routes tree showing routes -> legs -> waypoints
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RoutesTree(
     rideId: Int,
@@ -402,6 +405,9 @@ fun RoutesTree(
     onRoutesChanged: (List<UiRoute>) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val scope = rememberCoroutineScope()
+    var isCreating by remember { mutableStateOf(false) }
+    
     Column(
         modifier = modifier.padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -418,10 +424,57 @@ fun RoutesTree(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Button(onClick = {
-                        // TODO: Add route creation dialog
-                    }) {
-                        Text("Create Route")
+                    TooltipArea(
+                        tooltip = {
+                            Surface(
+                                color = MaterialTheme.colorScheme.inverseSurface,
+                                shape = MaterialTheme.shapes.small,
+                                shadowElevation = 4.dp
+                            ) {
+                                Text(
+                                    text = "A route is one possible plan. You can create different routes while deciding what you want to do, then pick the one you intend to ride.",
+                                    modifier = Modifier.padding(8.dp).widthIn(max = 300.dp),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.inverseOnSurface
+                                )
+                            }
+                        },
+                        delayMillis = 500,
+                        tooltipPlacement = TooltipPlacement.CursorPoint()
+                    ) {
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    isCreating = true
+                                    val request = CreateRouteRequest.builder()
+                                        .name("Route ${routes.size + 1}")
+                                        .isPrimary(routes.isEmpty())
+                                        .build()
+                                    
+                                    serverClient.createRoute(rideId, request).fold(
+                                        onSuccess = { newRoute ->
+                                            logger.info("Route created: {}", newRoute.name)
+                                            onRoutesChanged(routes + newRoute)
+                                            isCreating = false
+                                        },
+                                        onFailure = { error ->
+                                            logger.error("Failed to create route", error)
+                                            isCreating = false
+                                        }
+                                    )
+                                }
+                            },
+                            enabled = !isCreating
+                        ) {
+                            if (isCreating) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text("Create Route")
+                            }
+                        }
                     }
                 }
             }
@@ -434,6 +487,62 @@ fun RoutesTree(
                         onRoutesChanged(routes.map { if (it.id == updatedRoute.id) updatedRoute else it })
                     }
                 )
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            TooltipArea(
+                tooltip = {
+                    Surface(
+                        color = MaterialTheme.colorScheme.inverseSurface,
+                        shape = MaterialTheme.shapes.small,
+                        shadowElevation = 4.dp
+                    ) {
+                        Text(
+                            text = "A route is one possible plan. You can create different routes while deciding what you want to do, then pick the one you intend to ride.",
+                            modifier = Modifier.padding(8.dp).widthIn(max = 300.dp),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.inverseOnSurface
+                        )
+                    }
+                },
+                delayMillis = 500,
+                tooltipPlacement = TooltipPlacement.CursorPoint()
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            isCreating = true
+                            val request = CreateRouteRequest.builder()
+                                .name("Route ${routes.size + 1}")
+                                .isPrimary(false)
+                                .build()
+                            
+                            serverClient.createRoute(rideId, request).fold(
+                                onSuccess = { newRoute ->
+                                    logger.info("Route created: {}", newRoute.name)
+                                    onRoutesChanged(routes + newRoute)
+                                    isCreating = false
+                                },
+                                onFailure = { error ->
+                                    logger.error("Failed to create route", error)
+                                    isCreating = false
+                                }
+                            )
+                        }
+                    },
+                    enabled = !isCreating,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (isCreating) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("+ Add Route")
+                    }
+                }
             }
         }
     }
@@ -721,7 +830,22 @@ fun CreateRideDialog(
                         serverClient.createRide(request).fold(
                             onSuccess = { ride ->
                                 logger.info("Ride created: {} (ID: {})", ride.name, ride.id)
-                                onRideCreated(ride.id!!)
+                                
+                                val routeRequest = CreateRouteRequest.builder()
+                                    .name("Primary Route")
+                                    .isPrimary(true)
+                                    .build()
+                                
+                                serverClient.createRoute(ride.id!!, routeRequest).fold(
+                                    onSuccess = { route ->
+                                        logger.info("Initial route created: {} (ID: {})", route.name, route.id)
+                                        onRideCreated(ride.id)
+                                    },
+                                    onFailure = { error ->
+                                        logger.error("Failed to create initial route", error)
+                                        onRideCreated(ride.id)
+                                    }
+                                )
                             },
                             onFailure = { error ->
                                 logger.error("Failed to create ride", error)
