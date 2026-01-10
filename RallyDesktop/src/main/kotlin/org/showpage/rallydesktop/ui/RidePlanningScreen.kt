@@ -13,11 +13,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import org.showpage.rallydesktop.service.PreferencesService
 import org.showpage.rallydesktop.service.RallyServerClient
+import org.showpage.rallydesktop.service.WaypointSequencer
 import org.showpage.rallyserver.ui.*
 import org.slf4j.LoggerFactory
 import java.time.format.DateTimeFormatter
@@ -33,6 +36,7 @@ private val logger = LoggerFactory.getLogger("RidePlanningScreen")
 fun RidePlanningScreen(
     rideId: Int,
     serverClient: RallyServerClient,
+    preferencesService: PreferencesService,
     onBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -40,6 +44,9 @@ fun RidePlanningScreen(
     var ride by remember { mutableStateOf<UiRide?>(null) }
     var rally by remember { mutableStateOf<UiRally?>(null) }
     var routes by remember { mutableStateOf(emptyList<UiRoute>()) }
+    var selectedLegId by remember { mutableStateOf<Int?>(null) }
+    var waypointReloadTrigger by remember { mutableStateOf(0) }
+    var showNoLegSelectedMessage by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -89,10 +96,48 @@ fun RidePlanningScreen(
             }
         )
     }
+    
+    LaunchedEffect(routes) {
+        if (selectedLegId == null && routes.isNotEmpty()) {
+            val allLegs = routes.flatMap { route ->
+                serverClient.listRideLegs(route.id!!).getOrElse { emptyList() }
+            }
+            
+            val lastLegId = preferencesService.getLastSelectedLegId(rideId)
+            val restoredLeg = if (lastLegId != null) allLegs.find { it.id == lastLegId } else null
+            
+            val targetLeg = restoredLeg ?: allLegs.firstOrNull()
+            if (targetLeg != null) {
+                selectedLegId = targetLeg.id
+                logger.info("Selected leg: {} (restored={})", targetLeg.name, restoredLeg != null)
+            }
+        }
+    }
+    
+    LaunchedEffect(selectedLegId) {
+        if (selectedLegId != null) {
+            preferencesService.setLastSelectedLegId(rideId, selectedLegId)
+        }
+    }
+    
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    LaunchedEffect(showNoLegSelectedMessage) {
+        if (showNoLegSelectedMessage) {
+            snackbarHostState.showSnackbar(
+                message = "Please select a leg first",
+                duration = SnackbarDuration.Short
+            )
+            showNoLegSelectedMessage = false
+        }
+    }
 
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp)
-    ) {
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp).padding(paddingValues)
+        ) {
         // Header with back button
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -169,6 +214,9 @@ fun RidePlanningScreen(
                             rally = rally,
                             routes = routes,
                             serverClient = serverClient,
+                            selectedLegId = selectedLegId,
+                            waypointReloadTrigger = waypointReloadTrigger,
+                            onLegSelected = { legId -> selectedLegId = legId },
                             onCollapse = { sidebarCollapsed = true },
                             width = sidebarWidth,
                             onWidthChange = { sidebarWidth = it },
@@ -188,6 +236,8 @@ fun RidePlanningScreen(
                                     )
                                 }
                             },
+                            onWaypointAdded = { waypointReloadTrigger++ },
+                            onNoLegSelected = { showNoLegSelectedMessage = true },
                             modifier = Modifier.fillMaxHeight()
                         )
                     } else {
@@ -229,6 +279,7 @@ fun RidePlanningScreen(
             }
         }
     }
+    }
 }
 
 /**
@@ -240,13 +291,20 @@ fun RidePlanSidebar(
     rally: UiRally?,
     routes: List<UiRoute>,
     serverClient: RallyServerClient,
+    selectedLegId: Int?,
+    waypointReloadTrigger: Int,
+    onLegSelected: (Int?) -> Unit,
     onCollapse: () -> Unit,
     width: Dp,
     onWidthChange: (Dp) -> Unit,
     onRoutesChanged: (List<UiRoute>) -> Unit,
     onReloadRoutes: () -> Unit,
+    onWaypointAdded: () -> Unit,
+    onNoLegSelected: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val scope = rememberCoroutineScope()
+    
     Row(modifier = modifier) {
         Card(
             modifier = Modifier.width(width).fillMaxHeight(),
@@ -307,6 +365,9 @@ fun RidePlanSidebar(
                         rideId = ride.id!!,
                         routes = routes,
                         serverClient = serverClient,
+                        selectedLegId = selectedLegId,
+                        waypointReloadTrigger = waypointReloadTrigger,
+                        onLegSelected = onLegSelected,
                         onRoutesChanged = onRoutesChanged,
                         onReloadRoutes = onReloadRoutes,
                         modifier = Modifier.fillMaxSize()
@@ -328,6 +389,35 @@ fun RidePlanSidebar(
                             serverClient = serverClient,
                             selectedBonusPointId = null,
                             onBonusPointSelected = {},
+                            onBonusPointDoubleClick = { bonusPoint ->
+                                val legId = selectedLegId
+                                if (legId != null) {
+                                    scope.launch {
+                                        val existingWaypoints = serverClient.listWaypoints(legId).getOrElse { emptyList() }
+                                        val nextSeq = WaypointSequencer.nextSequence(existingWaypoints)
+                                        
+                                        val waypointRequest = CreateWaypointRequest.builder()
+                                            .name(bonusPoint.code ?: bonusPoint.name ?: "Waypoint")
+                                            .bonusPointId(bonusPoint.id)
+                                            .latitude(bonusPoint.latitude?.toFloat())
+                                            .longitude(bonusPoint.longitude?.toFloat())
+                                            .sequenceOrder(nextSeq)
+                                            .build()
+                                        
+                                        serverClient.createWaypoint(legId, waypointRequest).fold(
+                                            onSuccess = { waypoint ->
+                                                logger.info("Added bonus point {} as waypoint {} to leg {}", bonusPoint.code, nextSeq, legId)
+                                                onWaypointAdded()
+                                            },
+                                            onFailure = { error ->
+                                                logger.error("Failed to add bonus point as waypoint", error)
+                                            }
+                                        )
+                                    }
+                                } else {
+                                    onNoLegSelected()
+                                }
+                            },
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -417,6 +507,9 @@ fun RoutesTree(
     rideId: Int,
     routes: List<UiRoute>,
     serverClient: RallyServerClient,
+    selectedLegId: Int?,
+    waypointReloadTrigger: Int,
+    onLegSelected: (Int?) -> Unit,
     onRoutesChanged: (List<UiRoute>) -> Unit,
     onReloadRoutes: () -> Unit,
     modifier: Modifier = Modifier
@@ -518,6 +611,9 @@ fun RoutesTree(
                 RouteItem(
                     route = route,
                     serverClient = serverClient,
+                    selectedLegId = selectedLegId,
+                    waypointReloadTrigger = waypointReloadTrigger,
+                    onLegSelected = onLegSelected,
                     onRouteChanged = { updatedRoute ->
                         onRoutesChanged(routes.map { if (it.id == updatedRoute.id) updatedRoute else it })
                     },
@@ -596,6 +692,9 @@ fun RoutesTree(
 fun RouteItem(
     route: UiRoute,
     serverClient: RallyServerClient,
+    selectedLegId: Int?,
+    waypointReloadTrigger: Int,
+    onLegSelected: (Int?) -> Unit,
     onRouteChanged: (UiRoute) -> Unit,
     onRouteDeleted: () -> Unit,
     onReloadRoutes: () -> Unit
@@ -726,9 +825,19 @@ fun RouteItem(
                     RideLegItem(
                         leg = leg,
                         serverClient = serverClient,
+                        isSelected = selectedLegId == leg.id,
+                        waypointReloadTrigger = waypointReloadTrigger,
+                        onSelect = { onLegSelected(leg.id) },
                         onLegChanged = { updatedLeg ->
                             legs = legs.map { if (it.id == updatedLeg.id) updatedLeg else it }
-                        }
+                        },
+                        onLegDeleted = {
+                            legs = legs.filter { it.id != leg.id }
+                            if (selectedLegId == leg.id) {
+                                onLegSelected(null)
+                            }
+                        },
+                        onReloadWaypoints = onReloadRoutes
                     )
                 }
 
@@ -826,13 +935,21 @@ fun RouteItem(
 fun RideLegItem(
     leg: UiRideLeg,
     serverClient: RallyServerClient,
-    onLegChanged: (UiRideLeg) -> Unit
+    isSelected: Boolean,
+    waypointReloadTrigger: Int,
+    onSelect: () -> Unit,
+    onLegChanged: (UiRideLeg) -> Unit,
+    onLegDeleted: () -> Unit,
+    onReloadWaypoints: () -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(true) }
     var waypoints by remember { mutableStateOf(emptyList<UiWaypoint>()) }
+    var selectedWaypointId by remember { mutableStateOf<Int?>(null) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
-    // Load waypoints for this leg
-    LaunchedEffect(leg.id) {
+    // Reload waypoints when the trigger changes (from parent when waypoint is added)
+    LaunchedEffect(leg.id, waypointReloadTrigger) {
         if (leg.id != null) {
             serverClient.listWaypoints(leg.id).fold(
                 onSuccess = { loadedWaypoints ->
@@ -846,12 +963,19 @@ fun RideLegItem(
         }
     }
 
+    val backgroundColor = if (isSelected) {
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+    } else {
+        Color.Transparent
+    }
+
     Column {
-        // Leg header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp),
+                .background(backgroundColor)
+                .clickable { onSelect() }
+                .padding(vertical = 4.dp, horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
@@ -863,27 +987,73 @@ fun RideLegItem(
             Text(
                 text = leg.name ?: "Leg",
                 style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
             )
+            if (isSelected) {
+                Text(
+                    text = "●",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            IconButton(
+                onClick = { showDeleteConfirm = true },
+                modifier = Modifier.size(20.dp)
+            ) {
+                Text("🗑", style = MaterialTheme.typography.labelSmall)
+            }
         }
 
-        // Waypoints (if expanded)
         if (isExpanded) {
             Column(
                 modifier = Modifier.padding(start = 16.dp)
             ) {
-                waypoints.forEach { waypoint ->
+                waypoints.forEachIndexed { index, waypoint ->
                     WaypointItem(
                         waypoint = waypoint,
+                        isSelected = selectedWaypointId == waypoint.id,
+                        onSelect = { selectedWaypointId = if (selectedWaypointId == waypoint.id) null else waypoint.id },
                         onDelete = {
-                            // TODO: Implement deletion
-                        }
+                            scope.launch {
+                                WaypointSequencer.deleteAndRenumber(waypoints, waypoint, serverClient).fold(
+                                    onSuccess = { updated ->
+                                        waypoints = updated
+                                        selectedWaypointId = null
+                                    },
+                                    onFailure = { error ->
+                                        logger.error("Failed to delete waypoint", error)
+                                    }
+                                )
+                            }
+                        },
+                        onMoveUp = if (index > 0) {
+                            {
+                                scope.launch {
+                                    WaypointSequencer.moveUp(waypoints, waypoint, serverClient).fold(
+                                        onSuccess = { updated -> waypoints = updated },
+                                        onFailure = { error -> logger.error("Failed to move waypoint up", error) }
+                                    )
+                                }
+                            }
+                        } else null,
+                        onMoveDown = if (index < waypoints.size - 1) {
+                            {
+                                scope.launch {
+                                    WaypointSequencer.moveDown(waypoints, waypoint, serverClient).fold(
+                                        onSuccess = { updated -> waypoints = updated },
+                                        onFailure = { error -> logger.error("Failed to move waypoint down", error) }
+                                    )
+                                }
+                            }
+                        } else null
                     )
                 }
 
                 if (waypoints.isEmpty()) {
                     Text(
-                        text = "No waypoints",
+                        text = if (isSelected) "Double-click a bonus point to add it" else "No waypoints",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(8.dp)
@@ -892,54 +1062,108 @@ fun RideLegItem(
             }
         }
     }
+    
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Delete Leg?") },
+            text = { 
+                Text("Are you sure you want to delete \"${leg.name}\"? This will also delete all waypoints in this leg.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            serverClient.deleteRideLeg(leg.id!!).fold(
+                                onSuccess = {
+                                    logger.info("Deleted leg: {}", leg.name)
+                                    showDeleteConfirm = false
+                                    onLegDeleted()
+                                },
+                                onFailure = { error ->
+                                    logger.error("Failed to delete leg", error)
+                                    showDeleteConfirm = false
+                                }
+                            )
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showDeleteConfirm = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 /**
  * Single waypoint item
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun WaypointItem(
     waypoint: UiWaypoint,
-    onDelete: () -> Unit
+    isSelected: Boolean,
+    onSelect: () -> Unit,
+    onDelete: () -> Unit,
+    onMoveUp: (() -> Unit)?,
+    onMoveDown: (() -> Unit)?
 ) {
-    var showContextMenu by remember { mutableStateOf(false) }
+    val backgroundColor = if (isSelected) {
+        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+    } else {
+        Color.Transparent
+    }
 
-    Box {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .combinedClickable(
-                    onClick = {},
-                    onLongClick = { showContextMenu = true }
-                )
-                .padding(vertical = 2.dp, horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(
-                text = "${waypoint.sequenceOrder ?: "?"}.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = waypoint.name ?: "Waypoint",
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
-
-        // Context menu
-        DropdownMenu(
-            expanded = showContextMenu,
-            onDismissRequest = { showContextMenu = false }
-        ) {
-            DropdownMenuItem(
-                text = { Text("Delete") },
-                onClick = {
-                    onDelete()
-                    showContextMenu = false
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(backgroundColor)
+            .clickable { onSelect() }
+            .padding(vertical = 2.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = "${waypoint.sequenceOrder ?: "?"}.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = waypoint.name ?: "Waypoint",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.weight(1f)
+        )
+        
+        if (isSelected) {
+            if (onMoveUp != null) {
+                IconButton(
+                    onClick = onMoveUp,
+                    modifier = Modifier.size(20.dp)
+                ) {
+                    Text("↑", style = MaterialTheme.typography.labelSmall)
                 }
-            )
+            }
+            if (onMoveDown != null) {
+                IconButton(
+                    onClick = onMoveDown,
+                    modifier = Modifier.size(20.dp)
+                ) {
+                    Text("↓", style = MaterialTheme.typography.labelSmall)
+                }
+            }
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier.size(20.dp)
+            ) {
+                Text("🗑", style = MaterialTheme.typography.labelSmall)
+            }
         }
     }
 }

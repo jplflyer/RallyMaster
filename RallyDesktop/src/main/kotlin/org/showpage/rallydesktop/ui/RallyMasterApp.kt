@@ -228,6 +228,7 @@ fun RallyMasterApp(
                     RidePlanningScreen(
                         rideId = rideId,
                         serverClient = serverClient,
+                        preferencesService = preferencesService,
                         onBack = {
                             appState.navigateTo(Screen.HOME)
                         }

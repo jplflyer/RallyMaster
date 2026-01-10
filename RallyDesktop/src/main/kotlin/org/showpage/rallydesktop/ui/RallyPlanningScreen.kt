@@ -912,6 +912,7 @@ fun CompactBonusPointsList(
     serverClient: RallyServerClient,
     selectedBonusPointId: Int?,
     onBonusPointSelected: (Int?) -> Unit,
+    onBonusPointDoubleClick: ((org.showpage.rallyserver.ui.UiBonusPoint) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -1074,8 +1075,12 @@ fun CompactBonusPointsList(
                                 onBonusPointSelected(point.id)
                             },
                             onDoubleClick = {
-                                editingPoint = point
-                                showDialog = true
+                                if (onBonusPointDoubleClick != null) {
+                                    onBonusPointDoubleClick(point)
+                                } else {
+                                    editingPoint = point
+                                    showDialog = true
+                                }
                             },
                             onRightClick = {
                                 contextMenuPoint = point

@@ -147,4 +147,22 @@ class PreferencesService {
         prefs.flush()
         logger.debug("Set show all past rallies: {}", show)
     }
+
+    //----------------------------------------------------------------------
+    // Ride Planning Preferences
+    //----------------------------------------------------------------------
+
+    fun getLastSelectedLegId(rideId: Int): Int? {
+        val value = prefs.getInt("lastLeg_$rideId", -1)
+        return if (value > 0) value else null
+    }
+
+    fun setLastSelectedLegId(rideId: Int, legId: Int?) {
+        if (legId != null) {
+            prefs.putInt("lastLeg_$rideId", legId)
+        } else {
+            prefs.remove("lastLeg_$rideId")
+        }
+        prefs.flush()
+    }
 }
