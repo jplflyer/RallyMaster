@@ -373,6 +373,7 @@ fun RidePlanSidebar(
                         onLegSelected = onLegSelected,
                         onRoutesChanged = onRoutesChanged,
                         onReloadRoutes = onReloadRoutes,
+                        onWaypointChanged = onWaypointAdded,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -492,6 +493,7 @@ fun RoutesTree(
     onLegSelected: (Int?) -> Unit,
     onRoutesChanged: (List<UiRoute>) -> Unit,
     onReloadRoutes: () -> Unit,
+    onWaypointChanged: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -537,7 +539,7 @@ fun RoutesTree(
     }
     
     Column(
-        modifier = modifier.padding(8.dp),
+        modifier = modifier.padding(8.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         if (routes.isEmpty()) {
@@ -622,7 +624,8 @@ fun RoutesTree(
                             onRoutesChanged(remainingRoutes)
                         }
                     },
-                    onReloadRoutes = onReloadRoutes
+                    onReloadRoutes = onReloadRoutes,
+                    onWaypointChanged = onWaypointChanged
                 )
             }
             
@@ -677,7 +680,8 @@ fun RouteItem(
     onLegSelected: (Int?) -> Unit,
     onRouteChanged: (UiRoute) -> Unit,
     onRouteDeleted: () -> Unit,
-    onReloadRoutes: () -> Unit
+    onReloadRoutes: () -> Unit,
+    onWaypointChanged: () -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(true) }
     var legs by remember { mutableStateOf(emptyList<UiRideLeg>()) }
@@ -816,8 +820,9 @@ fun RouteItem(
                             if (selectedLegId == leg.id) {
                                 onLegSelected(null)
                             }
+                            onWaypointChanged()
                         },
-                        onReloadWaypoints = onReloadRoutes
+                        onWaypointChanged = onWaypointChanged
                     )
                 }
 
@@ -920,7 +925,7 @@ fun RideLegItem(
     onSelect: () -> Unit,
     onLegChanged: (UiRideLeg) -> Unit,
     onLegDeleted: () -> Unit,
-    onReloadWaypoints: () -> Unit
+    onWaypointChanged: () -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(true) }
     var waypoints by remember { mutableStateOf(emptyList<UiWaypoint>()) }
@@ -1001,6 +1006,7 @@ fun RideLegItem(
                                     onSuccess = { updated ->
                                         waypoints = updated
                                         selectedWaypointId = null
+                                        onWaypointChanged()
                                     },
                                     onFailure = { error ->
                                         logger.error("Failed to delete waypoint", error)
