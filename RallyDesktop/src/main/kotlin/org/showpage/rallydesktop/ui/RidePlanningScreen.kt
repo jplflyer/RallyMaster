@@ -931,6 +931,7 @@ fun RideLegItem(
     var waypoints by remember { mutableStateOf(emptyList<UiWaypoint>()) }
     var selectedWaypointId by remember { mutableStateOf<Int?>(null) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showClearConfirm by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     // Reload waypoints when the trigger changes (from parent when waypoint is added)
@@ -982,6 +983,14 @@ fun RideLegItem(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
+            }
+            if (waypoints.isNotEmpty()) {
+                IconButton(
+                    onClick = { showClearConfirm = true },
+                    modifier = Modifier.size(20.dp)
+                ) {
+                    Text("✕", style = MaterialTheme.typography.labelSmall)
+                }
             }
             IconButton(
                 onClick = { showDeleteConfirm = true },
@@ -1082,6 +1091,52 @@ fun RideLegItem(
             },
             dismissButton = {
                 OutlinedButton(onClick = { showDeleteConfirm = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+    
+    if (showClearConfirm) {
+        AlertDialog(
+            onDismissRequest = { showClearConfirm = false },
+            title = { Text("Clear Waypoints?") },
+            text = { 
+                Text("Remove all ${waypoints.size} waypoints from \"${leg.name}\"?")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            var allDeleted = true
+                            for (wp in waypoints) {
+                                serverClient.deleteWaypoint(wp.id!!).fold(
+                                    onSuccess = {
+                                        logger.info("Deleted waypoint: {}", wp.name)
+                                    },
+                                    onFailure = { error ->
+                                        logger.error("Failed to delete waypoint: {}", wp.name, error)
+                                        allDeleted = false
+                                    }
+                                )
+                            }
+                            if (allDeleted) {
+                                waypoints = emptyList()
+                            }
+                            showClearConfirm = false
+                            selectedWaypointId = null
+                            onWaypointChanged()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Clear All")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showClearConfirm = false }) {
                     Text("Cancel")
                 }
             }
@@ -1316,6 +1371,8 @@ fun RidePlanningComboTree(
     var expandedCombos by remember { mutableStateOf<Set<Int>>(emptySet()) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var contextMenuCombo by remember { mutableStateOf<UiCombination?>(null) }
+    var showContextMenu by remember { mutableStateOf(false) }
     
     LaunchedEffect(rallyId) {
         isLoading = true
@@ -1417,6 +1474,34 @@ fun RidePlanningComboTree(
         )
     }
     
+    suspend fun removeComboFromRoute(combo: UiCombination): Int {
+        val comboBpIds = combo.combinationPoints?.mapNotNull { it.bonusPointId }?.toSet() ?: emptySet()
+        var removedCount = 0
+        
+        for (route in routes) {
+            if (route.id != null) {
+                serverClient.listRideLegs(route.id).getOrNull()?.forEach { leg ->
+                    if (leg.id != null) {
+                        serverClient.listWaypoints(leg.id).getOrNull()?.forEach { waypoint ->
+                            if (waypoint.bonusPointId in comboBpIds) {
+                                serverClient.deleteWaypoint(waypoint.id!!).fold(
+                                    onSuccess = {
+                                        logger.info("Removed waypoint {} (BP {}) from leg {}", waypoint.name, waypoint.bonusPointId, leg.id)
+                                        removedCount++
+                                    },
+                                    onFailure = { error ->
+                                        logger.error("Failed to remove waypoint {}", waypoint.name, error)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return removedCount
+    }
+    
     Column(modifier = modifier) {
         Row(
             modifier = Modifier
@@ -1513,6 +1598,10 @@ fun RidePlanningComboTree(
                                     } else {
                                         onNoLegSelected()
                                     }
+                                },
+                                onRightClick = {
+                                    contextMenuCombo = combo
+                                    showContextMenu = true
                                 }
                             )
                             
@@ -1548,6 +1637,61 @@ fun RidePlanningComboTree(
             }
         }
     }
+    
+    if (showContextMenu && contextMenuCombo != null) {
+        val comboStatus = getComboInclusionStatus(contextMenuCombo!!)
+        DropdownMenu(
+            expanded = showContextMenu,
+            onDismissRequest = { 
+                showContextMenu = false
+                contextMenuCombo = null
+            }
+        ) {
+            if (comboStatus != ComboInclusionStatus.NONE) {
+                DropdownMenuItem(
+                    text = { Text("Remove from route") },
+                    onClick = {
+                        val combo = contextMenuCombo!!
+                        scope.launch {
+                            val removedCount = removeComboFromRoute(combo)
+                            if (removedCount > 0) {
+                                logger.info("Removed {} waypoints for combo {}", removedCount, combo.code)
+                                onBonusPointsAdded(0)
+                            }
+                        }
+                        showContextMenu = false
+                        contextMenuCombo = null
+                    }
+                )
+            }
+            DropdownMenuItem(
+                text = { Text("Add all to route") },
+                onClick = {
+                    val combo = contextMenuCombo!!
+                    val legId = selectedLegId
+                    if (legId != null) {
+                        scope.launch {
+                            val bpIds = combo.combinationPoints?.mapNotNull { it.bonusPointId } ?: emptyList()
+                            var addedCount = 0
+                            for (bpId in bpIds) {
+                                val bp = bonusPointMap[bpId]
+                                if (bp != null && addBonusPointAsWaypoint(bp, legId)) {
+                                    addedCount++
+                                }
+                            }
+                            if (addedCount > 0) {
+                                onBonusPointsAdded(addedCount)
+                            }
+                        }
+                    } else {
+                        onNoLegSelected()
+                    }
+                    showContextMenu = false
+                    contextMenuCombo = null
+                }
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -1557,7 +1701,8 @@ fun RidePlanningComboItem(
     inclusionStatus: ComboInclusionStatus,
     isExpanded: Boolean,
     onToggleExpand: () -> Unit,
-    onDoubleClick: () -> Unit
+    onDoubleClick: () -> Unit,
+    onRightClick: () -> Unit
 ) {
     val backgroundColor = when (inclusionStatus) {
         ComboInclusionStatus.FULL -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
@@ -1582,7 +1727,8 @@ fun RidePlanningComboItem(
             .fillMaxWidth()
             .combinedClickable(
                 onClick = onToggleExpand,
-                onDoubleClick = onDoubleClick
+                onDoubleClick = onDoubleClick,
+                onLongClick = onRightClick
             )
             .background(backgroundColor)
             .padding(horizontal = 4.dp, vertical = 4.dp),
