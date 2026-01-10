@@ -7,6 +7,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -14,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -374,50 +377,27 @@ fun RidePlanSidebar(
                     )
                 }
 
-                // Bonus Points section (only if rally-associated)
+                // Combos & Bonus Points section (only if rally-associated)
                 if (rally != null) {
                     HorizontalDivider()
 
                     CollapsibleSection(
-                        title = "Bonus Points",
+                        title = "Combos & Bonus Points",
                         isCollapsed = bonusPointsCollapsed,
                         onToggleCollapse = { bonusPointsCollapsed = !bonusPointsCollapsed },
                         modifier = Modifier.fillMaxWidth().weight(1f)
                     ) {
-                        CompactBonusPointsList(
+                        RidePlanningComboTree(
                             rallyId = rally.id!!,
+                            routes = routes,
                             serverClient = serverClient,
-                            selectedBonusPointId = null,
-                            onBonusPointSelected = {},
-                            onBonusPointDoubleClick = { bonusPoint ->
-                                val legId = selectedLegId
-                                if (legId != null) {
-                                    scope.launch {
-                                        val existingWaypoints = serverClient.listWaypoints(legId).getOrElse { emptyList() }
-                                        val nextSeq = WaypointSequencer.nextSequence(existingWaypoints)
-                                        
-                                        val waypointRequest = CreateWaypointRequest.builder()
-                                            .name(bonusPoint.code ?: bonusPoint.name ?: "Waypoint")
-                                            .bonusPointId(bonusPoint.id)
-                                            .latitude(bonusPoint.latitude?.toFloat())
-                                            .longitude(bonusPoint.longitude?.toFloat())
-                                            .sequenceOrder(nextSeq)
-                                            .build()
-                                        
-                                        serverClient.createWaypoint(legId, waypointRequest).fold(
-                                            onSuccess = { waypoint ->
-                                                logger.info("Added bonus point {} as waypoint {} to leg {}", bonusPoint.code, nextSeq, legId)
-                                                onWaypointAdded()
-                                            },
-                                            onFailure = { error ->
-                                                logger.error("Failed to add bonus point as waypoint", error)
-                                            }
-                                        )
-                                    }
-                                } else {
-                                    onNoLegSelected()
-                                }
+                            selectedLegId = selectedLegId,
+                            waypointReloadTrigger = waypointReloadTrigger,
+                            onBonusPointsAdded = { count ->
+                                logger.info("Added {} bonus points as waypoints", count)
+                                onWaypointAdded()
                             },
+                            onNoLegSelected = onNoLegSelected,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -1302,4 +1282,403 @@ fun CreateRideDialog(
             }
         }
     )
+}
+
+enum class ComboInclusionStatus {
+    FULL,
+    PARTIAL,
+    NONE
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun RidePlanningComboTree(
+    rallyId: Int,
+    routes: List<UiRoute>,
+    serverClient: RallyServerClient,
+    selectedLegId: Int?,
+    waypointReloadTrigger: Int,
+    onBonusPointsAdded: (Int) -> Unit,
+    onNoLegSelected: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val scope = rememberCoroutineScope()
+    
+    var combinations by remember { mutableStateOf<List<UiCombination>>(emptyList()) }
+    var bonusPoints by remember { mutableStateOf<List<UiBonusPoint>>(emptyList()) }
+    var includedBonusPointIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var expandedCombos by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    
+    LaunchedEffect(rallyId) {
+        isLoading = true
+        errorMessage = null
+        
+        serverClient.listCombinations(rallyId).fold(
+            onSuccess = { combos ->
+                logger.info("Loaded {} combinations", combos.size)
+                combinations = combos
+            },
+            onFailure = { error ->
+                logger.error("Failed to load combinations", error)
+                errorMessage = "Failed to load combinations: ${error.message}"
+            }
+        )
+        
+        serverClient.listBonusPoints(rallyId).fold(
+            onSuccess = { points ->
+                logger.info("Loaded {} bonus points", points.size)
+                bonusPoints = points
+            },
+            onFailure = { error ->
+                logger.error("Failed to load bonus points", error)
+            }
+        )
+        
+        isLoading = false
+    }
+    
+    LaunchedEffect(routes, waypointReloadTrigger) {
+        val allBonusPointIds = mutableSetOf<Int>()
+        for (route in routes) {
+            if (route.id != null) {
+                serverClient.listRideLegs(route.id).getOrNull()?.forEach { leg ->
+                    if (leg.id != null) {
+                        serverClient.listWaypoints(leg.id).getOrNull()?.forEach { waypoint ->
+                            waypoint.bonusPointId?.let { allBonusPointIds.add(it) }
+                        }
+                    }
+                }
+            }
+        }
+        includedBonusPointIds = allBonusPointIds
+        logger.info("Found {} bonus points included in current route", allBonusPointIds.size)
+    }
+    
+    fun getComboInclusionStatus(combo: UiCombination): ComboInclusionStatus {
+        val comboBpIds = combo.combinationPoints?.mapNotNull { it.bonusPointId }?.toSet() ?: emptySet()
+        if (comboBpIds.isEmpty()) return ComboInclusionStatus.NONE
+        
+        val includedCount = comboBpIds.count { it in includedBonusPointIds }
+        return when {
+            includedCount == comboBpIds.size -> ComboInclusionStatus.FULL
+            includedCount > 0 -> ComboInclusionStatus.PARTIAL
+            else -> ComboInclusionStatus.NONE
+        }
+    }
+    
+    val sortedCombinations = remember(combinations, includedBonusPointIds) {
+        combinations.sortedWith(
+            compareBy<UiCombination> { combo ->
+                when (getComboInclusionStatus(combo)) {
+                    ComboInclusionStatus.FULL -> 0
+                    ComboInclusionStatus.PARTIAL -> 1
+                    ComboInclusionStatus.NONE -> 2
+                }
+            }.thenBy { it.code ?: "" }
+        )
+    }
+    
+    val bonusPointMap = remember(bonusPoints) { bonusPoints.associateBy { it.id } }
+    
+    suspend fun addBonusPointAsWaypoint(bp: UiBonusPoint, legId: Int): Boolean {
+        val existingWaypoints = serverClient.listWaypoints(legId).getOrElse { emptyList() }
+        
+        if (existingWaypoints.any { it.bonusPointId == bp.id }) {
+            logger.info("Bonus point {} already in leg {}", bp.code, legId)
+            return false
+        }
+        
+        val nextSeq = WaypointSequencer.nextSequence(existingWaypoints)
+        val waypointRequest = CreateWaypointRequest.builder()
+            .name(bp.code ?: bp.name ?: "Waypoint")
+            .bonusPointId(bp.id)
+            .latitude(bp.latitude?.toFloat())
+            .longitude(bp.longitude?.toFloat())
+            .sequenceOrder(nextSeq)
+            .build()
+        
+        return serverClient.createWaypoint(legId, waypointRequest).fold(
+            onSuccess = {
+                logger.info("Added bonus point {} as waypoint to leg {}", bp.code, legId)
+                true
+            },
+            onFailure = { error ->
+                logger.error("Failed to add bonus point {} as waypoint", bp.code, error)
+                false
+            }
+        )
+    }
+    
+    Column(modifier = modifier) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "${combinations.size} combos",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        
+        when {
+            isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                }
+            }
+            errorMessage != null -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = errorMessage ?: "Error",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+            combinations.isEmpty() -> {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No combinations defined",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            else -> {
+                val listState = rememberLazyListState()
+                
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    items(
+                        count = sortedCombinations.size,
+                        key = { index -> sortedCombinations[index].id ?: index }
+                    ) { index ->
+                        val combo = sortedCombinations[index]
+                        val isExpanded = expandedCombos.contains(combo.id)
+                        val inclusionStatus = getComboInclusionStatus(combo)
+                        
+                        Column {
+                            RidePlanningComboItem(
+                                combination = combo,
+                                inclusionStatus = inclusionStatus,
+                                isExpanded = isExpanded,
+                                onToggleExpand = {
+                                    expandedCombos = if (isExpanded) {
+                                        expandedCombos - combo.id!!
+                                    } else {
+                                        expandedCombos + combo.id!!
+                                    }
+                                },
+                                onDoubleClick = {
+                                    val legId = selectedLegId
+                                    if (legId != null) {
+                                        scope.launch {
+                                            val bpIds = combo.combinationPoints?.mapNotNull { it.bonusPointId } ?: emptyList()
+                                            var addedCount = 0
+                                            for (bpId in bpIds) {
+                                                val bp = bonusPointMap[bpId]
+                                                if (bp != null && addBonusPointAsWaypoint(bp, legId)) {
+                                                    addedCount++
+                                                }
+                                            }
+                                            if (addedCount > 0) {
+                                                onBonusPointsAdded(addedCount)
+                                            }
+                                        }
+                                    } else {
+                                        onNoLegSelected()
+                                    }
+                                }
+                            )
+                            
+                            if (isExpanded && combo.combinationPoints?.isNotEmpty() == true) {
+                                Column(modifier = Modifier.padding(start = 24.dp)) {
+                                    combo.combinationPoints.forEach { cp ->
+                                        val bp = bonusPointMap[cp.bonusPointId]
+                                        val isIncluded = cp.bonusPointId in includedBonusPointIds
+                                        
+                                        RidePlanningBonusPointItem(
+                                            bonusPoint = bp,
+                                            bonusPointId = cp.bonusPointId,
+                                            isIncluded = isIncluded,
+                                            onDoubleClick = {
+                                                val legId = selectedLegId
+                                                if (legId != null && bp != null) {
+                                                    scope.launch {
+                                                        if (addBonusPointAsWaypoint(bp, legId)) {
+                                                            onBonusPointsAdded(1)
+                                                        }
+                                                    }
+                                                } else if (legId == null) {
+                                                    onNoLegSelected()
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun RidePlanningComboItem(
+    combination: UiCombination,
+    inclusionStatus: ComboInclusionStatus,
+    isExpanded: Boolean,
+    onToggleExpand: () -> Unit,
+    onDoubleClick: () -> Unit
+) {
+    val backgroundColor = when (inclusionStatus) {
+        ComboInclusionStatus.FULL -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        ComboInclusionStatus.PARTIAL -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
+        ComboInclusionStatus.NONE -> Color.Transparent
+    }
+    
+    val textColor = when (inclusionStatus) {
+        ComboInclusionStatus.FULL -> MaterialTheme.colorScheme.primary
+        ComboInclusionStatus.PARTIAL -> MaterialTheme.colorScheme.tertiary
+        ComboInclusionStatus.NONE -> MaterialTheme.colorScheme.onSurface
+    }
+    
+    val statusIcon = when (inclusionStatus) {
+        ComboInclusionStatus.FULL -> "✓"
+        ComboInclusionStatus.PARTIAL -> "◐"
+        ComboInclusionStatus.NONE -> ""
+    }
+    
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = onToggleExpand,
+                onDoubleClick = onDoubleClick
+            )
+            .background(backgroundColor)
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = if (isExpanded) "▼" else "▶",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.clickable(onClick = onToggleExpand)
+        )
+        
+        if (statusIcon.isNotEmpty()) {
+            Text(
+                text = statusIcon,
+                style = MaterialTheme.typography.bodySmall,
+                color = textColor
+            )
+        }
+        
+        Text(
+            text = combination.code ?: "?",
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = if (inclusionStatus == ComboInclusionStatus.FULL) FontWeight.Bold else FontWeight.Normal,
+            color = textColor,
+            modifier = Modifier.width(60.dp)
+        )
+        
+        Text(
+            text = combination.name ?: "",
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = if (inclusionStatus == ComboInclusionStatus.FULL) FontWeight.Bold else FontWeight.Normal,
+            fontStyle = if (inclusionStatus == ComboInclusionStatus.PARTIAL) FontStyle.Italic else FontStyle.Normal,
+            color = textColor,
+            maxLines = 1,
+            modifier = Modifier.weight(1f)
+        )
+        
+        if (combination.points != null) {
+            Text(
+                text = "${combination.points}",
+                style = MaterialTheme.typography.bodySmall,
+                color = textColor
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun RidePlanningBonusPointItem(
+    bonusPoint: UiBonusPoint?,
+    bonusPointId: Int,
+    isIncluded: Boolean,
+    onDoubleClick: () -> Unit
+) {
+    val code = bonusPoint?.code ?: "BP$bonusPointId"
+    
+    val backgroundColor = if (isIncluded) {
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+    } else {
+        Color.Transparent
+    }
+    
+    val textColor = if (isIncluded) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = {},
+                onDoubleClick = onDoubleClick
+            )
+            .background(backgroundColor)
+            .padding(start = 8.dp, top = 2.dp, bottom = 2.dp, end = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = if (isIncluded) "✓" else "•",
+            style = MaterialTheme.typography.bodySmall,
+            color = textColor
+        )
+        
+        Text(
+            text = code,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = if (isIncluded) FontWeight.Bold else FontWeight.Normal,
+            color = textColor
+        )
+        
+        if (bonusPoint?.points != null) {
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = "${bonusPoint.points}",
+                style = MaterialTheme.typography.bodySmall,
+                color = textColor.copy(alpha = 0.7f)
+            )
+        }
+    }
 }
