@@ -187,7 +187,16 @@ public class RideService {
         if (DataValidator.nonEmpty(request.getDescription())) {
             route.setDescription(request.getDescription().trim());
         }
-        if (request.getIsPrimary() != null) {
+        if (request.getIsPrimary() != null && request.getIsPrimary()) {
+            List<Route> allRoutes = routeRepository.findByRideId(route.getRideId());
+            for (Route otherRoute : allRoutes) {
+                if (otherRoute.getIsPrimary() != null && otherRoute.getIsPrimary() && !otherRoute.getId().equals(routeId)) {
+                    otherRoute.setIsPrimary(false);
+                    routeRepository.save(otherRoute);
+                }
+            }
+            route.setIsPrimary(true);
+        } else if (request.getIsPrimary() != null) {
             route.setIsPrimary(request.getIsPrimary());
         }
 

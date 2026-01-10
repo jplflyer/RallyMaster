@@ -175,6 +175,19 @@ fun RidePlanningScreen(
                             onRoutesChanged = { updatedRoutes ->
                                 routes = updatedRoutes
                             },
+                            onReloadRoutes = {
+                                scope.launch {
+                                    serverClient.listRoutes(rideId).fold(
+                                        onSuccess = { loadedRoutes ->
+                                            logger.info("Reloaded {} routes", loadedRoutes.size)
+                                            routes = loadedRoutes
+                                        },
+                                        onFailure = { error ->
+                                            logger.error("Failed to reload routes", error)
+                                        }
+                                    )
+                                }
+                            },
                             modifier = Modifier.fillMaxHeight()
                         )
                     } else {
@@ -231,6 +244,7 @@ fun RidePlanSidebar(
     width: Dp,
     onWidthChange: (Dp) -> Unit,
     onRoutesChanged: (List<UiRoute>) -> Unit,
+    onReloadRoutes: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(modifier = modifier) {
@@ -294,6 +308,7 @@ fun RidePlanSidebar(
                         routes = routes,
                         serverClient = serverClient,
                         onRoutesChanged = onRoutesChanged,
+                        onReloadRoutes = onReloadRoutes,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -403,10 +418,50 @@ fun RoutesTree(
     routes: List<UiRoute>,
     serverClient: RallyServerClient,
     onRoutesChanged: (List<UiRoute>) -> Unit,
+    onReloadRoutes: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
     var isCreating by remember { mutableStateOf(false) }
+    
+    val sortedRoutes = remember(routes) {
+        routes.sortedWith(compareByDescending<UiRoute> { it.isPrimary == true }.thenBy { it.name ?: "" })
+    }
+    
+    suspend fun createRouteWithLeg(isPrimary: Boolean) {
+        isCreating = true
+        val routeRequest = CreateRouteRequest.builder()
+            .name("Route ${routes.size + 1}")
+            .isPrimary(isPrimary)
+            .build()
+        
+        serverClient.createRoute(rideId, routeRequest).fold(
+            onSuccess = { newRoute ->
+                logger.info("Route created: {}", newRoute.name)
+                
+                val legRequest = CreateRideLegRequest.builder()
+                    .name("Leg 1")
+                    .sequenceOrder(1)
+                    .build()
+                
+                serverClient.createRideLeg(newRoute.id!!, legRequest).fold(
+                    onSuccess = { newLeg ->
+                        logger.info("Initial leg created: {}", newLeg.name)
+                    },
+                    onFailure = { error ->
+                        logger.error("Failed to create initial leg", error)
+                    }
+                )
+                
+                onRoutesChanged(routes + newRoute)
+                isCreating = false
+            },
+            onFailure = { error ->
+                logger.error("Failed to create route", error)
+                isCreating = false
+            }
+        )
+    }
     
     Column(
         modifier = modifier.padding(8.dp),
@@ -443,27 +498,7 @@ fun RoutesTree(
                         tooltipPlacement = TooltipPlacement.CursorPoint()
                     ) {
                         Button(
-                            onClick = {
-                                scope.launch {
-                                    isCreating = true
-                                    val request = CreateRouteRequest.builder()
-                                        .name("Route ${routes.size + 1}")
-                                        .isPrimary(routes.isEmpty())
-                                        .build()
-                                    
-                                    serverClient.createRoute(rideId, request).fold(
-                                        onSuccess = { newRoute ->
-                                            logger.info("Route created: {}", newRoute.name)
-                                            onRoutesChanged(routes + newRoute)
-                                            isCreating = false
-                                        },
-                                        onFailure = { error ->
-                                            logger.error("Failed to create route", error)
-                                            isCreating = false
-                                        }
-                                    )
-                                }
-                            },
+                            onClick = { scope.launch { createRouteWithLeg(isPrimary = true) } },
                             enabled = !isCreating
                         ) {
                             if (isCreating) {
@@ -479,13 +514,39 @@ fun RoutesTree(
                 }
             }
         } else {
-            routes.forEach { route ->
+            sortedRoutes.forEach { route ->
                 RouteItem(
                     route = route,
                     serverClient = serverClient,
                     onRouteChanged = { updatedRoute ->
                         onRoutesChanged(routes.map { if (it.id == updatedRoute.id) updatedRoute else it })
-                    }
+                    },
+                    onRouteDeleted = {
+                        val remainingRoutes = routes.filter { it.id != route.id }
+                        if (route.isPrimary == true && remainingRoutes.isNotEmpty()) {
+                            val newPrimaryRoute = remainingRoutes
+                                .sortedBy { it.name ?: "" }
+                                .first()
+                            scope.launch {
+                                val updateRequest = UpdateRouteRequest.builder()
+                                    .isPrimary(true)
+                                    .build()
+                                serverClient.updateRoute(newPrimaryRoute.id!!, updateRequest).fold(
+                                    onSuccess = { promoted ->
+                                        logger.info("Promoted route {} to primary", promoted.name)
+                                        onReloadRoutes()
+                                    },
+                                    onFailure = { error ->
+                                        logger.error("Failed to promote route to primary", error)
+                                        onRoutesChanged(remainingRoutes)
+                                    }
+                                )
+                            }
+                        } else {
+                            onRoutesChanged(remainingRoutes)
+                        }
+                    },
+                    onReloadRoutes = onReloadRoutes
                 )
             }
             
@@ -510,27 +571,7 @@ fun RoutesTree(
                 tooltipPlacement = TooltipPlacement.CursorPoint()
             ) {
                 OutlinedButton(
-                    onClick = {
-                        scope.launch {
-                            isCreating = true
-                            val request = CreateRouteRequest.builder()
-                                .name("Route ${routes.size + 1}")
-                                .isPrimary(false)
-                                .build()
-                            
-                            serverClient.createRoute(rideId, request).fold(
-                                onSuccess = { newRoute ->
-                                    logger.info("Route created: {}", newRoute.name)
-                                    onRoutesChanged(routes + newRoute)
-                                    isCreating = false
-                                },
-                                onFailure = { error ->
-                                    logger.error("Failed to create route", error)
-                                    isCreating = false
-                                }
-                            )
-                        }
-                    },
+                    onClick = { scope.launch { createRouteWithLeg(isPrimary = false) } },
                     enabled = !isCreating,
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -555,19 +596,24 @@ fun RoutesTree(
 fun RouteItem(
     route: UiRoute,
     serverClient: RallyServerClient,
-    onRouteChanged: (UiRoute) -> Unit
+    onRouteChanged: (UiRoute) -> Unit,
+    onRouteDeleted: () -> Unit,
+    onReloadRoutes: () -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(true) }
     var legs by remember { mutableStateOf(emptyList<UiRideLeg>()) }
+    var isEditing by remember { mutableStateOf(false) }
+    var editedName by remember(route.name) { mutableStateOf(route.name ?: "") }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var isCreatingLeg by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    // Load legs for this route
     LaunchedEffect(route.id) {
         if (route.id != null) {
             serverClient.listRideLegs(route.id).fold(
                 onSuccess = { loadedLegs ->
                     logger.info("Loaded {} legs for route {}", loadedLegs.size, route.id)
-                    legs = loadedLegs
+                    legs = loadedLegs.sortedBy { it.sequenceOrder ?: Int.MAX_VALUE }
                 },
                 onFailure = { error ->
                     logger.error("Failed to load legs for route {}", route.id, error)
@@ -577,7 +623,6 @@ fun RouteItem(
     }
 
     Column {
-        // Route header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -590,21 +635,89 @@ fun RouteItem(
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.clickable { isExpanded = !isExpanded }
             )
-            Text(
-                text = route.name ?: "Route",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold
-            )
-            if (route.isPrimary == true) {
-                Text(
-                    text = "★",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
+            
+            if (isEditing) {
+                OutlinedTextField(
+                    value = editedName,
+                    onValueChange = { editedName = it },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyMedium
                 )
+                IconButton(
+                    onClick = {
+                        scope.launch {
+                            val updateRequest = UpdateRouteRequest.builder()
+                                .name(editedName.trim())
+                                .build()
+                            serverClient.updateRoute(route.id!!, updateRequest).fold(
+                                onSuccess = { updated ->
+                                    logger.info("Route renamed to: {}", updated.name)
+                                    onRouteChanged(updated)
+                                    isEditing = false
+                                },
+                                onFailure = { error ->
+                                    logger.error("Failed to rename route", error)
+                                }
+                            )
+                        }
+                    },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Text("✓", style = MaterialTheme.typography.labelSmall)
+                }
+                IconButton(
+                    onClick = {
+                        editedName = route.name ?: ""
+                        isEditing = false
+                    },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Text("✕", style = MaterialTheme.typography.labelSmall)
+                }
+            } else {
+                Text(
+                    text = route.name ?: "Route",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = if (route.isPrimary == true) "★" else "☆",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable(enabled = route.isPrimary != true) {
+                        scope.launch {
+                            val updateRequest = UpdateRouteRequest.builder()
+                                .isPrimary(true)
+                                .build()
+                            serverClient.updateRoute(route.id!!, updateRequest).fold(
+                                onSuccess = { updated ->
+                                    logger.info("Route set as primary: {}", updated.name)
+                                    onReloadRoutes()
+                                },
+                                onFailure = { error ->
+                                    logger.error("Failed to set route as primary", error)
+                                }
+                            )
+                        }
+                    }
+                )
+                IconButton(
+                    onClick = { isEditing = true },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Text("✏️", style = MaterialTheme.typography.labelSmall)
+                }
+                IconButton(
+                    onClick = { showDeleteConfirm = true },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Text("🗑", style = MaterialTheme.typography.labelSmall)
+                }
             }
         }
 
-        // Legs (if expanded)
         if (isExpanded) {
             Column(
                 modifier = Modifier.padding(start = 16.dp)
@@ -627,8 +740,82 @@ fun RouteItem(
                         modifier = Modifier.padding(8.dp)
                     )
                 }
+                
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            isCreatingLeg = true
+                            val legRequest = CreateRideLegRequest.builder()
+                                .name("Leg ${legs.size + 1}")
+                                .sequenceOrder(legs.size + 1)
+                                .build()
+                            
+                            serverClient.createRideLeg(route.id!!, legRequest).fold(
+                                onSuccess = { newLeg ->
+                                    logger.info("Leg created: {}", newLeg.name)
+                                    legs = (legs + newLeg).sortedBy { it.sequenceOrder ?: Int.MAX_VALUE }
+                                    isCreatingLeg = false
+                                },
+                                onFailure = { error ->
+                                    logger.error("Failed to create leg", error)
+                                    isCreatingLeg = false
+                                }
+                            )
+                        }
+                    },
+                    enabled = !isCreatingLeg,
+                    modifier = Modifier.padding(start = 8.dp)
+                ) {
+                    if (isCreatingLeg) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(12.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("+ Add Leg", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
             }
         }
+    }
+    
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Delete Route?") },
+            text = { 
+                Text("Are you sure you want to delete \"${route.name}\"? This will also delete all legs and waypoints.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            serverClient.deleteRoute(route.id!!).fold(
+                                onSuccess = {
+                                    logger.info("Route deleted: {}", route.name)
+                                    showDeleteConfirm = false
+                                    onRouteDeleted()
+                                },
+                                onFailure = { error ->
+                                    logger.error("Failed to delete route", error)
+                                    showDeleteConfirm = false
+                                }
+                            )
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showDeleteConfirm = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
@@ -839,6 +1026,21 @@ fun CreateRideDialog(
                                 serverClient.createRoute(ride.id!!, routeRequest).fold(
                                     onSuccess = { route ->
                                         logger.info("Initial route created: {} (ID: {})", route.name, route.id)
+                                        
+                                        val legRequest = CreateRideLegRequest.builder()
+                                            .name("Leg 1")
+                                            .sequenceOrder(1)
+                                            .build()
+                                        
+                                        serverClient.createRideLeg(route.id!!, legRequest).fold(
+                                            onSuccess = { leg ->
+                                                logger.info("Initial leg created: {}", leg.name)
+                                            },
+                                            onFailure = { error ->
+                                                logger.error("Failed to create initial leg", error)
+                                            }
+                                        )
+                                        
                                         onRideCreated(ride.id)
                                     },
                                     onFailure = { error ->
