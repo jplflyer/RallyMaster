@@ -40,6 +40,8 @@ public class RideService {
                 .builder()
                 .memberId(member.getId())
                 .rallyId(request.getRallyId())
+                .startingBonusPointId(request.getStartingBonusPointId())
+                .endingBonusPointId(request.getEndingBonusPointId())
                 .name(request.getName().trim())
                 .description(request.getDescription() != null ? request.getDescription().trim() : null)
                 .expectedStart(request.getExpectedStart())
@@ -76,6 +78,12 @@ public class RideService {
         }
         if (request.getRallyId() != null) {
             ride.setRallyId(request.getRallyId());
+        }
+        if (request.getStartingBonusPointId() != null) {
+            ride.setStartingBonusPointId(request.getStartingBonusPointId());
+        }
+        if (request.getEndingBonusPointId() != null) {
+            ride.setEndingBonusPointId(request.getEndingBonusPointId());
         }
 
         if (request.getActualStart() != null) {

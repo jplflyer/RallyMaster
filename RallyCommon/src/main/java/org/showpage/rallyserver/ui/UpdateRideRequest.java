@@ -32,6 +32,12 @@ public class UpdateRideRequest {
     @Schema(description = "Optional rally ID if associated with a rally", example = "1")
     private Integer rallyId;
 
+    @Schema(description = "Starting bonus point ID (for rally rides)", example = "1")
+    private Integer startingBonusPointId;
+
+    @Schema(description = "Ending bonus point ID (for rally rides)", example = "1")
+    private Integer endingBonusPointId;
+
     /** Seconds, default stop duration for all waypoints, can be overridden individually. */
     private Integer stopDuration;
 

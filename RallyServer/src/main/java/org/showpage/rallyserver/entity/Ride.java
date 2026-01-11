@@ -34,6 +34,20 @@ public class Ride implements HasId<Ride> {
     @Column(name = "rally_id")
     private Integer rallyId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "starting_bonus_point_id", insertable = false, updatable = false)
+    private BonusPoint startingBonusPoint;
+
+    @Column(name = "starting_bonus_point_id")
+    private Integer startingBonusPointId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ending_bonus_point_id", insertable = false, updatable = false)
+    private BonusPoint endingBonusPoint;
+
+    @Column(name = "ending_bonus_point_id")
+    private Integer endingBonusPointId;
+
     @Column(nullable = false)
     private String name;
 

@@ -257,6 +257,8 @@ public class DtoMapper {
                 .id(ride.getId())
                 .memberId(ride.getMemberId())
                 .rallyId(ride.getRallyId())
+                .startingBonusPointId(ride.getStartingBonusPointId())
+                .endingBonusPointId(ride.getEndingBonusPointId())
                 .name(ride.getName())
                 .description(ride.getDescription())
                 .expectedStart(ride.getExpectedStart())
@@ -266,7 +268,7 @@ public class DtoMapper {
                 .actualEnd(ride.getActualEnd())
                 .spotwallaLink(ride.getSpotwallaLink())
                 .stopDuration(ride.getStopDuration())
-                .expectedStart(ride.getExpectedStart())
+                .odometerStart(ride.getOdometerStart())
                 .odometerEnd(ride.getOdometerEnd())
                 .build();
     }

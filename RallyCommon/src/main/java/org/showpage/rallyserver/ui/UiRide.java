@@ -27,6 +27,12 @@ public class UiRide implements HasId<UiRide> {
     @Schema(description = "Optional rally ID if this ride is associated with a rally", example = "1")
     private Integer rallyId;
 
+    @Schema(description = "Starting bonus point ID (for rally rides)", example = "1")
+    private Integer startingBonusPointId;
+
+    @Schema(description = "Ending bonus point ID (for rally rides)", example = "1")
+    private Integer endingBonusPointId;
+
     @Schema(description = "Ride name", example = "Saddlesore 1000", required = true)
     private String name;
 

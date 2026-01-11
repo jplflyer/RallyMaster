@@ -241,6 +241,7 @@ fun RidePlanningScreen(
                             },
                             onWaypointAdded = { waypointReloadTrigger++ },
                             onNoLegSelected = { showNoLegSelectedMessage = true },
+                            onRideUpdated = { updatedRide -> ride = updatedRide },
                             modifier = Modifier.fillMaxHeight()
                         )
                     } else {
@@ -304,6 +305,7 @@ fun RidePlanSidebar(
     onReloadRoutes: () -> Unit,
     onWaypointAdded: () -> Unit,
     onNoLegSelected: () -> Unit,
+    onRideUpdated: (UiRide) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -390,6 +392,7 @@ fun RidePlanSidebar(
                     ) {
                         RidePlanningComboTree(
                             rallyId = rally.id!!,
+                            ride = ride!!,
                             routes = routes,
                             serverClient = serverClient,
                             selectedLegId = selectedLegId,
@@ -399,6 +402,7 @@ fun RidePlanSidebar(
                                 onWaypointAdded()
                             },
                             onNoLegSelected = onNoLegSelected,
+                            onRideUpdated = onRideUpdated,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -1355,12 +1359,14 @@ enum class ComboInclusionStatus {
 @Composable
 fun RidePlanningComboTree(
     rallyId: Int,
+    ride: UiRide,
     routes: List<UiRoute>,
     serverClient: RallyServerClient,
     selectedLegId: Int?,
     waypointReloadTrigger: Int,
     onBonusPointsAdded: (Int) -> Unit,
     onNoLegSelected: () -> Unit,
+    onRideUpdated: (UiRide) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -1369,10 +1375,13 @@ fun RidePlanningComboTree(
     var bonusPoints by remember { mutableStateOf<List<UiBonusPoint>>(emptyList()) }
     var includedBonusPointIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
     var expandedCombos by remember { mutableStateOf<Set<Int>>(emptySet()) }
+    var unassociatedExpanded by remember { mutableStateOf(true) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var contextMenuCombo by remember { mutableStateOf<UiCombination?>(null) }
     var showContextMenu by remember { mutableStateOf(false) }
+    var contextMenuBp by remember { mutableStateOf<UiBonusPoint?>(null) }
+    var showBpContextMenu by remember { mutableStateOf(false) }
     
     LaunchedEffect(rallyId) {
         isLoading = true
@@ -1445,6 +1454,22 @@ fun RidePlanningComboTree(
     
     val bonusPointMap = remember(bonusPoints) { bonusPoints.associateBy { it.id } }
     
+    val associatedBpIds = remember(combinations) {
+        combinations.flatMap { combo ->
+            combo.combinationPoints?.mapNotNull { it.bonusPointId } ?: emptyList()
+        }.toSet()
+    }
+    
+    val unassociatedBonusPoints = remember(bonusPoints, associatedBpIds, includedBonusPointIds) {
+        bonusPoints
+            .filter { it.id !in associatedBpIds }
+            .sortedWith(
+                compareBy<UiBonusPoint> { bp ->
+                    if (bp.id in includedBonusPointIds) 0 else 1
+                }.thenBy { it.code ?: "" }
+            )
+    }
+    
     suspend fun addBonusPointAsWaypoint(bp: UiBonusPoint, legId: Int): Boolean {
         val existingWaypoints = serverClient.listWaypoints(legId).getOrElse { emptyList() }
         
@@ -1502,6 +1527,36 @@ fun RidePlanningComboTree(
         return removedCount
     }
     
+    suspend fun setRallyStart(bp: UiBonusPoint) {
+        val updateRequest = UpdateRideRequest.builder()
+            .startingBonusPointId(bp.id)
+            .build()
+        serverClient.updateRide(ride.id!!, updateRequest).fold(
+            onSuccess = { updatedRide ->
+                logger.info("Set rally start to {}", bp.code)
+                onRideUpdated(updatedRide)
+            },
+            onFailure = { error ->
+                logger.error("Failed to set rally start", error)
+            }
+        )
+    }
+    
+    suspend fun setRallyFinish(bp: UiBonusPoint) {
+        val updateRequest = UpdateRideRequest.builder()
+            .endingBonusPointId(bp.id)
+            .build()
+        serverClient.updateRide(ride.id!!, updateRequest).fold(
+            onSuccess = { updatedRide ->
+                logger.info("Set rally finish to {}", bp.code)
+                onRideUpdated(updatedRide)
+            },
+            onFailure = { error ->
+                logger.error("Failed to set rally finish", error)
+            }
+        )
+    }
+    
     Column(modifier = modifier) {
         Row(
             modifier = Modifier
@@ -1511,7 +1566,7 @@ fun RidePlanningComboTree(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "${combinations.size} combos",
+                text = "${combinations.size} combos, ${unassociatedBonusPoints.size} other",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -1538,13 +1593,13 @@ fun RidePlanningComboTree(
                     )
                 }
             }
-            combinations.isEmpty() -> {
+            combinations.isEmpty() && unassociatedBonusPoints.isEmpty() -> {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No combinations defined",
+                        text = "No bonus points defined",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1615,6 +1670,8 @@ fun RidePlanningComboTree(
                                             bonusPoint = bp,
                                             bonusPointId = cp.bonusPointId,
                                             isIncluded = isIncluded,
+                                            isStart = cp.bonusPointId == ride.startingBonusPointId,
+                                            isFinish = cp.bonusPointId == ride.endingBonusPointId,
                                             onDoubleClick = {
                                                 val legId = selectedLegId
                                                 if (legId != null && bp != null) {
@@ -1626,10 +1683,79 @@ fun RidePlanningComboTree(
                                                 } else if (legId == null) {
                                                     onNoLegSelected()
                                                 }
-                                            }
+                                            },
+                                            onRightClick = if (bp != null) {
+                                                {
+                                                    contextMenuBp = bp
+                                                    showBpContextMenu = true
+                                                }
+                                            } else null
                                         )
                                     }
                                 }
+                            }
+                        }
+                    }
+                    
+                    if (unassociatedBonusPoints.isNotEmpty()) {
+                        item(key = "unassociated_header") {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { unassociatedExpanded = !unassociatedExpanded }
+                                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if (unassociatedExpanded) "▼" else "▶",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                Text(
+                                    text = "Other Bonus Points",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "(${unassociatedBonusPoints.size})",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        
+                        if (unassociatedExpanded) {
+                            items(
+                                count = unassociatedBonusPoints.size,
+                                key = { index -> "unassoc_${unassociatedBonusPoints[index].id}" }
+                            ) { index ->
+                                val bp = unassociatedBonusPoints[index]
+                                val isIncluded = bp.id in includedBonusPointIds
+                                
+                                RidePlanningBonusPointItem(
+                                    bonusPoint = bp,
+                                    bonusPointId = bp.id!!,
+                                    isIncluded = isIncluded,
+                                    isStart = bp.id == ride.startingBonusPointId,
+                                    isFinish = bp.id == ride.endingBonusPointId,
+                                    onDoubleClick = {
+                                        val legId = selectedLegId
+                                        if (legId != null) {
+                                            scope.launch {
+                                                if (addBonusPointAsWaypoint(bp, legId)) {
+                                                    onBonusPointsAdded(1)
+                                                }
+                                            }
+                                        } else {
+                                            onNoLegSelected()
+                                        }
+                                    },
+                                    onRightClick = {
+                                        contextMenuBp = bp
+                                        showBpContextMenu = true
+                                    }
+                                )
                             }
                         }
                     }
@@ -1690,6 +1816,55 @@ fun RidePlanningComboTree(
                     contextMenuCombo = null
                 }
             )
+        }
+    }
+    
+    if (showBpContextMenu && contextMenuBp != null) {
+        val bp = contextMenuBp!!
+        val isIncluded = bp.id in includedBonusPointIds
+        DropdownMenu(
+            expanded = showBpContextMenu,
+            onDismissRequest = { 
+                showBpContextMenu = false
+                contextMenuBp = null
+            }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Set as Rally Start") },
+                onClick = {
+                    scope.launch { setRallyStart(bp) }
+                    showBpContextMenu = false
+                    contextMenuBp = null
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Set as Rally Finish") },
+                onClick = {
+                    scope.launch { setRallyFinish(bp) }
+                    showBpContextMenu = false
+                    contextMenuBp = null
+                }
+            )
+            HorizontalDivider()
+            if (!isIncluded) {
+                DropdownMenuItem(
+                    text = { Text("Add to route") },
+                    onClick = {
+                        val legId = selectedLegId
+                        if (legId != null) {
+                            scope.launch {
+                                if (addBonusPointAsWaypoint(bp, legId)) {
+                                    onBonusPointsAdded(1)
+                                }
+                            }
+                        } else {
+                            onNoLegSelected()
+                        }
+                        showBpContextMenu = false
+                        contextMenuBp = null
+                    }
+                )
+            }
         }
     }
 }
@@ -1783,7 +1958,10 @@ fun RidePlanningBonusPointItem(
     bonusPoint: UiBonusPoint?,
     bonusPointId: Int,
     isIncluded: Boolean,
-    onDoubleClick: () -> Unit
+    isStart: Boolean = false,
+    isFinish: Boolean = false,
+    onDoubleClick: () -> Unit,
+    onRightClick: (() -> Unit)? = null
 ) {
     val code = bonusPoint?.code ?: "BP$bonusPointId"
     
@@ -1799,12 +1977,21 @@ fun RidePlanningBonusPointItem(
         MaterialTheme.colorScheme.onSurfaceVariant
     }
     
+    val statusIndicator = when {
+        isStart && isFinish -> "🏁"
+        isStart -> "🚩"
+        isFinish -> "🏁"
+        isIncluded -> "✓"
+        else -> "•"
+    }
+    
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
                 onClick = {},
-                onDoubleClick = onDoubleClick
+                onDoubleClick = onDoubleClick,
+                onLongClick = onRightClick
             )
             .background(backgroundColor)
             .padding(start = 8.dp, top = 2.dp, bottom = 2.dp, end = 4.dp),
@@ -1812,7 +1999,7 @@ fun RidePlanningBonusPointItem(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = if (isIncluded) "✓" else "•",
+            text = statusIndicator,
             style = MaterialTheme.typography.bodySmall,
             color = textColor
         )
@@ -1820,7 +2007,7 @@ fun RidePlanningBonusPointItem(
         Text(
             text = code,
             style = MaterialTheme.typography.bodySmall,
-            fontWeight = if (isIncluded) FontWeight.Bold else FontWeight.Normal,
+            fontWeight = if (isIncluded || isStart || isFinish) FontWeight.Bold else FontWeight.Normal,
             color = textColor
         )
         
