@@ -6,7 +6,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import kotlinx.coroutines.launch
 import org.jxmapviewer.JXMapViewer
-import org.jxmapviewer.input.PanMouseInputListener
 import org.jxmapviewer.painter.CompoundPainter
 import org.jxmapviewer.painter.Painter
 import org.jxmapviewer.viewer.*
@@ -15,10 +14,11 @@ import org.showpage.rallydesktop.service.GeocodingService
 import org.showpage.rallyserver.ui.UiBonusPoint
 import org.slf4j.LoggerFactory
 import java.awt.*
-import java.awt.event.ActionEvent
 import java.net.URLConnection
 import javax.swing.*
-import javax.swing.event.MouseInputListener
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.sin
 
 private val logger = LoggerFactory.getLogger("MapViewer")
 
@@ -138,7 +138,7 @@ fun MapViewer(
                 if (bp.latitude != null && bp.longitude != null) {
                     // Filter out invalid coordinates (0 or very close to 0 is invalid for USA locations)
                     if (bp.latitude == 0.0 || bp.longitude == 0.0 ||
-                        Math.abs(bp.latitude) < 0.01 || Math.abs(bp.longitude) < 0.01) {
+                        abs(bp.latitude) < 0.01 || abs(bp.longitude) < 0.01) {
                         logger.warn("Bonus point {} ({}) has invalid coordinates: lat={}, lon={}",
                             bp.code, bp.name, bp.latitude, bp.longitude)
                         null
@@ -221,10 +221,7 @@ fun MapViewer(
     val dragOverlayPainter = remember {
         object : Painter<JXMapViewer> {
             override fun paint(g: Graphics2D, map: JXMapViewer, width: Int, height: Int) {
-                val currentDragState = dragStateRef.value
-                if (currentDragState == null) {
-                    return
-                }
+                val currentDragState = dragStateRef.value ?: return
 
                 // Draw directly at screen coordinates
                 val x = currentDragState.currentPosition.x
@@ -242,7 +239,7 @@ fun MapViewer(
                         Integer.parseInt(hex.substring(2, 4), 16),
                         Integer.parseInt(hex.substring(4, 6), 16)
                     )
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     Color.RED
                 }
 
@@ -251,15 +248,13 @@ fun MapViewer(
                 val headRadius = headSize / 2
                 val pinLength = 8
 
-                val tipX = x
-                val tipY = y
-                val headX = tipX
-                val headY = tipY - pinLength - headRadius
+                val headX = x
+                val headY = y - pinLength - headRadius
 
                 // Draw pin stem
                 g.color = color.darker()
                 g.stroke = BasicStroke(2f)
-                g.drawLine(tipX, tipY, headX, headY + headRadius)
+                g.drawLine(x, y, headX, headY + headRadius)
 
                 // Draw shadow
                 g.color = Color(0, 0, 0, 50)
@@ -343,7 +338,7 @@ fun MapViewer(
                         val waypointScreenPoint = mapViewer.convertGeoPositionToPoint(waypoint.position)
                         val dx = waypointScreenPoint.x - clickPoint.x
                         val dy = waypointScreenPoint.y - clickPoint.y
-                        val distance = kotlin.math.sqrt((dx * dx + dy * dy).toDouble())
+                        val distance = kotlin.math.sqrt((dx * dx + dy * dy))
 
                         if (distance < maxClickDistancePixels && waypoint.bonusPointId != null) {
                             // Potentially starting a bonus point drag
@@ -403,7 +398,7 @@ fun MapViewer(
                         Point(rect.x, rect.y), zoom
                     )
                     val draggedGeoPos = mapViewer.tileFactory.pixelToGeo(
-                        Point(rect.x - dx.toInt(), rect.y - dy.toInt()), zoom
+                        Point(rect.x - dx, rect.y - dy), zoom
                     )
 
                     mapViewer.addressLocation = GeoPosition(
@@ -502,7 +497,7 @@ fun MapViewer(
                     val waypointScreenPoint = mapViewer.convertGeoPositionToPoint(waypoint.position)
                     val dx = waypointScreenPoint.x - clickPoint.x
                     val dy = waypointScreenPoint.y - clickPoint.y
-                    val distance = kotlin.math.sqrt((dx * dx + dy * dy).toDouble())
+                    val distance = kotlin.math.sqrt((dx * dx + dy * dy))
 
                     if (distance < minDistancePixels && distance < maxClickDistancePixels) {
                         minDistancePixels = distance
@@ -714,41 +709,12 @@ private fun createMapViewer(): JXMapViewer {
         "x", "y", "z"
     ) {
         override fun getTileUrl(x: Int, y: Int, zoom: Int): String {
-            // Empirically determined: the coordinates need to be divided by 2
-            // At zoom 8: we get x=119, need x=60 (119/2=59.5≈60)
-            // At zoom 9: we get x=59, need x=119 (would need to multiply)
-            //val tileX = x / 2
-            //val tileY = y / 2
-            val tileX = x
-            val tileY = y
             val useZoom = maximumZoomLevel - zoom
-            val factor = 1 shl (getTotalMapZoom() - zoom)  // For debugging
-
-            val maxTileCoord = (1 shl zoom) - 1
-            /*
-            logger.info("getTileUrl: zoom={}, x={}, y={}, factor={} -> tile x={}, y={} (max={})",
-                zoom, x, y, factor, tileX, tileY, maxTileCoord)
-             */
-
-            // Validate tile coordinates
-            /*
-            if (tileX < 0 || tileY < 0 || tileX > maxTileCoord || tileY > maxTileCoord) {
-                logger.warn("Tile coordinates out of range: zoom={}, tile x={}, y={} (max={})",
-                    zoom, tileX, tileY, maxTileCoord)
-                // Clamp to valid range
-                val clampedX = tileX.coerceIn(0, maxTileCoord)
-                val clampedY = tileY.coerceIn(0, maxTileCoord)
-                val url = "https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/$useZoom/$clampedX/$clampedY?access_token=$mapboxToken"
-                return url
-            }
-
-             */
 
             // Mapbox Styles API - modern, well-supported
             // streets-v12 is the current standard street map style
             // Format: /styles/v1/{username}/{style_id}/tiles/{tileSize}/{z}/{x}/{y}
-            val url = "https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/$useZoom/$tileX/$tileY?access_token=$mapboxToken"
-            // logger.info("Requesting tile URL: {}", url)
+            val url = "https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/$useZoom/$x/$y?access_token=$mapboxToken"
             return url
         }
     }
@@ -774,7 +740,7 @@ private fun createMapViewer(): JXMapViewer {
         // Require 3 notches to zoom one level (adjust this value to change sensitivity)
         val threshold = 3.0
 
-        if (Math.abs(wheelRotationAccumulator) >= threshold) {
+        if (abs(wheelRotationAccumulator) >= threshold) {
             val zoomChange = if (wheelRotationAccumulator > 0) 1 else -1
             val newZoom = mapViewer.zoom + zoomChange
 
@@ -931,12 +897,12 @@ class ColoredWaypointRenderer : WaypointRenderer<BonusPointWaypoint> {
         val highlightRadius2 = 28
 
         // Outer ring (semi-transparent dark grey)
-        g.color = Color(60, 60, 60, 150) // Dark grey with transparency
+        g.color = Color(60, 60, 60, 150) // Dark gray with transparency
         g.stroke = BasicStroke(4f)
         g.drawOval(tipX - highlightRadius2, headY - highlightRadius2, highlightRadius2 * 2, highlightRadius2 * 2)
 
         // Inner ring (more opaque medium grey)
-        g.color = Color(90, 90, 90, 200) // Medium grey with less transparency
+        g.color = Color(90, 90, 90, 200) // Medium gray with less transparency
         g.stroke = BasicStroke(3f)
         g.drawOval(tipX - highlightRadius1, headY - highlightRadius1, highlightRadius1 * 2, highlightRadius1 * 2)
     }
@@ -950,11 +916,11 @@ class ColoredWaypointRenderer : WaypointRenderer<BonusPointWaypoint> {
         val pinLength = 8
         val headY = tipY - pinLength - headRadius
 
-        // Draw a grey ring to indicate combo membership
+        // Draw a gray ring to indicate combo membership
         val highlightRadius = 20
 
-        // Single ring (medium grey color)
-        g.color = Color(80, 80, 80, 180) // Medium grey with transparency
+        // Single ring (medium gray color)
+        g.color = Color(80, 80, 80, 180) // Medium gray with transparency
         g.stroke = BasicStroke(3f)
         g.drawOval(tipX - highlightRadius, headY - highlightRadius, highlightRadius * 2, highlightRadius * 2)
     }
@@ -1152,7 +1118,6 @@ class ColoredWaypointRenderer : WaypointRenderer<BonusPointWaypoint> {
         val poleLength = 20
 
         val poleTop = tipY - poleLength
-        val flagTop = poleTop
 
         // Draw pole
         g.color = Color(100, 100, 100)
@@ -1161,7 +1126,7 @@ class ColoredWaypointRenderer : WaypointRenderer<BonusPointWaypoint> {
 
         // Flag shape (triangular)
         val xPoints = intArrayOf(tipX, tipX + flagWidth, tipX)
-        val yPoints = intArrayOf(flagTop, flagTop + flagHeight/2, flagTop + flagHeight)
+        val yPoints = intArrayOf(poleTop, poleTop + flagHeight / 2, poleTop + flagHeight)
 
         // Draw shadow
         g.color = Color(0, 0, 0, 50)
@@ -1195,8 +1160,6 @@ class ColoredWaypointRenderer : WaypointRenderer<BonusPointWaypoint> {
         val checkSize = 3
 
         val poleTop = tipY - poleLength
-        val flagTop = poleTop
-        val flagLeft = tipX
 
         // Draw pole
         g.color = Color(100, 100, 100)
@@ -1208,20 +1171,20 @@ class ColoredWaypointRenderer : WaypointRenderer<BonusPointWaypoint> {
             for (col in 0 until flagWidth / checkSize) {
                 val isBlack = (row + col) % 2 == 0
                 g.color = if (isBlack) Color.BLACK else Color.WHITE
-                g.fillRect(flagLeft + col * checkSize, flagTop + row * checkSize, checkSize, checkSize)
+                g.fillRect(tipX + col * checkSize, poleTop + row * checkSize, checkSize, checkSize)
             }
         }
 
         // Draw flag border
         g.color = Color.DARK_GRAY
         g.stroke = BasicStroke(1.5f)
-        g.drawRect(flagLeft, flagTop, flagWidth, flagHeight)
+        g.drawRect(tipX, poleTop, flagWidth, flagHeight)
     }
 
     /**
      * Create a star shape with the given parameters
      */
-    private fun createStarShape(cx: Int, cy: Int, outerRadius: Int, innerRadius: Int, points: Int): java.awt.Polygon {
+    private fun createStarShape(cx: Int, cy: Int, outerRadius: Int, innerRadius: Int, points: Int): Polygon {
         val xPoints = IntArray(points * 2)
         val yPoints = IntArray(points * 2)
 
@@ -1231,11 +1194,11 @@ class ColoredWaypointRenderer : WaypointRenderer<BonusPointWaypoint> {
             val angle = i * angleStep - Math.PI / 2 // Start at top
             val radius = if (i % 2 == 0) outerRadius else innerRadius
 
-            xPoints[i] = (cx + radius * Math.cos(angle)).toInt()
-            yPoints[i] = (cy + radius * Math.sin(angle)).toInt()
+            xPoints[i] = (cx + radius * cos(angle)).toInt()
+            yPoints[i] = (cy + radius * sin(angle)).toInt()
         }
 
-        return java.awt.Polygon(xPoints, yPoints, points * 2)
+        return Polygon(xPoints, yPoints, points * 2)
     }
 
 
@@ -1261,7 +1224,7 @@ class ColoredWaypointRenderer : WaypointRenderer<BonusPointWaypoint> {
         // Parse the color from the hex string
         val color = parseColor(waypoint.markerColor)
 
-        // Enable anti-aliasing for smoother circles
+        // Enable antialiasing for smoother circles
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
 
 

@@ -47,6 +47,8 @@ fun RidePlanningScreen(
     var ride by remember { mutableStateOf<UiRide?>(null) }
     var rally by remember { mutableStateOf<UiRally?>(null) }
     var routes by remember { mutableStateOf(emptyList<UiRoute>()) }
+    var bonusPoints by remember { mutableStateOf(emptyList<UiBonusPoint>()) }
+    var combinations by remember { mutableStateOf(emptyList<UiCombination>()) }
     var selectedLegId by remember { mutableStateOf<Int?>(null) }
     var waypointReloadTrigger by remember { mutableStateOf(0) }
     var showNoLegSelectedMessage by remember { mutableStateOf(false) }
@@ -66,7 +68,7 @@ fun RidePlanningScreen(
                 logger.info("Ride loaded: {}", loadedRide.name)
                 ride = loadedRide
 
-                // If rally-associated, load rally details
+                // If rally-associated, load rally details and bonus points
                 if (loadedRide.rallyId != null) {
                     serverClient.getRally(loadedRide.rallyId).fold(
                         onSuccess = { loadedRally ->
@@ -75,6 +77,28 @@ fun RidePlanningScreen(
                         },
                         onFailure = { error ->
                             logger.error("Failed to load rally", error)
+                        }
+                    )
+                    
+                    // Load bonus points for the rally
+                    serverClient.listBonusPoints(loadedRide.rallyId).fold(
+                        onSuccess = { loadedBonusPoints ->
+                            logger.info("Loaded {} bonus points", loadedBonusPoints.size)
+                            bonusPoints = loadedBonusPoints
+                        },
+                        onFailure = { error ->
+                            logger.error("Failed to load bonus points", error)
+                        }
+                    )
+                    
+                    // Load combinations for the rally
+                    serverClient.listCombinations(loadedRide.rallyId).fold(
+                        onSuccess = { loadedCombinations ->
+                            logger.info("Loaded {} combinations", loadedCombinations.size)
+                            combinations = loadedCombinations
+                        },
+                        onFailure = { error ->
+                            logger.error("Failed to load combinations", error)
                         }
                     )
                 }
@@ -263,21 +287,18 @@ fun RidePlanningScreen(
                         }
                     }
 
-                    // Map panel (placeholder for now)
+                    // Map panel
                     Card(
                         modifier = Modifier.fillMaxSize(),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Map View\n(Coming Soon)",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        MapViewer(
+                            bonusPoints = bonusPoints,
+                            combinations = combinations,
+                            centerLatitude = rally?.latitude?.toDouble(),
+                            centerLongitude = rally?.longitude?.toDouble(),
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
                 }
             }
