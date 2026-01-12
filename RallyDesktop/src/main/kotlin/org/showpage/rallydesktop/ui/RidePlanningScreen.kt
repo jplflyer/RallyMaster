@@ -51,6 +51,9 @@ fun RidePlanningScreen(
     var combinations by remember { mutableStateOf(emptyList<UiCombination>()) }
     var allWaypoints by remember { mutableStateOf(emptyList<UiWaypoint>()) }
     var selectedLegId by remember { mutableStateOf<Int?>(null) }
+    var selectedBonusPointId by remember { mutableStateOf<Int?>(null) }
+    var selectedCombinationId by remember { mutableStateOf<Int?>(null) }
+    var selectedWaypointId by remember { mutableStateOf<Int?>(null) }
     var waypointReloadTrigger by remember { mutableStateOf(0) }
     var showNoLegSelectedMessage by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
@@ -183,6 +186,30 @@ fun RidePlanningScreen(
         allWaypoints = aggregatedWaypoints
         logger.info("Aggregated {} waypoints across all routes/legs", aggregatedWaypoints.size)
     }
+
+    LaunchedEffect(selectedBonusPointId, combinations) {
+        if (selectedBonusPointId != null) {
+            val combo = combinations.firstOrNull { combo ->
+                combo.combinationPoints?.any { it.bonusPointId == selectedBonusPointId } == true
+            }
+            selectedCombinationId = combo?.id
+            if (combo != null) {
+                logger.info("Selected BP {} belongs to combo {}", selectedBonusPointId, combo.name)
+            }
+        } else {
+            selectedCombinationId = null
+        }
+    }
+
+    LaunchedEffect(selectedWaypointId, allWaypoints) {
+        if (selectedWaypointId != null) {
+            val waypoint = allWaypoints.find { it.id == selectedWaypointId }
+            if (waypoint?.bonusPointId != null) {
+                selectedBonusPointId = waypoint.bonusPointId
+                logger.info("Selected waypoint {} links to BP {}", selectedWaypointId, waypoint.bonusPointId)
+            }
+        }
+    }
     
     val snackbarHostState = remember { SnackbarHostState() }
     
@@ -279,8 +306,23 @@ fun RidePlanningScreen(
                             routes = routes,
                             serverClient = serverClient,
                             selectedLegId = selectedLegId,
+                            selectedBonusPointId = selectedBonusPointId,
+                            selectedCombinationId = selectedCombinationId,
+                            selectedWaypointId = selectedWaypointId,
                             waypointReloadTrigger = waypointReloadTrigger,
                             onLegSelected = { legId -> selectedLegId = legId },
+                            onBonusPointSelected = { bpId -> 
+                                selectedBonusPointId = bpId
+                                selectedWaypointId = null
+                            },
+                            onCombinationSelected = { comboId ->
+                                selectedCombinationId = comboId
+                                selectedBonusPointId = null
+                                selectedWaypointId = null
+                            },
+                            onWaypointSelected = { wpId ->
+                                selectedWaypointId = wpId
+                            },
                             onCollapse = { sidebarCollapsed = true },
                             width = sidebarWidth,
                             onWidthChange = { sidebarWidth = it },
@@ -335,6 +377,12 @@ fun RidePlanningScreen(
                             rideWaypoints = allWaypoints,
                             centerLatitude = rally?.latitude?.toDouble(),
                             centerLongitude = rally?.longitude?.toDouble(),
+                            selectedBonusPointId = selectedBonusPointId,
+                            selectedCombinationId = selectedCombinationId,
+                            onBonusPointClicked = { bpId ->
+                                selectedBonusPointId = bpId
+                                selectedWaypointId = null
+                            },
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -355,8 +403,14 @@ fun RidePlanSidebar(
     routes: List<UiRoute>,
     serverClient: RallyServerClient,
     selectedLegId: Int?,
+    selectedBonusPointId: Int?,
+    selectedCombinationId: Int?,
+    selectedWaypointId: Int?,
     waypointReloadTrigger: Int,
     onLegSelected: (Int?) -> Unit,
+    onBonusPointSelected: (Int?) -> Unit,
+    onCombinationSelected: (Int?) -> Unit,
+    onWaypointSelected: (Int?) -> Unit,
     onCollapse: () -> Unit,
     width: Dp,
     onWidthChange: (Dp) -> Unit,
@@ -430,8 +484,11 @@ fun RidePlanSidebar(
                         routes = routes,
                         serverClient = serverClient,
                         selectedLegId = selectedLegId,
+                        selectedBonusPointId = selectedBonusPointId,
+                        selectedWaypointId = selectedWaypointId,
                         waypointReloadTrigger = waypointReloadTrigger,
                         onLegSelected = onLegSelected,
+                        onWaypointSelected = onWaypointSelected,
                         onRoutesChanged = onRoutesChanged,
                         onReloadRoutes = onReloadRoutes,
                         onWaypointChanged = onWaypointAdded,
@@ -455,7 +512,11 @@ fun RidePlanSidebar(
                             routes = routes,
                             serverClient = serverClient,
                             selectedLegId = selectedLegId,
+                            selectedBonusPointId = selectedBonusPointId,
+                            selectedCombinationId = selectedCombinationId,
                             waypointReloadTrigger = waypointReloadTrigger,
+                            onBonusPointSelected = onBonusPointSelected,
+                            onCombinationSelected = onCombinationSelected,
                             onBonusPointsAdded = { count ->
                                 logger.info("Added {} bonus points as waypoints", count)
                                 onWaypointAdded()
@@ -552,8 +613,11 @@ fun RoutesTree(
     routes: List<UiRoute>,
     serverClient: RallyServerClient,
     selectedLegId: Int?,
+    selectedBonusPointId: Int?,
+    selectedWaypointId: Int?,
     waypointReloadTrigger: Int,
     onLegSelected: (Int?) -> Unit,
+    onWaypointSelected: (Int?) -> Unit,
     onRoutesChanged: (List<UiRoute>) -> Unit,
     onReloadRoutes: () -> Unit,
     onWaypointChanged: () -> Unit,
@@ -657,8 +721,11 @@ fun RoutesTree(
                     route = route,
                     serverClient = serverClient,
                     selectedLegId = selectedLegId,
+                    selectedBonusPointId = selectedBonusPointId,
+                    selectedWaypointId = selectedWaypointId,
                     waypointReloadTrigger = waypointReloadTrigger,
                     onLegSelected = onLegSelected,
+                    onWaypointSelected = onWaypointSelected,
                     onRouteChanged = { updatedRoute ->
                         onRoutesChanged(routes.map { if (it.id == updatedRoute.id) updatedRoute else it })
                     },
@@ -739,8 +806,11 @@ fun RouteItem(
     route: UiRoute,
     serverClient: RallyServerClient,
     selectedLegId: Int?,
+    selectedBonusPointId: Int?,
+    selectedWaypointId: Int?,
     waypointReloadTrigger: Int,
     onLegSelected: (Int?) -> Unit,
+    onWaypointSelected: (Int?) -> Unit,
     onRouteChanged: (UiRoute) -> Unit,
     onRouteDeleted: () -> Unit,
     onReloadRoutes: () -> Unit,
@@ -873,8 +943,11 @@ fun RouteItem(
                         leg = leg,
                         serverClient = serverClient,
                         isSelected = selectedLegId == leg.id,
+                        selectedBonusPointId = selectedBonusPointId,
+                        selectedWaypointId = selectedWaypointId,
                         waypointReloadTrigger = waypointReloadTrigger,
                         onSelect = { onLegSelected(leg.id) },
+                        onWaypointSelected = onWaypointSelected,
                         onLegChanged = { updatedLeg ->
                             legs = legs.map { if (it.id == updatedLeg.id) updatedLeg else it }
                         },
@@ -984,15 +1057,17 @@ fun RideLegItem(
     leg: UiRideLeg,
     serverClient: RallyServerClient,
     isSelected: Boolean,
+    selectedBonusPointId: Int?,
+    selectedWaypointId: Int?,
     waypointReloadTrigger: Int,
     onSelect: () -> Unit,
+    onWaypointSelected: (Int?) -> Unit,
     onLegChanged: (UiRideLeg) -> Unit,
     onLegDeleted: () -> Unit,
     onWaypointChanged: () -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(true) }
     var waypoints by remember { mutableStateOf(emptyList<UiWaypoint>()) }
-    var selectedWaypointId by remember { mutableStateOf<Int?>(null) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showClearConfirm by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -1068,16 +1143,23 @@ fun RideLegItem(
                 modifier = Modifier.padding(start = 16.dp)
             ) {
                 waypoints.forEachIndexed { index, waypoint ->
+                    val isWpSelected = selectedWaypointId == waypoint.id
+                    val isLinkedToSelectedBp = waypoint.bonusPointId != null && 
+                                               waypoint.bonusPointId == selectedBonusPointId
+                    
                     WaypointItem(
                         waypoint = waypoint,
-                        isSelected = selectedWaypointId == waypoint.id,
-                        onSelect = { selectedWaypointId = if (selectedWaypointId == waypoint.id) null else waypoint.id },
+                        isSelected = isWpSelected,
+                        isHighlighted = isLinkedToSelectedBp && !isWpSelected,
+                        onSelect = { 
+                            onWaypointSelected(if (selectedWaypointId == waypoint.id) null else waypoint.id) 
+                        },
                         onDelete = {
                             scope.launch {
                                 WaypointSequencer.deleteAndRenumber(waypoints, waypoint, serverClient).fold(
                                     onSuccess = { updated ->
                                         waypoints = updated
-                                        selectedWaypointId = null
+                                        onWaypointSelected(null)
                                         onWaypointChanged()
                                     },
                                     onFailure = { error ->
@@ -1187,7 +1269,7 @@ fun RideLegItem(
                                 waypoints = emptyList()
                             }
                             showClearConfirm = false
-                            selectedWaypointId = null
+                            onWaypointSelected(null)
                             onWaypointChanged()
                         }
                     },
@@ -1214,15 +1296,16 @@ fun RideLegItem(
 fun WaypointItem(
     waypoint: UiWaypoint,
     isSelected: Boolean,
+    isHighlighted: Boolean = false,
     onSelect: () -> Unit,
     onDelete: () -> Unit,
     onMoveUp: (() -> Unit)?,
     onMoveDown: (() -> Unit)?
 ) {
-    val backgroundColor = if (isSelected) {
-        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-    } else {
-        Color.Transparent
+    val backgroundColor = when {
+        isSelected -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+        isHighlighted -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
+        else -> Color.Transparent
     }
 
     Row(
@@ -1422,7 +1505,11 @@ fun RidePlanningComboTree(
     routes: List<UiRoute>,
     serverClient: RallyServerClient,
     selectedLegId: Int?,
+    selectedBonusPointId: Int?,
+    selectedCombinationId: Int?,
     waypointReloadTrigger: Int,
+    onBonusPointSelected: (Int?) -> Unit,
+    onCombinationSelected: (Int?) -> Unit,
     onBonusPointsAdded: (Int) -> Unit,
     onNoLegSelected: () -> Unit,
     onRideUpdated: (UiRide) -> Unit,
@@ -1680,18 +1767,23 @@ fun RidePlanningComboTree(
                         val combo = sortedCombinations[index]
                         val isExpanded = expandedCombos.contains(combo.id)
                         val inclusionStatus = getComboInclusionStatus(combo)
+                        val isComboSelected = combo.id == selectedCombinationId
                         
                         Column {
                             RidePlanningComboItem(
                                 combination = combo,
                                 inclusionStatus = inclusionStatus,
                                 isExpanded = isExpanded,
+                                isSelected = isComboSelected,
                                 onToggleExpand = {
                                     expandedCombos = if (isExpanded) {
                                         expandedCombos - combo.id!!
                                     } else {
                                         expandedCombos + combo.id!!
                                     }
+                                },
+                                onClick = {
+                                    onCombinationSelected(if (isComboSelected) null else combo.id)
                                 },
                                 onDoubleClick = {
                                     val legId = selectedLegId
@@ -1724,13 +1816,20 @@ fun RidePlanningComboTree(
                                     combo.combinationPoints.forEach { cp ->
                                         val bp = bonusPointMap[cp.bonusPointId]
                                         val isIncluded = cp.bonusPointId in includedBonusPointIds
+                                        val isBpSelected = cp.bonusPointId == selectedBonusPointId
+                                        val isInSelectedCombo = isComboSelected
                                         
                                         RidePlanningBonusPointItem(
                                             bonusPoint = bp,
                                             bonusPointId = cp.bonusPointId,
                                             isIncluded = isIncluded,
+                                            isSelected = isBpSelected,
+                                            isHighlighted = isInSelectedCombo && !isBpSelected,
                                             isStart = cp.bonusPointId == ride.startingBonusPointId,
                                             isFinish = cp.bonusPointId == ride.endingBonusPointId,
+                                            onClick = {
+                                                onBonusPointSelected(if (isBpSelected) null else cp.bonusPointId)
+                                            },
                                             onDoubleClick = {
                                                 val legId = selectedLegId
                                                 if (legId != null && bp != null) {
@@ -1791,13 +1890,19 @@ fun RidePlanningComboTree(
                             ) { index ->
                                 val bp = unassociatedBonusPoints[index]
                                 val isIncluded = bp.id in includedBonusPointIds
+                                val isBpSelected = bp.id == selectedBonusPointId
                                 
                                 RidePlanningBonusPointItem(
                                     bonusPoint = bp,
                                     bonusPointId = bp.id!!,
                                     isIncluded = isIncluded,
+                                    isSelected = isBpSelected,
+                                    isHighlighted = false,
                                     isStart = bp.id == ride.startingBonusPointId,
                                     isFinish = bp.id == ride.endingBonusPointId,
+                                    onClick = {
+                                        onBonusPointSelected(if (isBpSelected) null else bp.id)
+                                    },
                                     onDoubleClick = {
                                         val legId = selectedLegId
                                         if (legId != null) {
@@ -1934,20 +2039,29 @@ fun RidePlanningComboItem(
     combination: UiCombination,
     inclusionStatus: ComboInclusionStatus,
     isExpanded: Boolean,
+    isSelected: Boolean = false,
     onToggleExpand: () -> Unit,
+    onClick: () -> Unit,
     onDoubleClick: () -> Unit,
     onRightClick: () -> Unit
 ) {
-    val backgroundColor = when (inclusionStatus) {
+    val baseBackgroundColor = when (inclusionStatus) {
         ComboInclusionStatus.FULL -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
         ComboInclusionStatus.PARTIAL -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
         ComboInclusionStatus.NONE -> Color.Transparent
     }
     
-    val textColor = when (inclusionStatus) {
-        ComboInclusionStatus.FULL -> MaterialTheme.colorScheme.primary
-        ComboInclusionStatus.PARTIAL -> MaterialTheme.colorScheme.tertiary
-        ComboInclusionStatus.NONE -> MaterialTheme.colorScheme.onSurface
+    val backgroundColor = if (isSelected) {
+        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f)
+    } else {
+        baseBackgroundColor
+    }
+    
+    val textColor = when {
+        isSelected -> MaterialTheme.colorScheme.onSecondaryContainer
+        inclusionStatus == ComboInclusionStatus.FULL -> MaterialTheme.colorScheme.primary
+        inclusionStatus == ComboInclusionStatus.PARTIAL -> MaterialTheme.colorScheme.tertiary
+        else -> MaterialTheme.colorScheme.onSurface
     }
     
     val statusIcon = when (inclusionStatus) {
@@ -1960,7 +2074,7 @@ fun RidePlanningComboItem(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
-                onClick = onToggleExpand,
+                onClick = onClick,
                 onDoubleClick = onDoubleClick,
                 onLongClick = onRightClick
             )
@@ -1986,7 +2100,7 @@ fun RidePlanningComboItem(
         Text(
             text = combination.code ?: "?",
             style = MaterialTheme.typography.bodySmall,
-            fontWeight = if (inclusionStatus == ComboInclusionStatus.FULL) FontWeight.Bold else FontWeight.Normal,
+            fontWeight = if (inclusionStatus == ComboInclusionStatus.FULL || isSelected) FontWeight.Bold else FontWeight.Normal,
             color = textColor,
             modifier = Modifier.width(60.dp)
         )
@@ -1994,7 +2108,7 @@ fun RidePlanningComboItem(
         Text(
             text = combination.name ?: "",
             style = MaterialTheme.typography.bodySmall,
-            fontWeight = if (inclusionStatus == ComboInclusionStatus.FULL) FontWeight.Bold else FontWeight.Normal,
+            fontWeight = if (inclusionStatus == ComboInclusionStatus.FULL || isSelected) FontWeight.Bold else FontWeight.Normal,
             fontStyle = if (inclusionStatus == ComboInclusionStatus.PARTIAL) FontStyle.Italic else FontStyle.Normal,
             color = textColor,
             maxLines = 1,
@@ -2017,23 +2131,27 @@ fun RidePlanningBonusPointItem(
     bonusPoint: UiBonusPoint?,
     bonusPointId: Int,
     isIncluded: Boolean,
+    isSelected: Boolean = false,
+    isHighlighted: Boolean = false,
     isStart: Boolean = false,
     isFinish: Boolean = false,
+    onClick: () -> Unit = {},
     onDoubleClick: () -> Unit,
     onRightClick: (() -> Unit)? = null
 ) {
     val code = bonusPoint?.code ?: "BP$bonusPointId"
     
-    val backgroundColor = if (isIncluded) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
-    } else {
-        Color.Transparent
+    val backgroundColor = when {
+        isSelected -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+        isHighlighted -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
+        isIncluded -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+        else -> Color.Transparent
     }
     
-    val textColor = if (isIncluded) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
+    val textColor = when {
+        isSelected -> MaterialTheme.colorScheme.onSecondaryContainer
+        isIncluded -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
     
     val statusIndicator = when {
@@ -2048,7 +2166,7 @@ fun RidePlanningBonusPointItem(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
-                onClick = {},
+                onClick = onClick,
                 onDoubleClick = onDoubleClick,
                 onLongClick = onRightClick
             )
@@ -2066,7 +2184,7 @@ fun RidePlanningBonusPointItem(
         Text(
             text = code,
             style = MaterialTheme.typography.bodySmall,
-            fontWeight = if (isIncluded || isStart || isFinish) FontWeight.Bold else FontWeight.Normal,
+            fontWeight = if (isIncluded || isStart || isFinish || isSelected) FontWeight.Bold else FontWeight.Normal,
             color = textColor
         )
         
