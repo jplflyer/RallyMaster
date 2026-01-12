@@ -49,6 +49,7 @@ fun RidePlanningScreen(
     var routes by remember { mutableStateOf(emptyList<UiRoute>()) }
     var bonusPoints by remember { mutableStateOf(emptyList<UiBonusPoint>()) }
     var combinations by remember { mutableStateOf(emptyList<UiCombination>()) }
+    var allWaypoints by remember { mutableStateOf(emptyList<UiWaypoint>()) }
     var selectedLegId by remember { mutableStateOf<Int?>(null) }
     var waypointReloadTrigger by remember { mutableStateOf(0) }
     var showNoLegSelectedMessage by remember { mutableStateOf(false) }
@@ -145,6 +146,42 @@ fun RidePlanningScreen(
         if (selectedLegId != null) {
             preferencesService.setLastSelectedLegId(rideId, selectedLegId)
         }
+    }
+
+    LaunchedEffect(routes, waypointReloadTrigger) {
+        val aggregatedWaypoints = mutableListOf<UiWaypoint>()
+        var globalSequence = 1
+        
+        for (route in routes) {
+            val legs = serverClient.listRideLegs(route.id!!).getOrElse { emptyList() }
+                .sortedBy { it.sequenceOrder }
+            
+            for (leg in legs) {
+                val legWaypoints = serverClient.listWaypoints(leg.id!!).getOrElse { emptyList() }
+                    .sortedBy { it.sequenceOrder }
+                
+                for (wp in legWaypoints) {
+                    aggregatedWaypoints.add(
+                        UiWaypoint.builder()
+                            .id(wp.id)
+                            .rideLegId(wp.rideLegId)
+                            .bonusPointId(wp.bonusPointId)
+                            .name(wp.name)
+                            .description(wp.description)
+                            .sequenceOrder(globalSequence++)
+                            .latitude(wp.latitude)
+                            .longitude(wp.longitude)
+                            .address(wp.address)
+                            .markerColor(wp.markerColor)
+                            .markerIcon(wp.markerIcon)
+                            .build()
+                    )
+                }
+            }
+        }
+        
+        allWaypoints = aggregatedWaypoints
+        logger.info("Aggregated {} waypoints across all routes/legs", aggregatedWaypoints.size)
     }
     
     val snackbarHostState = remember { SnackbarHostState() }
@@ -295,6 +332,7 @@ fun RidePlanningScreen(
                         MapViewer(
                             bonusPoints = bonusPoints,
                             combinations = combinations,
+                            rideWaypoints = allWaypoints,
                             centerLatitude = rally?.latitude?.toDouble(),
                             centerLongitude = rally?.longitude?.toDouble(),
                             modifier = Modifier.fillMaxSize()

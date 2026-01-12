@@ -62,6 +62,7 @@ private fun configureHttpUserAgent() {
 fun MapViewer(
     bonusPoints: List<UiBonusPoint>,
     combinations: List<org.showpage.rallyserver.ui.UiCombination> = emptyList(),
+    rideWaypoints: List<org.showpage.rallyserver.ui.UiWaypoint> = emptyList(),
     centerLatitude: Double?,
     centerLongitude: Double?,
     selectedBonusPointId: Int? = null,
@@ -96,10 +97,10 @@ fun MapViewer(
     }
 
     // Update bonus point markers when they change or selection changes
-    LaunchedEffect(bonusPoints, combinations, selectedBonusPointId, selectedCombinationId) {
+    LaunchedEffect(bonusPoints, combinations, rideWaypoints, selectedBonusPointId, selectedCombinationId) {
         if (bonusPoints.isNotEmpty()) {
-            logger.info("Processing {} bonus points and {} combinations for map display",
-                bonusPoints.size, combinations.size)
+            logger.info("Processing {} bonus points, {} combinations, and {} ride waypoints for map display",
+                bonusPoints.size, combinations.size, rideWaypoints.size)
 
             // Build a map of bonus point ID to combination color
             val bonusPointColors = mutableMapOf<Int, String>()
@@ -117,6 +118,20 @@ fun MapViewer(
             }
 
             logger.info("Assigned colors to {} bonus points from combinations", bonusPointColors.size)
+
+            // Build a map of bonus point ID to waypoint sequence number
+            val bonusPointSequenceNumbers = mutableMapOf<Int, Int>()
+            rideWaypoints
+                .filter { it.bonusPointId != null && it.sequenceOrder != null }
+                .sortedBy { it.sequenceOrder }
+                .forEachIndexed { index, wp ->
+                    bonusPointSequenceNumbers[wp.bonusPointId!!] = index + 1
+                }
+            
+            if (bonusPointSequenceNumbers.isNotEmpty()) {
+                logger.info("Assigned sequence numbers to {} bonus points from ride waypoints", 
+                    bonusPointSequenceNumbers.size)
+            }
 
             // Find which bonus points belong to the selected combination
             val selectedComboBonusPointIds = if (selectedCombinationId != null) {
@@ -159,7 +174,8 @@ fun MapViewer(
                             isStart = bp.isStart ?: false,
                             isFinish = bp.isFinish ?: false,
                             isSelected = bp.id == selectedBonusPointId,
-                            isInSelectedCombo = bp.id != null && selectedComboBonusPointIds.contains(bp.id)
+                            isInSelectedCombo = bp.id != null && selectedComboBonusPointIds.contains(bp.id),
+                            waypointSequenceNumber = bp.id?.let { bonusPointSequenceNumbers[it] }
                         )
                     }
                 } else {
@@ -773,7 +789,8 @@ class BonusPointWaypoint(
     val isStart: Boolean = false,
     val isFinish: Boolean = false,
     val isSelected: Boolean = false,
-    val isInSelectedCombo: Boolean = false
+    val isInSelectedCombo: Boolean = false,
+    val waypointSequenceNumber: Int? = null
 ) : Waypoint {
     override fun getPosition(): GeoPosition = geoPosition
 }
@@ -878,8 +895,12 @@ class ColoredWaypointRenderer : WaypointRenderer<BonusPointWaypoint> {
                 "triangle" -> drawTrianglePin(g, tipX, tipY, color)
                 "diamond" -> drawDiamondPin(g, tipX, tipY, color)
                 "flag" -> drawFlagPin(g, tipX, tipY, color)
-                else -> drawCirclePin(g, tipX, tipY, color) // Default to circle
+                else -> drawCirclePin(g, tipX, tipY, color)
             }
+        }
+
+        if (waypoint.waypointSequenceNumber != null) {
+            drawSequenceBadge(g, tipX, tipY, waypoint.waypointSequenceNumber, color)
         }
     }
 
@@ -1199,6 +1220,50 @@ class ColoredWaypointRenderer : WaypointRenderer<BonusPointWaypoint> {
         }
 
         return Polygon(xPoints, yPoints, points * 2)
+    }
+
+    private fun drawSequenceBadge(g: Graphics2D, tipX: Int, tipY: Int, sequenceNumber: Int, pinColor: Color) {
+        val headSize = 16
+        val headRadius = headSize / 2
+        val pinLength = 8
+        val headCenterY = tipY - pinLength - headRadius
+
+        val text = sequenceNumber.toString()
+        val font = Font("SansSerif", Font.BOLD, 10)
+        g.font = font
+        val fontMetrics = g.fontMetrics
+        val textWidth = fontMetrics.stringWidth(text)
+        val textHeight = fontMetrics.ascent
+
+        val paddingH = 3
+        val paddingV = 2
+        val badgeWidth = textWidth + paddingH * 2
+        val badgeHeight = textHeight + paddingV * 2
+
+        val badgeX = tipX + headRadius - 2
+        val badgeY = headCenterY - headRadius - 2
+
+        g.color = Color.WHITE
+        g.fillRoundRect(badgeX - 1, badgeY - 1, badgeWidth + 2, badgeHeight + 2, 6, 6)
+
+        g.color = pinColor
+        g.fillRoundRect(badgeX, badgeY, badgeWidth, badgeHeight, 5, 5)
+
+        g.color = Color.WHITE
+        g.stroke = BasicStroke(1f)
+        g.drawRoundRect(badgeX, badgeY, badgeWidth, badgeHeight, 5, 5)
+
+        g.color = getContrastingTextColor(pinColor)
+        val textX = badgeX + paddingH
+        val textY = badgeY + paddingV + textHeight - 2
+        g.drawString(text, textX, textY)
+    }
+
+    private fun getContrastingTextColor(backgroundColor: Color): Color {
+        val luminance = (0.299 * backgroundColor.red + 
+                         0.587 * backgroundColor.green + 
+                         0.114 * backgroundColor.blue) / 255.0
+        return if (luminance > 0.5) Color.BLACK else Color.WHITE
     }
 
 
