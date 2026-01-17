@@ -95,6 +95,7 @@ public class RideController {
     )
     @GetMapping("/rides")
     ResponseEntity<RestResponse<List<UiRide>>> listRides() {
+        log.info("Get rides.");
         return serviceCaller.call((member) ->
             rideService.listRides(member).stream()
                     .map(DtoMapper::toUiRide)

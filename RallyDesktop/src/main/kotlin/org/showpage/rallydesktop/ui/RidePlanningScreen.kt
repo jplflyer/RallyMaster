@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogWindow
 import kotlinx.coroutines.launch
 import org.jxmapviewer.viewer.GeoPosition
 import org.showpage.rallydesktop.service.PreferencesService
@@ -30,6 +31,7 @@ import org.showpage.rallydesktop.service.RoutingWaypoint
 import org.showpage.rallydesktop.service.WaypointSequencer
 import org.showpage.rallyserver.ui.*
 import org.slf4j.LoggerFactory
+import java.awt.Dimension
 import java.time.format.DateTimeFormatter
 
 private val logger = LoggerFactory.getLogger("RidePlanningScreen")
@@ -64,6 +66,7 @@ fun RidePlanningScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var routeResult by remember { mutableStateOf<RouteResult?>(null) }
     var isCalculatingRoute by remember { mutableStateOf(false) }
+    var showRideEditDialog by remember { mutableStateOf(false) }
     
     val routingService = remember { RoutingService() }
 
@@ -391,6 +394,7 @@ fun RidePlanningScreen(
                             onWaypointAdded = { waypointReloadTrigger++ },
                             onNoLegSelected = { showNoLegSelectedMessage = true },
                             onRideUpdated = { updatedRide -> ride = updatedRide },
+                            onEditRideClicked = { showRideEditDialog = true },
                             modifier = Modifier.fillMaxHeight()
                         )
                     } else {
@@ -451,6 +455,18 @@ fun RidePlanningScreen(
         }
     }
     }
+    
+    if (showRideEditDialog && ride != null) {
+        RideDetailsEditDialog(
+            ride = ride!!,
+            serverClient = serverClient,
+            onDismiss = { showRideEditDialog = false },
+            onRideUpdated = { updatedRide ->
+                ride = updatedRide
+                showRideEditDialog = false
+            }
+        )
+    }
 }
 
 /**
@@ -481,6 +497,7 @@ fun RidePlanSidebar(
     onWaypointAdded: () -> Unit,
     onNoLegSelected: () -> Unit,
     onRideUpdated: (UiRide) -> Unit,
+    onEditRideClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -530,8 +547,7 @@ fun RidePlanSidebar(
                         rally = rally,
                         routeResult = routeResult,
                         isCalculatingRoute = isCalculatingRoute,
-                        serverClient = serverClient,
-                        onRideUpdated = onRideUpdated,
+                        onEditClicked = onEditRideClicked,
                         modifier = Modifier.fillMaxWidth().padding(8.dp)
                     )
                 }
@@ -615,14 +631,11 @@ fun CompactRideInfo(
     rally: UiRally?,
     routeResult: RouteResult?,
     isCalculatingRoute: Boolean,
-    serverClient: RallyServerClient,
-    onRideUpdated: (UiRide) -> Unit,
+    onEditClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")
     val routingService = remember { RoutingService() }
-    val scope = rememberCoroutineScope()
-    var showEditDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier,
@@ -640,7 +653,7 @@ fun CompactRideInfo(
                 modifier = Modifier.weight(1f)
             )
             IconButton(
-                onClick = { showEditDialog = true },
+                onClick = onEditClicked,
                 modifier = Modifier.size(24.dp)
             ) {
                 Text("✏️", style = MaterialTheme.typography.labelSmall)
@@ -733,18 +746,6 @@ fun CompactRideInfo(
             )
         }
     }
-    
-    if (showEditDialog) {
-        RideDetailsEditDialog(
-            ride = ride,
-            serverClient = serverClient,
-            onDismiss = { showEditDialog = false },
-            onRideUpdated = { updatedRide ->
-                onRideUpdated(updatedRide)
-                showEditDialog = false
-            }
-        )
-    }
 }
 
 @Composable
@@ -767,170 +768,198 @@ fun RideDetailsEditDialog(
     var isSaving by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Edit Ride Details") },
-        text = {
+    DialogWindow(
+        onCloseRequest = onDismiss,
+        title = "Edit Ride Details"
+    ) {
+        window.minimumSize = Dimension(450, 500)
+        window.size = Dimension(450, 550)
+
+        Card(
+            modifier = Modifier.fillMaxSize(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
             Column(
-                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
             ) {
                 if (errorMessage != null) {
-                    Text(
-                        text = errorMessage ?: "",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Text(
+                            text = errorMessage ?: "",
+                            modifier = Modifier.padding(12.dp),
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Ride Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isSaving,
+                        singleLine = true
+                    )
+
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text("Description") },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isSaving,
+                        minLines = 2,
+                        maxLines = 3
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = expectedStartDate,
+                            onValueChange = { expectedStartDate = it },
+                            label = { Text("Start Date") },
+                            placeholder = { Text("YYYY-MM-DD") },
+                            modifier = Modifier.weight(1f),
+                            enabled = !isSaving,
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = expectedStartTime,
+                            onValueChange = { expectedStartTime = it },
+                            label = { Text("Time") },
+                            placeholder = { Text("HH:MM") },
+                            modifier = Modifier.width(100.dp),
+                            enabled = !isSaving,
+                            singleLine = true
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = expectedEndDate,
+                            onValueChange = { expectedEndDate = it },
+                            label = { Text("End Date") },
+                            placeholder = { Text("YYYY-MM-DD") },
+                            modifier = Modifier.weight(1f),
+                            enabled = !isSaving,
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = expectedEndTime,
+                            onValueChange = { expectedEndTime = it },
+                            label = { Text("Time") },
+                            placeholder = { Text("HH:MM") },
+                            modifier = Modifier.width(100.dp),
+                            enabled = !isSaving,
+                            singleLine = true
+                        )
+                    }
+
+                    OutlinedTextField(
+                        value = stopDurationMinutes,
+                        onValueChange = { stopDurationMinutes = it.filter { c -> c.isDigit() } },
+                        label = { Text("Default Stop Duration (minutes)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isSaving,
+                        singleLine = true
                     )
                 }
 
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Ride Name") },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isSaving,
-                    singleLine = true
-                )
-
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text("Description") },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isSaving,
-                    minLines = 2,
-                    maxLines = 3
-                )
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                 ) {
-                    OutlinedTextField(
-                        value = expectedStartDate,
-                        onValueChange = { expectedStartDate = it },
-                        label = { Text("Start Date") },
-                        placeholder = { Text("YYYY-MM-DD") },
-                        modifier = Modifier.weight(1f),
-                        enabled = !isSaving,
-                        singleLine = true
-                    )
-                    OutlinedTextField(
-                        value = expectedStartTime,
-                        onValueChange = { expectedStartTime = it },
-                        label = { Text("Time") },
-                        placeholder = { Text("HH:MM") },
-                        modifier = Modifier.width(100.dp),
-                        enabled = !isSaving,
-                        singleLine = true
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = expectedEndDate,
-                        onValueChange = { expectedEndDate = it },
-                        label = { Text("End Date") },
-                        placeholder = { Text("YYYY-MM-DD") },
-                        modifier = Modifier.weight(1f),
-                        enabled = !isSaving,
-                        singleLine = true
-                    )
-                    OutlinedTextField(
-                        value = expectedEndTime,
-                        onValueChange = { expectedEndTime = it },
-                        label = { Text("Time") },
-                        placeholder = { Text("HH:MM") },
-                        modifier = Modifier.width(100.dp),
-                        enabled = !isSaving,
-                        singleLine = true
-                    )
-                }
-
-                OutlinedTextField(
-                    value = stopDurationMinutes,
-                    onValueChange = { stopDurationMinutes = it.filter { c -> c.isDigit() } },
-                    label = { Text("Default Stop Duration (minutes)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !isSaving,
-                    singleLine = true
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    scope.launch {
-                        isSaving = true
-                        errorMessage = null
-                        
-                        try {
-                            val startDateTime = if (expectedStartDate.isNotBlank()) {
-                                val date = java.time.LocalDate.parse(expectedStartDate)
-                                val time = if (expectedStartTime.isNotBlank()) {
-                                    java.time.LocalTime.parse(expectedStartTime)
-                                } else {
-                                    java.time.LocalTime.of(0, 0)
-                                }
-                                java.time.LocalDateTime.of(date, time)
-                            } else null
-                            
-                            val endDateTime = if (expectedEndDate.isNotBlank()) {
-                                val date = java.time.LocalDate.parse(expectedEndDate)
-                                val time = if (expectedEndTime.isNotBlank()) {
-                                    java.time.LocalTime.parse(expectedEndTime)
-                                } else {
-                                    java.time.LocalTime.of(23, 59)
-                                }
-                                java.time.LocalDateTime.of(date, time)
-                            } else null
-                            
-                            val stopSeconds = stopDurationMinutes.toIntOrNull()?.let { it * 60 }
-                            
-                            val request = UpdateRideRequest.builder()
-                                .name(name.trim().ifBlank { null })
-                                .description(description.trim().ifBlank { null })
-                                .expectedStart(startDateTime)
-                                .expectedEnd(endDateTime)
-                                .stopDuration(stopSeconds)
-                                .build()
-                            
-                            serverClient.updateRide(ride.id!!, request).fold(
-                                onSuccess = { updatedRide ->
-                                    logger.info("Ride updated: {}", updatedRide.name)
-                                    onRideUpdated(updatedRide)
-                                },
-                                onFailure = { error ->
-                                    logger.error("Failed to update ride", error)
-                                    errorMessage = "Failed to save: ${error.message}"
+                    OutlinedButton(onClick = onDismiss, enabled = !isSaving) {
+                        Text("Cancel")
+                    }
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                isSaving = true
+                                errorMessage = null
+                                
+                                try {
+                                    val startDateTime = if (expectedStartDate.isNotBlank()) {
+                                        val date = java.time.LocalDate.parse(expectedStartDate)
+                                        val time = if (expectedStartTime.isNotBlank()) {
+                                            java.time.LocalTime.parse(expectedStartTime)
+                                        } else {
+                                            java.time.LocalTime.of(0, 0)
+                                        }
+                                        java.time.LocalDateTime.of(date, time)
+                                    } else null
+                                    
+                                    val endDateTime = if (expectedEndDate.isNotBlank()) {
+                                        val date = java.time.LocalDate.parse(expectedEndDate)
+                                        val time = if (expectedEndTime.isNotBlank()) {
+                                            java.time.LocalTime.parse(expectedEndTime)
+                                        } else {
+                                            java.time.LocalTime.of(23, 59)
+                                        }
+                                        java.time.LocalDateTime.of(date, time)
+                                    } else null
+                                    
+                                    val stopSeconds = stopDurationMinutes.toIntOrNull()?.let { it * 60 }
+                                    
+                                    val request = UpdateRideRequest.builder()
+                                        .name(name.trim().ifBlank { null })
+                                        .description(description.trim().ifBlank { null })
+                                        .expectedStart(startDateTime)
+                                        .expectedEnd(endDateTime)
+                                        .stopDuration(stopSeconds)
+                                        .build()
+                                    
+                                    serverClient.updateRide(ride.id!!, request).fold(
+                                        onSuccess = { updatedRide ->
+                                            logger.info("Ride updated: {}", updatedRide.name)
+                                            onRideUpdated(updatedRide)
+                                        },
+                                        onFailure = { error ->
+                                            logger.error("Failed to update ride", error)
+                                            errorMessage = "Failed to save: ${error.message}"
+                                            isSaving = false
+                                        }
+                                    )
+                                } catch (e: Exception) {
+                                    logger.error("Invalid date/time format", e)
+                                    errorMessage = "Invalid date/time format. Use YYYY-MM-DD and HH:MM"
                                     isSaving = false
                                 }
-                            )
-                        } catch (e: Exception) {
-                            logger.error("Invalid date/time format", e)
-                            errorMessage = "Invalid date/time format. Use YYYY-MM-DD and HH:MM"
-                            isSaving = false
+                            }
+                        },
+                        enabled = !isSaving && name.isNotBlank()
+                    ) {
+                        if (isSaving) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text("Save")
                         }
                     }
-                },
-                enabled = !isSaving && name.isNotBlank()
-            ) {
-                if (isSaving) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                } else {
-                    Text("Save")
                 }
             }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss, enabled = !isSaving) {
-                Text("Cancel")
-            }
         }
-    )
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)

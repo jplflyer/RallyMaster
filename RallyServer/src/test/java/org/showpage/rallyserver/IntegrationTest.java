@@ -180,10 +180,10 @@ public abstract class IntegrationTest {
             if (memberResponse != null && memberResponse.isSuccess() && memberResponse.getData() != null) {
                 List<UiMember> members = memberResponse.getData();
                 List<UiMember> testUsers = members.stream()
-                        .filter(m -> m.getEmail() != null && m.getEmail().endsWith("@nowhere.com"))
+                        .filter(m -> m.getEmail() != null && m.getEmail().endsWith("nowhere.com"))
                         .toList();
 
-                log.info("Found {} test users to clean up", testUsers.size());
+                log.info("Found {} test users to clean up out of {} total", testUsers.size(), members.size());
 
                 for (UiMember testUser : testUsers) {
                     try {
@@ -203,7 +203,7 @@ public abstract class IntegrationTest {
                     log.info("Found {} rides for organizer to clean up", rides.size());
 
                     for (UiRide ride : rides) {
-                        if (ride.getName() != null && ride.getName().startsWith("Organizer's")) {
+                        if (ride.getName() != null && (ride.getName().startsWith("Organizer's") || ride.getName().equals("Updated Saddlesore 1000"))) {
                             try {
                                 log.info("Deleting test ride: {} (ID: {})", ride.getName(), ride.getId());
                                 delete_ForRM("/api/ride/" + ride.getId(), tr_Void);

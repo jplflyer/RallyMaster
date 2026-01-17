@@ -122,7 +122,10 @@ public class RideService {
      * List all rides for the authenticated member.
      */
     public List<Ride> listRides(Member member) {
-        return rideRepository.findByMemberId(member.getId());
+        List<Ride> rides = rideRepository.findByMemberId(member.getId());
+        log.info("Rides for member {} == {}", member.getId(), rides.size());
+
+        return rides;
     }
 
     /**

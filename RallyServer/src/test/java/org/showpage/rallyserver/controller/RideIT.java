@@ -1,10 +1,7 @@
 package org.showpage.rallyserver.controller;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
 import org.showpage.rallyserver.IntegrationTest;
 import org.showpage.rallyserver.ui.*;
 
@@ -20,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class RideIT extends IntegrationTest {
+    private static RideIT singleton = null;
 
     private static UiRide organizerRide;
     private static UiRide riderRide;
@@ -31,12 +29,48 @@ public class RideIT extends IntegrationTest {
     private static UiWaypoint organizerWaypoint;
 
     //======================================================================
+    // Methods that enable cleanup.
+    //======================================================================
+    public RideIT() {
+        singleton = this;
+    }
+
+    @AfterAll
+    public static void cleanup() {
+        if (singleton != null) {
+            singleton.deleteTestData();
+        }
+    }
+
+    private void deleteTestData() {
+        try {
+            log.info("Cleaning up test rally");
+            RR_ListUiRide getRR = get_ForRider("/rides", tr_ListUiRide);
+
+            for (UiRide ride: getRR.getData()) {
+                if (ride.getName().equals("Updated Saddlesore 1000")) {
+                    delete_ForRider("/api/rally/" + ride.getId(), tr_Void);
+                    log.info("Deleted test rally: {}", testRally.getId());
+                }
+            }
+        }
+        catch (Exception e) {
+        }
+    }
+
+
+    //======================================================================
     // Setup - Create test rally and bonus point for waypoint tests
     //======================================================================
 
+    @Test @Order(1)
+    public void deleteStuff() {
+    }
+
+
     @Test
     @Order(10)
-    public void test_010_Setup_CreateTestRally() throws Exception {
+    public void setup_CreateTestRally() throws Exception {
         log.info("Creating test rally for ride association");
         testRally = createTestRally();
         assertNotNull(testRally);
@@ -46,7 +80,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(20)
-    public void test_020_Setup_CreateTestBonusPoint() throws Exception {
+    public void setup_CreateTestBonusPoint() throws Exception {
         log.info("Creating test bonus point for waypoint tests");
         testBonusPoint = createTestBonusPoint(testRally.getId(), "TESTBP", 50);
         assertNotNull(testBonusPoint);
@@ -60,7 +94,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(100)
-    public void test_100_CreateRide_ForOrganizer_Standalone() throws Exception {
+    public void createRide_ForOrganizer_Standalone() throws Exception {
         log.info("Test: Create standalone ride for organizer");
 
         CreateRideRequest request = CreateRideRequest.builder()
@@ -86,7 +120,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(110)
-    public void test_110_CreateRide_ForOrganizer_WithRally() throws Exception {
+    public void createRide_ForOrganizer_WithRally() throws Exception {
         log.info("Test: Create rally-associated ride for organizer");
 
         CreateRideRequest request = CreateRideRequest.builder()
@@ -110,7 +144,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(120)
-    public void test_120_GetRide_ForOrganizer_Success() throws Exception {
+    public void getRide_ForOrganizer_Success() throws Exception {
         log.info("Test: Get ride as owner");
 
         RR_UiRide response = get_ForRM("/api/ride/" + organizerRide.getId(), tr_UiRide);
@@ -124,7 +158,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(130)
-    public void test_130_UpdateRide_ForOrganizer_Success() throws Exception {
+    public void updateRide_ForOrganizer_Success() throws Exception {
         log.info("Test: Update ride as owner");
 
         UpdateRideRequest request = UpdateRideRequest.builder()
@@ -143,7 +177,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(140)
-    public void test_140_ListRides_ForOrganizer_Success() throws Exception {
+    public void listRides_ForOrganizer_Success() throws Exception {
         log.info("Test: List all rides for organizer");
 
         RR_ListUiRide response = get_ForRM("/api/rides", tr_ListUiRide);
@@ -164,7 +198,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(200)
-    public void test_200_CreateRide_ForRider_Success() throws Exception {
+    public void createRide_ForRider_Success() throws Exception {
         log.info("Test: Create ride for rider");
 
         CreateRideRequest request = CreateRideRequest.builder()
@@ -188,7 +222,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(210)
-    public void test_210_GetRide_CrossUser_ShouldFail() throws Exception {
+    public void getRide_CrossUser_ShouldFail() throws Exception {
         log.info("Test: Rider tries to access organizer's ride - should fail");
 
         RR_UiRide response = get_ForRider("/api/ride/" + organizerRide.getId(), tr_UiRide);
@@ -199,7 +233,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(220)
-    public void test_220_UpdateRide_CrossUser_ShouldFail() throws Exception {
+    public void updateRide_CrossUser_ShouldFail() throws Exception {
         log.info("Test: Rider tries to update organizer's ride - should fail");
 
         UpdateRideRequest request = UpdateRideRequest.builder()
@@ -214,7 +248,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(230)
-    public void test_230_DeleteRide_CrossUser_ShouldFail() throws Exception {
+    public void deleteRide_CrossUser_ShouldFail() throws Exception {
         log.info("Test: Rider tries to delete organizer's ride - should fail");
 
         RR_Void response = delete_ForRider("/api/ride/" + organizerRide.getId(), tr_Void);
@@ -229,7 +263,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(300)
-    public void test_300_CreateRoute_ForOrganizer_Success() throws Exception {
+    public void createRoute_ForOrganizer_Success() throws Exception {
         log.info("Test: Create route for organizer's ride");
 
         CreateRouteRequest request = CreateRouteRequest.builder()
@@ -253,7 +287,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(310)
-    public void test_310_CreateRoute_Alternate() throws Exception {
+    public void createRoute_Alternate() throws Exception {
         log.info("Test: Create alternate route");
 
         CreateRouteRequest request = CreateRouteRequest.builder()
@@ -274,7 +308,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(320)
-    public void test_320_GetRoute_Success() throws Exception {
+    public void getRoute_Success() throws Exception {
         log.info("Test: Get route by ID");
 
         RR_UiRoute response = get_ForRM("/api/route/" + organizerRoute.getId(), tr_UiRoute);
@@ -288,7 +322,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(330)
-    public void test_330_UpdateRoute_Success() throws Exception {
+    public void updateRoute_Success() throws Exception {
         log.info("Test: Update route");
 
         UpdateRouteRequest request = UpdateRouteRequest.builder()
@@ -307,7 +341,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(340)
-    public void test_340_ListRoutes_Success() throws Exception {
+    public void listRoutes_Success() throws Exception {
         log.info("Test: List all routes for a ride");
 
         RR_ListUiRoute response = get_ForRM("/api/ride/" + organizerRide.getId() + "/routes", tr_ListUiRoute);
@@ -320,7 +354,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(350)
-    public void test_350_CreateRoute_CrossUser_ShouldFail() throws Exception {
+    public void createRoute_CrossUser_ShouldFail() throws Exception {
         log.info("Test: Rider tries to create route on organizer's ride - should fail");
 
         CreateRouteRequest request = CreateRouteRequest.builder()
@@ -339,7 +373,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(400)
-    public void test_400_CreateRideLeg_Success() throws Exception {
+    public void createRideLeg_Success() throws Exception {
         log.info("Test: Create ride leg for route");
 
         CreateRideLegRequest request = CreateRideLegRequest.builder()
@@ -363,7 +397,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(410)
-    public void test_410_CreateRideLeg_Multiple() throws Exception {
+    public void createRideLeg_Multiple() throws Exception {
         log.info("Test: Create multiple ride legs");
 
         CreateRideLegRequest request = CreateRideLegRequest.builder()
@@ -380,7 +414,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(420)
-    public void test_420_GetRideLeg_Success() throws Exception {
+    public void getRideLeg_Success() throws Exception {
         log.info("Test: Get ride leg by ID");
 
         RR_UiRideLeg response = get_ForRM("/api/leg/" + organizerLeg.getId(), tr_UiRideLeg);
@@ -394,7 +428,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(430)
-    public void test_430_UpdateRideLeg_Success() throws Exception {
+    public void updateRideLeg_Success() throws Exception {
         log.info("Test: Update ride leg");
 
         UpdateRideLegRequest request = UpdateRideLegRequest.builder()
@@ -413,7 +447,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(440)
-    public void test_440_ListRideLegs_Success() throws Exception {
+    public void listRideLegs_Success() throws Exception {
         log.info("Test: List all ride legs for a route");
 
         RR_ListUiRideLeg response = get_ForRM("/api/route/" + organizerRoute.getId() + "/legs", tr_ListUiRideLeg);
@@ -430,7 +464,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(500)
-    public void test_500_CreateWaypoint_WithLocation_Success() throws Exception {
+    public void createWaypoint_WithLocation_Success() throws Exception {
         log.info("Test: Create waypoint with location coordinates");
 
         CreateWaypointRequest request = CreateWaypointRequest.builder()
@@ -458,7 +492,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(510)
-    public void test_510_CreateWaypoint_WithBonusPoint_Success() throws Exception {
+    public void createWaypoint_WithBonusPoint_Success() throws Exception {
         log.info("Test: Create waypoint referencing bonus point");
 
         CreateWaypointRequest request = CreateWaypointRequest.builder()
@@ -480,7 +514,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(520)
-    public void test_520_CreateWaypoint_NoLocationOrBonus_ShouldFail() throws Exception {
+    public void createWaypoint_NoLocationOrBonus_ShouldFail() throws Exception {
         log.info("Test: Create waypoint without location or bonus point - should fail");
 
         CreateWaypointRequest request = CreateWaypointRequest.builder()
@@ -497,7 +531,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(530)
-    public void test_530_GetWaypoint_Success() throws Exception {
+    public void getWaypoint_Success() throws Exception {
         log.info("Test: Get waypoint by ID");
 
         RR_UiWaypoint response = get_ForRM("/api/waypoint/" + organizerWaypoint.getId(), tr_UiWaypoint);
@@ -511,7 +545,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(540)
-    public void test_540_UpdateWaypoint_Success() throws Exception {
+    public void updateWaypoint_Success() throws Exception {
         log.info("Test: Update waypoint");
 
         UpdateWaypointRequest request = UpdateWaypointRequest.builder()
@@ -530,7 +564,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(550)
-    public void test_550_ListWaypoints_Success() throws Exception {
+    public void listWaypoints_Success() throws Exception {
         log.info("Test: List all waypoints for a ride leg");
 
         RR_ListUiWaypoint response = get_ForRM("/api/leg/" + organizerLeg.getId() + "/waypoints", tr_ListUiWaypoint);
@@ -547,7 +581,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(600)
-    public void test_600_DeleteWaypoint_Success() throws Exception {
+    public void deleteWaypoint_Success() throws Exception {
         log.info("Test: Delete waypoint");
 
         RR_Void response = delete_ForRM("/api/waypoint/" + organizerWaypoint.getId(), tr_Void);
@@ -562,7 +596,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(610)
-    public void test_610_DeleteRideLeg_CascadesWaypoints() throws Exception {
+    public void deleteRideLeg_CascadesWaypoints() throws Exception {
         log.info("Test: Delete ride leg - should cascade to waypoints");
 
         // First verify leg has waypoints
@@ -584,7 +618,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(620)
-    public void test_620_DeleteRoute_CascadesLegsAndWaypoints() throws Exception {
+    public void deleteRoute_CascadesLegsAndWaypoints() throws Exception {
         log.info("Test: Delete route - should cascade to legs and waypoints");
 
         // First verify route has legs
@@ -606,7 +640,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(630)
-    public void test_630_DeleteRide_CascadesAll() throws Exception {
+    public void deleteRide_CascadesAll() throws Exception {
         log.info("Test: Delete ride - should cascade to all child entities");
 
         // Delete rider's ride (organizer ride was already partially deleted in previous tests)
@@ -626,7 +660,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(700)
-    public void test_700_EndToEnd_CompleteRidePlanningWorkflow() throws Exception {
+    public void endToEnd_CompleteRidePlanningWorkflow() throws Exception {
         log.info("=== COMPREHENSIVE END-TO-END TEST: Complete Ride Planning Workflow ===");
 
         // Step 1: Create or reuse a rally for ride planning
@@ -840,7 +874,7 @@ public class RideIT extends IntegrationTest {
 
     @Test
     @Order(900)
-    public void test_900_Cleanup_DeleteTestRally() throws Exception {
+    public void cleanup_DeleteTestRally() throws Exception {
         log.info("Cleaning up test rally");
         if (testRally != null && testRally.getId() != null) {
             delete_ForRM("/api/rally/" + testRally.getId(), tr_Void);
