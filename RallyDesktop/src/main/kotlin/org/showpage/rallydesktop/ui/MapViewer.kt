@@ -63,6 +63,7 @@ fun MapViewer(
     bonusPoints: List<UiBonusPoint>,
     combinations: List<org.showpage.rallyserver.ui.UiCombination> = emptyList(),
     rideWaypoints: List<org.showpage.rallyserver.ui.UiWaypoint> = emptyList(),
+    route: MapRoute? = null,
     centerLatitude: Double?,
     centerLongitude: Double?,
     selectedBonusPointId: Int? = null,
@@ -295,20 +296,18 @@ fun MapViewer(
 
     // Update the overlay painter to include drag overlay whenever waypoints or searchMarker changes
     // Note: We don't depend on dragStateRef.value here because the dragOverlayPainter reads it directly
-    LaunchedEffect(waypoints, searchMarker) {
+    LaunchedEffect(waypoints, searchMarker, route) {
         val allWaypoints = if (searchMarker != null) {
             waypoints + searchMarker!!
         } else {
             waypoints
         }
 
-        // Create a custom painter that filters out dragged waypoint during paint
         val waypointPainter = object : Painter<JXMapViewer> {
             override fun paint(g: Graphics2D, map: JXMapViewer, width: Int, height: Int) {
                 logger.info("Waypoint painter paint() called, dragState = {}, total waypoints = {}",
                     dragStateRef.value, allWaypoints.size)
 
-                // Filter out the waypoint being dragged (if any)
                 val visibleWaypoints = if (dragStateRef.value != null) {
                     val filtered = allWaypoints.filter { it.bonusPointId != dragStateRef.value!!.waypoint.bonusPointId }
                     logger.info("Filtered out dragged waypoint, showing {} of {} waypoints",
@@ -327,8 +326,16 @@ fun MapViewer(
             }
         }
 
-        mapViewer.overlayPainter = CompoundPainter(waypointPainter, dragOverlayPainter)
-        logger.info("Updated compound painter with waypoint filter and drag overlay")
+        val painters = mutableListOf<Painter<JXMapViewer>>()
+        if (route != null && route.segments.isNotEmpty()) {
+            painters.add(RoutePainter(route))
+        }
+        painters.add(waypointPainter)
+        painters.add(dragOverlayPainter)
+
+        mapViewer.overlayPainter = CompoundPainter(painters)
+        logger.info("Updated compound painter with {} painters (route={}, waypoints, drag)", 
+            painters.size, route != null)
     }
 
     // Add unified mouse listener for panning, clicking, and dragging
@@ -1319,7 +1326,6 @@ class ColoredWaypointRenderer : WaypointRenderer<BonusPointWaypoint> {
      * Returns a default red color if parsing fails.
      */
     private fun parseColor(colorStr: String?): Color {
-        // Default to red if no color provided
         val effectiveColorStr = colorStr?.takeIf { it.isNotBlank() } ?: "#FF0000"
 
         return try {
@@ -1338,5 +1344,67 @@ class ColoredWaypointRenderer : WaypointRenderer<BonusPointWaypoint> {
             logger.warn("Failed to parse color '{}', using default red", effectiveColorStr, e)
             Color.RED
         }
+    }
+}
+
+data class MapRoute(
+    val segments: List<MapRouteSegment>
+)
+
+data class MapRouteSegment(
+    val points: List<GeoPosition>,
+    val color: Color,
+    val strokeWidth: Float = 4f
+)
+
+class RoutePainter(
+    private val route: MapRoute
+) : Painter<JXMapViewer> {
+
+    override fun paint(g: Graphics2D, map: JXMapViewer, width: Int, height: Int) {
+        val g2 = g.create() as Graphics2D
+
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE)
+
+        val rect = map.viewportBounds
+
+        for (segment in route.segments) {
+            if (segment.points.size < 2) continue
+
+            val path = java.awt.geom.GeneralPath()
+            var started = false
+
+            for (point in segment.points) {
+                val pixel = map.tileFactory.geoToPixel(point, map.zoom)
+                val screenX = pixel.x - rect.x
+                val screenY = pixel.y - rect.y
+
+                if (!started) {
+                    path.moveTo(screenX, screenY)
+                    started = true
+                } else {
+                    path.lineTo(screenX, screenY)
+                }
+            }
+
+            g2.color = Color(segment.color.red, segment.color.green, segment.color.blue, 200)
+            g2.stroke = BasicStroke(
+                segment.strokeWidth + 2f,
+                BasicStroke.CAP_ROUND,
+                BasicStroke.JOIN_ROUND
+            )
+            g2.draw(path)
+
+            g2.color = segment.color
+            g2.stroke = BasicStroke(
+                segment.strokeWidth,
+                BasicStroke.CAP_ROUND,
+                BasicStroke.JOIN_ROUND
+            )
+            g2.draw(path)
+        }
+
+        g2.dispose()
     }
 }

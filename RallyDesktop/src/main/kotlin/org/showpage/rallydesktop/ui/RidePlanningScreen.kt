@@ -21,8 +21,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import org.jxmapviewer.viewer.GeoPosition
 import org.showpage.rallydesktop.service.PreferencesService
 import org.showpage.rallydesktop.service.RallyServerClient
+import org.showpage.rallydesktop.service.RouteResult
+import org.showpage.rallydesktop.service.RoutingService
+import org.showpage.rallydesktop.service.RoutingWaypoint
 import org.showpage.rallydesktop.service.WaypointSequencer
 import org.showpage.rallyserver.ui.*
 import org.slf4j.LoggerFactory
@@ -58,6 +62,10 @@ fun RidePlanningScreen(
     var showNoLegSelectedMessage by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var routeResult by remember { mutableStateOf<RouteResult?>(null) }
+    var isCalculatingRoute by remember { mutableStateOf(false) }
+    
+    val routingService = remember { RoutingService() }
 
     // Load ride data on first composition
     LaunchedEffect(rideId) {
@@ -211,6 +219,42 @@ fun RidePlanningScreen(
         }
     }
     
+    LaunchedEffect(allWaypoints, ride) {
+        if (allWaypoints.size >= 2) {
+            isCalculatingRoute = true
+            
+            val routingWaypoints = mutableListOf<RoutingWaypoint>()
+            
+            val startBpId = ride?.startingBonusPointId
+            val startBp = if (startBpId != null) bonusPoints.find { it.id == startBpId } else null
+            if (startBp?.latitude != null && startBp.longitude != null) {
+                routingWaypoints.add(RoutingWaypoint(startBp.latitude, startBp.longitude, 0))
+            }
+            
+            for (wp in allWaypoints.sortedBy { it.sequenceOrder }) {
+                if (wp.latitude != null && wp.longitude != null) {
+                    routingWaypoints.add(RoutingWaypoint(wp.latitude.toDouble(), wp.longitude.toDouble(), 0))
+                }
+            }
+            
+            val endBpId = ride?.endingBonusPointId
+            val endBp = if (endBpId != null) bonusPoints.find { it.id == endBpId } else null
+            if (endBp?.latitude != null && endBp.longitude != null) {
+                routingWaypoints.add(RoutingWaypoint(endBp.latitude, endBp.longitude, 0))
+            }
+            
+            if (routingWaypoints.size >= 2) {
+                logger.info("Calculating route through {} waypoints", routingWaypoints.size)
+                routeResult = routingService.calculateRoute(routingWaypoints)
+            } else {
+                routeResult = null
+            }
+            isCalculatingRoute = false
+        } else {
+            routeResult = null
+        }
+    }
+    
     val snackbarHostState = remember { SnackbarHostState() }
     
     LaunchedEffect(showNoLegSelectedMessage) {
@@ -310,6 +354,8 @@ fun RidePlanningScreen(
                             selectedCombinationId = selectedCombinationId,
                             selectedWaypointId = selectedWaypointId,
                             waypointReloadTrigger = waypointReloadTrigger,
+                            routeResult = routeResult,
+                            isCalculatingRoute = isCalculatingRoute,
                             onLegSelected = { legId -> selectedLegId = legId },
                             onBonusPointSelected = { bpId -> 
                                 selectedBonusPointId = bpId
@@ -371,10 +417,24 @@ fun RidePlanningScreen(
                         modifier = Modifier.fillMaxSize(),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
+                        val mapRoute = routeResult?.let { result ->
+                            MapRoute(
+                                segments = result.segments.map { segment ->
+                                    MapRouteSegment(
+                                        points = segment.points.map { pt ->
+                                            GeoPosition(pt.latitude, pt.longitude)
+                                        },
+                                        color = segment.color
+                                    )
+                                }
+                            )
+                        }
+                        
                         MapViewer(
                             bonusPoints = bonusPoints,
                             combinations = combinations,
                             rideWaypoints = allWaypoints,
+                            route = mapRoute,
                             centerLatitude = rally?.latitude?.toDouble(),
                             centerLongitude = rally?.longitude?.toDouble(),
                             selectedBonusPointId = selectedBonusPointId,
@@ -407,6 +467,8 @@ fun RidePlanSidebar(
     selectedCombinationId: Int?,
     selectedWaypointId: Int?,
     waypointReloadTrigger: Int,
+    routeResult: RouteResult?,
+    isCalculatingRoute: Boolean,
     onLegSelected: (Int?) -> Unit,
     onBonusPointSelected: (Int?) -> Unit,
     onCombinationSelected: (Int?) -> Unit,
@@ -466,6 +528,8 @@ fun RidePlanSidebar(
                     CompactRideInfo(
                         ride = ride,
                         rally = rally,
+                        routeResult = routeResult,
+                        isCalculatingRoute = isCalculatingRoute,
                         modifier = Modifier.fillMaxWidth().padding(8.dp)
                     )
                 }
@@ -547,9 +611,12 @@ fun RidePlanSidebar(
 fun CompactRideInfo(
     ride: UiRide,
     rally: UiRally?,
+    routeResult: RouteResult?,
+    isCalculatingRoute: Boolean,
     modifier: Modifier = Modifier
 ) {
     val dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")
+    val routingService = remember { RoutingService() }
 
     Column(
         modifier = modifier,
@@ -561,7 +628,6 @@ fun CompactRideInfo(
             fontWeight = FontWeight.Bold
         )
 
-        // Rally association
         if (rally != null) {
             Text(
                 text = "Rally: ${rally.name}",
@@ -576,7 +642,6 @@ fun CompactRideInfo(
             )
         }
 
-        // Dates
         if (ride.expectedStart != null) {
             Text(
                 text = "Start: ${ride.expectedStart.format(dateFormatter)}",
@@ -592,11 +657,59 @@ fun CompactRideInfo(
             )
         }
 
-        // Description
         if (!ride.description.isNullOrBlank()) {
             Text(
                 text = ride.description,
                 style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+        
+        if (isCalculatingRoute) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 2.dp)
+                Text(
+                    text = "Calculating route...",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else if (routeResult != null) {
+            Text(
+                text = "Route Summary",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = "Distance: ${routingService.formatDistance(routeResult.totalDistanceMeters, useMiles = true)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "Driving time: ${routeResult.formattedDuration()}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            val stopDuration = ride.stopDuration ?: 0
+            if (stopDuration > 0) {
+                val stopCount = routeResult.segments.sumOf { 1 }
+                val totalStopMinutes = (stopDuration * stopCount) / 60
+                Text(
+                    text = "Stop time: ~${totalStopMinutes}m (${stopDuration}s/stop)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            Text(
+                text = "Add waypoints to see route",
+                style = MaterialTheme.typography.bodySmall,
+                fontStyle = FontStyle.Italic,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -1172,7 +1285,10 @@ fun RideLegItem(
                             {
                                 scope.launch {
                                     WaypointSequencer.moveUp(waypoints, waypoint, serverClient).fold(
-                                        onSuccess = { updated -> waypoints = updated },
+                                        onSuccess = { updated ->
+                                            waypoints = updated
+                                            onWaypointChanged()
+                                        },
                                         onFailure = { error -> logger.error("Failed to move waypoint up", error) }
                                     )
                                 }
@@ -1182,7 +1298,10 @@ fun RideLegItem(
                             {
                                 scope.launch {
                                     WaypointSequencer.moveDown(waypoints, waypoint, serverClient).fold(
-                                        onSuccess = { updated -> waypoints = updated },
+                                        onSuccess = { updated ->
+                                            waypoints = updated
+                                            onWaypointChanged()
+                                        },
                                         onFailure = { error -> logger.error("Failed to move waypoint down", error) }
                                     )
                                 }
