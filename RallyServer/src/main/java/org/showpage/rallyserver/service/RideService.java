@@ -377,6 +377,7 @@ public class RideService {
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
                 .address(request.getAddress() != null ? request.getAddress().trim() : null)
+                .stopDuration(request.getStopDuration())
                 .build();
 
         return waypointRepository.save(waypoint);
@@ -419,6 +420,9 @@ public class RideService {
         }
         if (DataValidator.nonEmpty(request.getAddress())) {
             waypoint.setAddress(request.getAddress().trim());
+        }
+        if (request.getStopDuration() != null) {
+            waypoint.setStopDuration(request.getStopDuration());
         }
 
         return waypointRepository.save(waypoint);

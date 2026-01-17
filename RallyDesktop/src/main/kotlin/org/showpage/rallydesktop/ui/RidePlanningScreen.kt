@@ -530,6 +530,8 @@ fun RidePlanSidebar(
                         rally = rally,
                         routeResult = routeResult,
                         isCalculatingRoute = isCalculatingRoute,
+                        serverClient = serverClient,
+                        onRideUpdated = onRideUpdated,
                         modifier = Modifier.fillMaxWidth().padding(8.dp)
                     )
                 }
@@ -613,20 +615,37 @@ fun CompactRideInfo(
     rally: UiRally?,
     routeResult: RouteResult?,
     isCalculatingRoute: Boolean,
+    serverClient: RallyServerClient,
+    onRideUpdated: (UiRide) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")
     val routingService = remember { RoutingService() }
+    val scope = rememberCoroutineScope()
+    var showEditDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text(
-            text = ride.name ?: "Unnamed Ride",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = ride.name ?: "Unnamed Ride",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            IconButton(
+                onClick = { showEditDialog = true },
+                modifier = Modifier.size(24.dp)
+            ) {
+                Text("✏️", style = MaterialTheme.typography.labelSmall)
+            }
+        }
 
         if (rally != null) {
             Text(
@@ -714,11 +733,206 @@ fun CompactRideInfo(
             )
         }
     }
+    
+    if (showEditDialog) {
+        RideDetailsEditDialog(
+            ride = ride,
+            serverClient = serverClient,
+            onDismiss = { showEditDialog = false },
+            onRideUpdated = { updatedRide ->
+                onRideUpdated(updatedRide)
+                showEditDialog = false
+            }
+        )
+    }
 }
 
-/**
- * Routes tree showing routes -> legs -> waypoints
- */
+@Composable
+fun RideDetailsEditDialog(
+    ride: UiRide,
+    serverClient: RallyServerClient,
+    onDismiss: () -> Unit,
+    onRideUpdated: (UiRide) -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    var name by remember { mutableStateOf(ride.name ?: "") }
+    var description by remember { mutableStateOf(ride.description ?: "") }
+    var expectedStartDate by remember { mutableStateOf(ride.expectedStart?.toLocalDate()?.toString() ?: "") }
+    var expectedStartTime by remember { mutableStateOf(ride.expectedStart?.toLocalTime()?.toString()?.substring(0, 5) ?: "") }
+    var expectedEndDate by remember { mutableStateOf(ride.expectedEnd?.toLocalDate()?.toString() ?: "") }
+    var expectedEndTime by remember { mutableStateOf(ride.expectedEnd?.toLocalTime()?.toString()?.substring(0, 5) ?: "") }
+    var stopDurationMinutes by remember { 
+        mutableStateOf(((ride.stopDuration ?: 0) / 60).toString()) 
+    }
+    var isSaving by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Ride Details") },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (errorMessage != null) {
+                    Text(
+                        text = errorMessage ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Ride Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isSaving,
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Description") },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isSaving,
+                    minLines = 2,
+                    maxLines = 3
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = expectedStartDate,
+                        onValueChange = { expectedStartDate = it },
+                        label = { Text("Start Date") },
+                        placeholder = { Text("YYYY-MM-DD") },
+                        modifier = Modifier.weight(1f),
+                        enabled = !isSaving,
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = expectedStartTime,
+                        onValueChange = { expectedStartTime = it },
+                        label = { Text("Time") },
+                        placeholder = { Text("HH:MM") },
+                        modifier = Modifier.width(100.dp),
+                        enabled = !isSaving,
+                        singleLine = true
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = expectedEndDate,
+                        onValueChange = { expectedEndDate = it },
+                        label = { Text("End Date") },
+                        placeholder = { Text("YYYY-MM-DD") },
+                        modifier = Modifier.weight(1f),
+                        enabled = !isSaving,
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = expectedEndTime,
+                        onValueChange = { expectedEndTime = it },
+                        label = { Text("Time") },
+                        placeholder = { Text("HH:MM") },
+                        modifier = Modifier.width(100.dp),
+                        enabled = !isSaving,
+                        singleLine = true
+                    )
+                }
+
+                OutlinedTextField(
+                    value = stopDurationMinutes,
+                    onValueChange = { stopDurationMinutes = it.filter { c -> c.isDigit() } },
+                    label = { Text("Default Stop Duration (minutes)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isSaving,
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    scope.launch {
+                        isSaving = true
+                        errorMessage = null
+                        
+                        try {
+                            val startDateTime = if (expectedStartDate.isNotBlank()) {
+                                val date = java.time.LocalDate.parse(expectedStartDate)
+                                val time = if (expectedStartTime.isNotBlank()) {
+                                    java.time.LocalTime.parse(expectedStartTime)
+                                } else {
+                                    java.time.LocalTime.of(0, 0)
+                                }
+                                java.time.LocalDateTime.of(date, time)
+                            } else null
+                            
+                            val endDateTime = if (expectedEndDate.isNotBlank()) {
+                                val date = java.time.LocalDate.parse(expectedEndDate)
+                                val time = if (expectedEndTime.isNotBlank()) {
+                                    java.time.LocalTime.parse(expectedEndTime)
+                                } else {
+                                    java.time.LocalTime.of(23, 59)
+                                }
+                                java.time.LocalDateTime.of(date, time)
+                            } else null
+                            
+                            val stopSeconds = stopDurationMinutes.toIntOrNull()?.let { it * 60 }
+                            
+                            val request = UpdateRideRequest.builder()
+                                .name(name.trim().ifBlank { null })
+                                .description(description.trim().ifBlank { null })
+                                .expectedStart(startDateTime)
+                                .expectedEnd(endDateTime)
+                                .stopDuration(stopSeconds)
+                                .build()
+                            
+                            serverClient.updateRide(ride.id!!, request).fold(
+                                onSuccess = { updatedRide ->
+                                    logger.info("Ride updated: {}", updatedRide.name)
+                                    onRideUpdated(updatedRide)
+                                },
+                                onFailure = { error ->
+                                    logger.error("Failed to update ride", error)
+                                    errorMessage = "Failed to save: ${error.message}"
+                                    isSaving = false
+                                }
+                            )
+                        } catch (e: Exception) {
+                            logger.error("Invalid date/time format", e)
+                            errorMessage = "Invalid date/time format. Use YYYY-MM-DD and HH:MM"
+                            isSaving = false
+                        }
+                    }
+                },
+                enabled = !isSaving && name.isNotBlank()
+            ) {
+                if (isSaving) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("Save")
+                }
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss, enabled = !isSaving) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RoutesTree(
@@ -1183,6 +1397,7 @@ fun RideLegItem(
     var waypoints by remember { mutableStateOf(emptyList<UiWaypoint>()) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showClearConfirm by remember { mutableStateOf(false) }
+    var editingWaypoint by remember { mutableStateOf<UiWaypoint?>(null) }
     val scope = rememberCoroutineScope()
 
     // Reload waypoints when the trigger changes (from parent when waypoint is added)
@@ -1281,6 +1496,7 @@ fun RideLegItem(
                                 )
                             }
                         },
+                        onEdit = { editingWaypoint = waypoint },
                         onMoveUp = if (index > 0) {
                             {
                                 scope.launch {
@@ -1406,6 +1622,19 @@ fun RideLegItem(
             }
         )
     }
+    
+    if (editingWaypoint != null) {
+        WaypointEditDialog(
+            waypoint = editingWaypoint!!,
+            serverClient = serverClient,
+            onDismiss = { editingWaypoint = null },
+            onWaypointUpdated = { updated ->
+                waypoints = waypoints.map { if (it.id == updated.id) updated else it }
+                editingWaypoint = null
+                onWaypointChanged()
+            }
+        )
+    }
 }
 
 /**
@@ -1418,6 +1647,7 @@ fun WaypointItem(
     isHighlighted: Boolean = false,
     onSelect: () -> Unit,
     onDelete: () -> Unit,
+    onEdit: () -> Unit,
     onMoveUp: (() -> Unit)?,
     onMoveDown: (() -> Unit)?
 ) {
@@ -1441,13 +1671,27 @@ fun WaypointItem(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Text(
-            text = waypoint.name ?: "Waypoint",
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = waypoint.name ?: "Waypoint",
+                style = MaterialTheme.typography.bodySmall
+            )
+            if (waypoint.stopDuration != null) {
+                Text(
+                    text = "${waypoint.stopDuration / 60}m stop",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
         
         if (isSelected) {
+            IconButton(
+                onClick = onEdit,
+                modifier = Modifier.size(20.dp)
+            ) {
+                Text("✏️", style = MaterialTheme.typography.labelSmall)
+            }
             if (onMoveUp != null) {
                 IconButton(
                     onClick = onMoveUp,
@@ -1472,6 +1716,102 @@ fun WaypointItem(
             }
         }
     }
+}
+
+@Composable
+fun WaypointEditDialog(
+    waypoint: UiWaypoint,
+    serverClient: RallyServerClient,
+    onDismiss: () -> Unit,
+    onWaypointUpdated: (UiWaypoint) -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    var stopDurationMinutes by remember { 
+        mutableStateOf(waypoint.stopDuration?.let { (it / 60).toString() } ?: "") 
+    }
+    var isSaving by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Waypoint") },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = waypoint.name ?: "Waypoint",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                
+                if (errorMessage != null) {
+                    Text(
+                        text = errorMessage ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+
+                OutlinedTextField(
+                    value = stopDurationMinutes,
+                    onValueChange = { stopDurationMinutes = it.filter { c -> c.isDigit() } },
+                    label = { Text("Stop Duration (minutes)") },
+                    placeholder = { Text("Leave empty for ride default") },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isSaving,
+                    singleLine = true
+                )
+                
+                Text(
+                    text = "Leave empty to use the ride's default stop duration",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    scope.launch {
+                        isSaving = true
+                        errorMessage = null
+                        
+                        val stopSeconds = stopDurationMinutes.toIntOrNull()?.let { it * 60 }
+                        
+                        val request = UpdateWaypointRequest.builder()
+                            .stopDuration(stopSeconds)
+                            .build()
+                        
+                        serverClient.updateWaypoint(waypoint.id!!, request).fold(
+                            onSuccess = { updatedWaypoint ->
+                                logger.info("Waypoint updated: {}", updatedWaypoint.name)
+                                onWaypointUpdated(updatedWaypoint)
+                            },
+                            onFailure = { error ->
+                                logger.error("Failed to update waypoint", error)
+                                errorMessage = "Failed to save: ${error.message}"
+                                isSaving = false
+                            }
+                        )
+                    }
+                },
+                enabled = !isSaving
+            ) {
+                if (isSaving) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("Save")
+                }
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss, enabled = !isSaving) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 /**
@@ -1743,18 +2083,43 @@ fun RidePlanningComboTree(
             return false
         }
         
-        val nextSeq = WaypointSequencer.nextSequence(existingWaypoints)
+        val newLat = bp.latitude?.toDouble()
+        val newLon = bp.longitude?.toDouble()
+        
+        val insertSequence = if (newLat != null && newLon != null) {
+            val startBp = ride.startingBonusPointId?.let { id -> bonusPointMap[id] }
+            val endBp = ride.endingBonusPointId?.let { id -> bonusPointMap[id] }
+            
+            WaypointSequencer.findBestInsertionSequence(
+                newLat = newLat,
+                newLon = newLon,
+                existingWaypoints = existingWaypoints,
+                startBonusPoint = startBp,
+                endBonusPoint = endBp
+            )
+        } else {
+            WaypointSequencer.nextSequence(existingWaypoints)
+        }
+        
+        if (existingWaypoints.any { (it.sequenceOrder ?: 0) >= insertSequence }) {
+            WaypointSequencer.makeRoomForInsertion(existingWaypoints, insertSequence, serverClient)
+                .onFailure { error ->
+                    logger.error("Failed to make room for insertion", error)
+                    return false
+                }
+        }
+        
         val waypointRequest = CreateWaypointRequest.builder()
             .name(bp.code ?: bp.name ?: "Waypoint")
             .bonusPointId(bp.id)
             .latitude(bp.latitude?.toFloat())
             .longitude(bp.longitude?.toFloat())
-            .sequenceOrder(nextSeq)
+            .sequenceOrder(insertSequence)
             .build()
         
         return serverClient.createWaypoint(legId, waypointRequest).fold(
             onSuccess = {
-                logger.info("Added bonus point {} as waypoint to leg {}", bp.code, legId)
+                logger.info("Added bonus point {} as waypoint to leg {} at sequence {}", bp.code, legId, insertSequence)
                 true
             },
             onFailure = { error ->

@@ -337,6 +337,7 @@ public class DtoMapper {
                 .address(waypoint.getAddress())
                 .markerColor(waypoint.getMarkerColor())
                 .markerIcon(waypoint.getMarkerIcon())
+                .stopDuration(waypoint.getStopDuration())
                 .build();
     }
 }

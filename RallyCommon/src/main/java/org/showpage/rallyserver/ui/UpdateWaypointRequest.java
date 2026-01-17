@@ -40,4 +40,7 @@ public class UpdateWaypointRequest {
 
     @Schema(description = "Marker icon type for map display", example = "pin")
     private String markerIcon;
+
+    @Schema(description = "Stop duration override in seconds (null = use ride default)")
+    private Integer stopDuration;
 }

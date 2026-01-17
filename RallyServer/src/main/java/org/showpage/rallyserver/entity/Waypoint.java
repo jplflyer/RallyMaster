@@ -45,4 +45,6 @@ public class Waypoint implements HasId<Waypoint> {
     private String address;
     private String markerColor;
     private String markerIcon;
+
+    private Integer stopDuration;
 }
