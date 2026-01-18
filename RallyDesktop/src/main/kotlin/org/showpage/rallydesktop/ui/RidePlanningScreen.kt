@@ -4,6 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.TooltipPlacement
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -60,6 +61,7 @@ fun RidePlanningScreen(
     var selectedBonusPointId by remember { mutableStateOf<Int?>(null) }
     var selectedCombinationId by remember { mutableStateOf<Int?>(null) }
     var selectedWaypointId by remember { mutableStateOf<Int?>(null) }
+    var activeRouteId by remember { mutableStateOf<Int?>(null) }
     var waypointReloadTrigger by remember { mutableStateOf(0) }
     var showNoLegSelectedMessage by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
@@ -159,14 +161,29 @@ fun RidePlanningScreen(
     LaunchedEffect(selectedLegId) {
         if (selectedLegId != null) {
             preferencesService.setLastSelectedLegId(rideId, selectedLegId)
+            
+            for (route in routes) {
+                val legs = serverClient.listRideLegs(route.id!!).getOrElse { emptyList() }
+                if (legs.any { it.id == selectedLegId }) {
+                    activeRouteId = route.id
+                    logger.info("Active route set to {} based on selected leg {}", route.id, selectedLegId)
+                    break
+                }
+            }
         }
     }
 
-    LaunchedEffect(routes, waypointReloadTrigger) {
+    LaunchedEffect(routes, waypointReloadTrigger, activeRouteId) {
         val aggregatedWaypoints = mutableListOf<UiWaypoint>()
         var globalSequence = 1
         
-        for (route in routes) {
+        val routeToLoad = if (activeRouteId != null) {
+            routes.filter { it.id == activeRouteId }
+        } else {
+            routes.take(1)
+        }
+        
+        for (route in routeToLoad) {
             val legs = serverClient.listRideLegs(route.id!!).getOrElse { emptyList() }
                 .sortedBy { it.sequenceOrder }
             
@@ -195,7 +212,7 @@ fun RidePlanningScreen(
         }
         
         allWaypoints = aggregatedWaypoints
-        logger.info("Aggregated {} waypoints across all routes/legs", aggregatedWaypoints.size)
+        logger.info("Aggregated {} waypoints from active route {}", aggregatedWaypoints.size, activeRouteId)
     }
 
     LaunchedEffect(selectedBonusPointId, combinations) {
@@ -351,6 +368,7 @@ fun RidePlanningScreen(
                             ride = ride!!,
                             rally = rally,
                             routes = routes,
+                            activeRouteId = activeRouteId,
                             serverClient = serverClient,
                             selectedLegId = selectedLegId,
                             selectedBonusPointId = selectedBonusPointId,
@@ -477,6 +495,7 @@ fun RidePlanSidebar(
     ride: UiRide,
     rally: UiRally?,
     routes: List<UiRoute>,
+    activeRouteId: Int?,
     serverClient: RallyServerClient,
     selectedLegId: Int?,
     selectedBonusPointId: Int?,
@@ -592,6 +611,7 @@ fun RidePlanSidebar(
                             rallyId = rally.id!!,
                             ride = ride!!,
                             routes = routes,
+                            activeRouteId = activeRouteId,
                             serverClient = serverClient,
                             selectedLegId = selectedLegId,
                             selectedBonusPointId = selectedBonusPointId,
@@ -634,12 +654,11 @@ fun CompactRideInfo(
     onEditClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")
     val routingService = remember { RoutingService() }
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -666,38 +685,30 @@ fun CompactRideInfo(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary
             )
-        } else {
-            Text(
-                text = "Standalone Ride",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
 
         if (ride.expectedStart != null) {
+            val start = ride.expectedStart
+            val end = ride.expectedEnd
+            val dateText = if (end != null && start.toLocalDate() == end.toLocalDate()) {
+                val dayFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
+                val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+                "${start.format(dayFormatter)} ${start.format(timeFormatter)} to ${end.format(timeFormatter)}"
+            } else if (end != null) {
+                val fullFormatter = DateTimeFormatter.ofPattern("MMM d HH:mm")
+                "${start.format(fullFormatter)} to ${end.format(fullFormatter)}"
+            } else {
+                val fullFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")
+                start.format(fullFormatter)
+            }
             Text(
-                text = "Start: ${ride.expectedStart.format(dateFormatter)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        if (ride.expectedEnd != null) {
-            Text(
-                text = "End: ${ride.expectedEnd.format(dateFormatter)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        if (!ride.description.isNullOrBlank()) {
-            Text(
-                text = ride.description,
+                text = dateText,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         
-        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+        HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
         
         if (isCalculatingRoute) {
             Row(
@@ -706,35 +717,40 @@ fun CompactRideInfo(
             ) {
                 CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 2.dp)
                 Text(
-                    text = "Calculating route...",
+                    text = "Calculating...",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         } else if (routeResult != null) {
-            Text(
-                text = "Route Summary",
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = "Distance: ${routingService.formatDistance(routeResult.totalDistanceMeters, useMiles = true)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = "Driving time: ${routeResult.formattedDuration()}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
             val stopDuration = ride.stopDuration ?: 0
-            if (stopDuration > 0) {
-                val stopCount = routeResult.segments.sumOf { 1 }
-                val totalStopMinutes = (stopDuration * stopCount) / 60
+            val stopCount = routeResult.segments.size
+            val totalStopSeconds = stopDuration * stopCount
+            val totalStopMinutes = totalStopSeconds / 60
+            
+            val distanceStr = routingService.formatDistance(routeResult.totalDistanceMeters, useMiles = true)
+            val ridingStr = routeResult.formattedDuration()
+            val routeSummary = if (totalStopMinutes > 0) {
+                "$distanceStr $ridingStr riding + ${totalStopMinutes}m stopped"
+            } else {
+                "$distanceStr $ridingStr"
+            }
+            
+            Text(
+                text = routeSummary,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            if (ride.expectedStart != null) {
+                val totalSeconds = routeResult.totalDurationSeconds.toLong() + totalStopSeconds
+                val estimatedEnd = ride.expectedStart.plusSeconds(totalSeconds)
+                val endFormatter = DateTimeFormatter.ofPattern("MMM d HH:mm")
                 Text(
-                    text = "Stop time: ~${totalStopMinutes}m (${stopDuration}s/stop)",
+                    text = "Est. finish: ${estimatedEnd.format(endFormatter)}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         } else {
@@ -1991,6 +2007,7 @@ fun RidePlanningComboTree(
     rallyId: Int,
     ride: UiRide,
     routes: List<UiRoute>,
+    activeRouteId: Int?,
     serverClient: RallyServerClient,
     selectedLegId: Int?,
     selectedBonusPointId: Int?,
@@ -2045,9 +2062,15 @@ fun RidePlanningComboTree(
         isLoading = false
     }
     
-    LaunchedEffect(routes, waypointReloadTrigger) {
+    LaunchedEffect(routes, waypointReloadTrigger, activeRouteId) {
         val allBonusPointIds = mutableSetOf<Int>()
-        for (route in routes) {
+        val routesToCheck = if (activeRouteId != null) {
+            routes.filter { it.id == activeRouteId }
+        } else {
+            routes.take(1)
+        }
+        
+        for (route in routesToCheck) {
             if (route.id != null) {
                 serverClient.listRideLegs(route.id).getOrNull()?.forEach { leg ->
                     if (leg.id != null) {
@@ -2059,7 +2082,7 @@ fun RidePlanningComboTree(
             }
         }
         includedBonusPointIds = allBonusPointIds
-        logger.info("Found {} bonus points included in current route", allBonusPointIds.size)
+        logger.info("Found {} bonus points included in active route {}", allBonusPointIds.size, activeRouteId)
     }
     
     fun getComboInclusionStatus(combo: UiCombination): ComboInclusionStatus {
@@ -2266,6 +2289,37 @@ fun RidePlanningComboTree(
             }
             else -> {
                 val listState = rememberLazyListState()
+                
+                LaunchedEffect(selectedBonusPointId, sortedCombinations, unassociatedBonusPoints) {
+                    if (selectedBonusPointId == null) return@LaunchedEffect
+                    
+                    var targetComboIndex: Int? = null
+                    
+                    for ((comboIndex, combo) in sortedCombinations.withIndex()) {
+                        val cpIndex = combo.combinationPoints?.indexOfFirst { it.bonusPointId == selectedBonusPointId } ?: -1
+                        if (cpIndex >= 0) {
+                            targetComboIndex = comboIndex
+                            
+                            if (combo.id != null && !expandedCombos.contains(combo.id)) {
+                                expandedCombos = expandedCombos + combo.id
+                            }
+                            break
+                        }
+                    }
+                    
+                    if (targetComboIndex != null) {
+                        listState.animateScrollToItem(targetComboIndex)
+                    } else {
+                        val unassocIndex = unassociatedBonusPoints.indexOfFirst { it.id == selectedBonusPointId }
+                        if (unassocIndex >= 0) {
+                            if (!unassociatedExpanded) {
+                                unassociatedExpanded = true
+                            }
+                            val listIndex = sortedCombinations.size + 1 + unassocIndex
+                            listState.animateScrollToItem(listIndex)
+                        }
+                    }
+                }
                 
                 LazyColumn(
                     state = listState,
@@ -2655,16 +2709,22 @@ fun RidePlanningBonusPointItem(
     val code = bonusPoint?.code ?: "BP$bonusPointId"
     
     val backgroundColor = when {
-        isSelected -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+        isSelected -> MaterialTheme.colorScheme.primaryContainer
         isHighlighted -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
         isIncluded -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
         else -> Color.Transparent
     }
     
     val textColor = when {
-        isSelected -> MaterialTheme.colorScheme.onSecondaryContainer
+        isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
         isIncluded -> MaterialTheme.colorScheme.primary
         else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    
+    val borderModifier = if (isSelected) {
+        Modifier.border(2.dp, MaterialTheme.colorScheme.primary, shape = MaterialTheme.shapes.small)
+    } else {
+        Modifier
     }
     
     val statusIndicator = when {
@@ -2678,13 +2738,14 @@ fun RidePlanningBonusPointItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(borderModifier)
             .combinedClickable(
                 onClick = onClick,
                 onDoubleClick = onDoubleClick,
                 onLongClick = onRightClick
             )
             .background(backgroundColor)
-            .padding(start = 8.dp, top = 2.dp, bottom = 2.dp, end = 4.dp),
+            .padding(start = 8.dp, top = 4.dp, bottom = 4.dp, end = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
