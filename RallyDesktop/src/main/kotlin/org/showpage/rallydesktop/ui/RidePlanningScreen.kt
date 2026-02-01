@@ -261,17 +261,9 @@ fun RidePlanningScreen(
 
     LaunchedEffect(selectedBonusPointId, allWaypoints) {
         if (selectedBonusPointId != null) {
-            logger.info("Looking for waypoint with bonusPointId={} in {} waypoints", 
-                selectedBonusPointId, allWaypoints.size)
-            allWaypoints.forEach { wp ->
-                logger.info("  Waypoint id={}, bonusPointId={}, name={}", wp.id, wp.bonusPointId, wp.name)
-            }
             val waypoint = allWaypoints.find { it.bonusPointId == selectedBonusPointId }
             if (waypoint != null) {
                 selectedWaypointId = waypoint.id
-                logger.info("Selected BP {} links to waypoint {}", selectedBonusPointId, waypoint.id)
-            } else {
-                logger.info("No waypoint found for BP {}", selectedBonusPointId)
             }
         }
     }
@@ -1530,13 +1522,8 @@ fun RideLegItem(
     }
 
     LaunchedEffect(selectedWaypointId, waypoints) {
-        if (selectedWaypointId != null) {
-            val hasWaypoint = waypoints.any { it.id == selectedWaypointId }
-            logger.info("Leg {} checking for waypoint {}: found={}, waypoint ids={}", 
-                leg.name, selectedWaypointId, hasWaypoint, waypoints.map { it.id })
-            if (hasWaypoint) {
-                isExpanded = true
-            }
+        if (selectedWaypointId != null && waypoints.any { it.id == selectedWaypointId }) {
+            isExpanded = true
         }
     }
 
