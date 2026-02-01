@@ -629,7 +629,9 @@ fun RidePlanSidebar(
                     title = "Routes & Waypoints",
                     isCollapsed = routesCollapsed,
                     onToggleCollapse = { routesCollapsed = !routesCollapsed },
-                    modifier = Modifier.fillMaxWidth().weight(1f)
+                    modifier = Modifier.fillMaxWidth().then(
+                        if (routesCollapsed) Modifier else Modifier.weight(1f)
+                    )
                 ) {
                     RoutesTree(
                         rideId = ride.id!!,
@@ -656,7 +658,9 @@ fun RidePlanSidebar(
                         title = "Combos & Bonus Points",
                         isCollapsed = bonusPointsCollapsed,
                         onToggleCollapse = { bonusPointsCollapsed = !bonusPointsCollapsed },
-                        modifier = Modifier.fillMaxWidth().weight(1f)
+                        modifier = Modifier.fillMaxWidth().then(
+                            if (bonusPointsCollapsed) Modifier else Modifier.weight(1f)
+                        )
                     ) {
                         RidePlanningComboTree(
                             rallyId = rally.id!!,
@@ -798,11 +802,12 @@ fun CompactRideInfo(
                 val totalSeconds = routeResult.totalDurationSeconds.toLong() + totalStopSeconds
                 val estimatedEnd = ride.expectedStart.plusSeconds(totalSeconds)
                 val endFormatter = DateTimeFormatter.ofPattern("MMM d HH:mm")
+                val isLate = ride.expectedEnd != null && estimatedEnd.isAfter(ride.expectedEnd)
                 Text(
                     text = "Est. finish: ${estimatedEnd.format(endFormatter)}",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = if (isLate) Color.Red else MaterialTheme.colorScheme.primary
                 )
             }
             
