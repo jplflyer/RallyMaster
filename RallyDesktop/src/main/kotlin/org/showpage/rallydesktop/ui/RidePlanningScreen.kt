@@ -10,6 +10,8 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -101,7 +103,25 @@ fun RidePlanningScreen(
                     serverClient.listBonusPoints(loadedRide.rallyId).fold(
                         onSuccess = { loadedBonusPoints ->
                             logger.info("Loaded {} bonus points", loadedBonusPoints.size)
-                            bonusPoints = loadedBonusPoints
+                            bonusPoints = loadedBonusPoints.map { bp ->
+                                UiBonusPoint.builder()
+                                    .id(bp.id)
+                                    .rallyId(bp.rallyId)
+                                    .code(bp.code)
+                                    .name(bp.name)
+                                    .description(bp.description)
+                                    .latitude(bp.latitude)
+                                    .longitude(bp.longitude)
+                                    .address(bp.address)
+                                    .points(bp.points)
+                                    .required(bp.required)
+                                    .repeatable(bp.repeatable)
+                                    .isStart(bp.id == loadedRide.startingBonusPointId)
+                                    .isFinish(bp.id == loadedRide.endingBonusPointId)
+                                    .markerColor(bp.markerColor)
+                                    .markerIcon(bp.markerIcon)
+                                    .build()
+                            }
                         },
                         onFailure = { error ->
                             logger.error("Failed to load bonus points", error)
@@ -238,6 +258,23 @@ fun RidePlanningScreen(
             }
         }
     }
+
+    LaunchedEffect(selectedBonusPointId, allWaypoints) {
+        if (selectedBonusPointId != null) {
+            logger.info("Looking for waypoint with bonusPointId={} in {} waypoints", 
+                selectedBonusPointId, allWaypoints.size)
+            allWaypoints.forEach { wp ->
+                logger.info("  Waypoint id={}, bonusPointId={}, name={}", wp.id, wp.bonusPointId, wp.name)
+            }
+            val waypoint = allWaypoints.find { it.bonusPointId == selectedBonusPointId }
+            if (waypoint != null) {
+                selectedWaypointId = waypoint.id
+                logger.info("Selected BP {} links to waypoint {}", selectedBonusPointId, waypoint.id)
+            } else {
+                logger.info("No waypoint found for BP {}", selectedBonusPointId)
+            }
+        }
+    }
     
     LaunchedEffect(allWaypoints, ride) {
         if (allWaypoints.size >= 2) {
@@ -273,6 +310,28 @@ fun RidePlanningScreen(
         } else {
             routeResult = null
         }
+    }
+    
+    val estimatedScore = remember(allWaypoints, bonusPoints, combinations, rally) {
+        if (rally == null) return@remember null
+        
+        val includedBpIds = allWaypoints.mapNotNull { it.bonusPointId }.toSet()
+        val bpMap = bonusPoints.associateBy { it.id }
+        
+        var bpPoints = 0
+        for (bpId in includedBpIds) {
+            bpPoints += bpMap[bpId]?.points ?: 0
+        }
+        
+        var comboPoints = 0
+        for (combo in combinations) {
+            val comboBpIds = combo.combinationPoints?.mapNotNull { it.bonusPointId }?.toSet() ?: emptySet()
+            if (comboBpIds.isNotEmpty() && comboBpIds.all { it in includedBpIds }) {
+                comboPoints += combo.points ?: 0
+            }
+        }
+        
+        bpPoints + comboPoints
     }
     
     val snackbarHostState = remember { SnackbarHostState() }
@@ -377,15 +436,14 @@ fun RidePlanningScreen(
                             waypointReloadTrigger = waypointReloadTrigger,
                             routeResult = routeResult,
                             isCalculatingRoute = isCalculatingRoute,
+                            estimatedScore = estimatedScore,
                             onLegSelected = { legId -> selectedLegId = legId },
                             onBonusPointSelected = { bpId -> 
                                 selectedBonusPointId = bpId
-                                selectedWaypointId = null
                             },
                             onCombinationSelected = { comboId ->
                                 selectedCombinationId = comboId
                                 selectedBonusPointId = null
-                                selectedWaypointId = null
                             },
                             onWaypointSelected = { wpId ->
                                 selectedWaypointId = wpId
@@ -463,7 +521,6 @@ fun RidePlanningScreen(
                             selectedCombinationId = selectedCombinationId,
                             onBonusPointClicked = { bpId ->
                                 selectedBonusPointId = bpId
-                                selectedWaypointId = null
                             },
                             modifier = Modifier.fillMaxSize()
                         )
@@ -504,6 +561,7 @@ fun RidePlanSidebar(
     waypointReloadTrigger: Int,
     routeResult: RouteResult?,
     isCalculatingRoute: Boolean,
+    estimatedScore: Int?,
     onLegSelected: (Int?) -> Unit,
     onBonusPointSelected: (Int?) -> Unit,
     onCombinationSelected: (Int?) -> Unit,
@@ -566,6 +624,7 @@ fun RidePlanSidebar(
                         rally = rally,
                         routeResult = routeResult,
                         isCalculatingRoute = isCalculatingRoute,
+                        estimatedScore = estimatedScore,
                         onEditClicked = onEditRideClicked,
                         modifier = Modifier.fillMaxWidth().padding(8.dp)
                     )
@@ -651,6 +710,7 @@ fun CompactRideInfo(
     rally: UiRally?,
     routeResult: RouteResult?,
     isCalculatingRoute: Boolean,
+    estimatedScore: Int?,
     onEditClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -748,6 +808,15 @@ fun CompactRideInfo(
                 val endFormatter = DateTimeFormatter.ofPattern("MMM d HH:mm")
                 Text(
                     text = "Est. finish: ${estimatedEnd.format(endFormatter)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            
+            if (estimatedScore != null && rally != null) {
+                Text(
+                    text = "Est. score: $estimatedScore pts",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary
@@ -1438,7 +1507,7 @@ fun RideLegItem(
     onLegDeleted: () -> Unit,
     onWaypointChanged: () -> Unit
 ) {
-    var isExpanded by remember { mutableStateOf(true) }
+    var isExpanded by remember(leg.id) { mutableStateOf(isSelected) }
     var waypoints by remember { mutableStateOf(emptyList<UiWaypoint>()) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showClearConfirm by remember { mutableStateOf(false) }
@@ -1457,6 +1526,17 @@ fun RideLegItem(
                     logger.error("Failed to load waypoints for leg {}", leg.id, error)
                 }
             )
+        }
+    }
+
+    LaunchedEffect(selectedWaypointId, waypoints) {
+        if (selectedWaypointId != null) {
+            val hasWaypoint = waypoints.any { it.id == selectedWaypointId }
+            logger.info("Leg {} checking for waypoint {}: found={}, waypoint ids={}", 
+                leg.name, selectedWaypointId, hasWaypoint, waypoints.map { it.id })
+            if (hasWaypoint) {
+                isExpanded = true
+            }
         }
     }
 
@@ -1520,55 +1600,65 @@ fun RideLegItem(
                     val isLinkedToSelectedBp = waypoint.bonusPointId != null && 
                                                waypoint.bonusPointId == selectedBonusPointId
                     
-                    WaypointItem(
-                        waypoint = waypoint,
-                        isSelected = isWpSelected,
-                        isHighlighted = isLinkedToSelectedBp && !isWpSelected,
-                        onSelect = { 
-                            onWaypointSelected(if (selectedWaypointId == waypoint.id) null else waypoint.id) 
-                        },
-                        onDelete = {
-                            scope.launch {
-                                WaypointSequencer.deleteAndRenumber(waypoints, waypoint, serverClient).fold(
-                                    onSuccess = { updated ->
-                                        waypoints = updated
-                                        onWaypointSelected(null)
-                                        onWaypointChanged()
-                                    },
-                                    onFailure = { error ->
-                                        logger.error("Failed to delete waypoint", error)
+                    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+                    
+                    LaunchedEffect(isWpSelected) {
+                        if (isWpSelected) {
+                            bringIntoViewRequester.bringIntoView()
+                        }
+                    }
+                    
+                    Box(modifier = Modifier.bringIntoViewRequester(bringIntoViewRequester)) {
+                        WaypointItem(
+                            waypoint = waypoint,
+                            isSelected = isWpSelected,
+                            isHighlighted = isLinkedToSelectedBp && !isWpSelected,
+                            onSelect = { 
+                                onWaypointSelected(if (selectedWaypointId == waypoint.id) null else waypoint.id) 
+                            },
+                            onDelete = {
+                                scope.launch {
+                                    WaypointSequencer.deleteAndRenumber(waypoints, waypoint, serverClient).fold(
+                                        onSuccess = { updated ->
+                                            waypoints = updated
+                                            onWaypointSelected(null)
+                                            onWaypointChanged()
+                                        },
+                                        onFailure = { error ->
+                                            logger.error("Failed to delete waypoint", error)
+                                        }
+                                    )
+                                }
+                            },
+                            onEdit = { editingWaypoint = waypoint },
+                            onMoveUp = if (index > 0) {
+                                {
+                                    scope.launch {
+                                        WaypointSequencer.moveUp(waypoints, waypoint, serverClient).fold(
+                                            onSuccess = { updated ->
+                                                waypoints = updated
+                                                onWaypointChanged()
+                                            },
+                                            onFailure = { error -> logger.error("Failed to move waypoint up", error) }
+                                        )
                                     }
-                                )
-                            }
-                        },
-                        onEdit = { editingWaypoint = waypoint },
-                        onMoveUp = if (index > 0) {
-                            {
-                                scope.launch {
-                                    WaypointSequencer.moveUp(waypoints, waypoint, serverClient).fold(
-                                        onSuccess = { updated ->
-                                            waypoints = updated
-                                            onWaypointChanged()
-                                        },
-                                        onFailure = { error -> logger.error("Failed to move waypoint up", error) }
-                                    )
                                 }
-                            }
-                        } else null,
-                        onMoveDown = if (index < waypoints.size - 1) {
-                            {
-                                scope.launch {
-                                    WaypointSequencer.moveDown(waypoints, waypoint, serverClient).fold(
-                                        onSuccess = { updated ->
-                                            waypoints = updated
-                                            onWaypointChanged()
-                                        },
-                                        onFailure = { error -> logger.error("Failed to move waypoint down", error) }
-                                    )
+                            } else null,
+                            onMoveDown = if (index < waypoints.size - 1) {
+                                {
+                                    scope.launch {
+                                        WaypointSequencer.moveDown(waypoints, waypoint, serverClient).fold(
+                                            onSuccess = { updated ->
+                                                waypoints = updated
+                                                onWaypointChanged()
+                                            },
+                                            onFailure = { error -> logger.error("Failed to move waypoint down", error) }
+                                        )
+                                    }
                                 }
-                            }
-                        } else null
-                    )
+                            } else null
+                        )
+                    }
                 }
 
                 if (waypoints.isEmpty()) {
